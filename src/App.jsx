@@ -1,8 +1,10 @@
 import React from "react";
+import { RouterProvider } from "react-router-dom";
+import router from "./router"; // Import file cấu hình router của bạn
 
-// File này tạm thời để trống hoặc dùng làm Wrapper sau này
 const App = () => {
-  return null;
+  // RouterProvider sẽ giúp render trang tương ứng với đường dẫn URL
+  return <RouterProvider router={router} />;
 };
 
 export default App;
