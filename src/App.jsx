@@ -1,10 +1,15 @@
+// src/App.jsx
 import React from "react";
 import { RouterProvider } from "react-router-dom";
-import router from "./router"; // Import file cấu hình router của bạn
+import router from "./router";
+import { AuthProvider } from "./context/AuthContext"; // Nhớ import cái này
 
 const App = () => {
-  // RouterProvider sẽ giúp render trang tương ứng với đường dẫn URL
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 };
 
 export default App;
