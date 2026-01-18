@@ -20,10 +20,10 @@ const LoginForm = () => {
 
     try {
       const userData = await loginAPI(email, password);
-      login(userData);
-      alert("Đăng nhập thành công! (Check console để xem user)");
-      console.log("User Info:", userData);
-      // Tạm thời chưa có trang chủ, nên cứ ở yên đây hoặc chuyển sang register để test
+      login(userData); // 1. Lưu user vào Context
+
+      // 2. Chuyển hướng ngay lập tức về trang chủ
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {
