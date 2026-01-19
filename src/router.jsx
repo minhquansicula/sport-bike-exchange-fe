@@ -9,6 +9,7 @@ import BikeDetailPage from "./features/bicycle/pages/BikeDetailPage";
 // Các trang Auth
 import LoginForm from "./features/auth/LoginForm";
 import RegisterForm from "./features/auth/RegisterForm";
+import UserProfilePage from "./features/auth/pages/UserProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -28,6 +29,14 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: <RegisterForm />,
+  },
+  {
+    path: "/",
+    element: <MainLayout />,
+    children: [
+      // ... các route khác
+      { path: "profile", element: <UserProfilePage /> }, // <-- Thêm dòng này
+    ],
   },
 ]);
 
