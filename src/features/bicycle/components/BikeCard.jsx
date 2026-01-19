@@ -1,71 +1,106 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import formatCurrency from "../../../utils/formatCurrency"; // Đảm bảo file này đã có export default
+import formatCurrency from "../../../utils/formatCurrency";
+// Import Icons
+import {
+  MdLocationOn,
+  MdAddShoppingCart,
+  MdFavoriteBorder,
+  MdAccessTime,
+} from "react-icons/md";
 
 const BikeCard = ({ bike }) => {
   return (
     <Link
       to={`/bikes/${bike.id}`}
-      className="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+      className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-orange-200 transition-all duration-300 flex flex-col h-full relative"
     >
-      {/* Phần Ảnh */}
-      <div className="relative h-48 overflow-hidden">
+      {/* --- 1. PHẦN ẢNH (Image Section) --- */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         <img
           src={bike.image}
           alt={bike.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         />
-        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
+
+        {/* Đã xóa Badge "Inspector Verified" ở đây theo yêu cầu */}
+
+        {/* Badge: Độ mới (Vẫn giữ lại vì người bán tự khai báo tình trạng) */}
+        <div className="absolute top-3 right-3 bg-zinc-900/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">
           Mới {bike.condition}%
         </div>
-        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
-          📍 {bike.location}
-        </div>
+
+        {/* Nút Tim (Chỉ hiện khi hover) */}
+        <button
+          className="absolute bottom-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:scale-110 transition-all shadow-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 duration-300"
+          onClick={(e) => {
+            e.preventDefault(); // Chặn click vào Link cha
+            // Xử lý logic yêu thích tại đây
+          }}
+        >
+          <MdFavoriteBorder />
+        </button>
       </div>
 
-      {/* Phần Thông tin */}
-      <div className="p-4 flex flex-col flex-grow">
-        <div className="flex justify-between items-start mb-2">
-          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-            {bike.type}
+      {/* --- 2. PHẦN THÔNG TIN (Info Section) --- */}
+      <div className="p-5 flex flex-col flex-grow">
+        {/* Dòng 1: Hãng & Loại xe */}
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[10px] font-bold tracking-wider uppercase text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-md">
+            {bike.brand} • {bike.type}
           </span>
-          <span className="text-xs text-gray-400">{bike.postedDate}</span>
+          <span className="flex items-center gap-1 text-[11px] text-zinc-400">
+            <MdLocationOn /> {bike.location?.split(",")[0]}{" "}
+            {/* Chỉ hiện Quận/Huyện */}
+          </span>
         </div>
 
-        <h3 className="font-bold text-lg text-gray-800 line-clamp-2 mb-1 group-hover:text-orange-600 transition-colors">
+        {/* Tên xe */}
+        <h3 className="font-bold text-base text-zinc-900 line-clamp-2 mb-1 leading-snug group-hover:text-orange-600 transition-colors min-h-[2.5rem]">
           {bike.name}
         </h3>
 
-        <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+        {/* Giá & Nút Mua */}
+        <div className="mt-auto pt-4 flex items-end justify-between">
           <div className="flex flex-col">
-            <span className="text-gray-400 text-xs line-through">
-              {formatCurrency(bike.originalPrice)}
-            </span>
-            <span className="text-orange-600 font-bold text-xl">
+            {bike.originalPrice && (
+              <span className="text-xs text-zinc-400 line-through mb-0.5">
+                {formatCurrency(bike.originalPrice)}
+              </span>
+            )}
+            <span className="text-lg font-black text-orange-600 tracking-tight">
               {formatCurrency(bike.price)}
             </span>
           </div>
-          <button className="bg-orange-50 text-orange-600 p-2 rounded-full hover:bg-orange-600 hover:text-white transition-colors">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
-              />
-            </svg>
+
+          <button
+            className="w-10 h-10 rounded-full bg-zinc-50 border border-zinc-100 text-zinc-400 hover:bg-orange-600 hover:text-white hover:border-orange-600 flex items-center justify-center transition-all duration-300 shadow-sm"
+            onClick={(e) => {
+              e.preventDefault();
+              // Xử lý thêm vào giỏ
+            }}
+          >
+            <MdAddShoppingCart size={18} />
           </button>
+        </div>
+
+        {/* Footer Card: Người bán & Thời gian */}
+        <div className="mt-4 pt-3 border-t border-dashed border-gray-100 flex items-center gap-2">
+          <img
+            src={bike.seller?.avatar || "https://ui-avatars.com/api/?name=User"}
+            className="w-5 h-5 rounded-full border border-gray-200"
+            alt="seller"
+          />
+          <span className="text-xs text-zinc-500 truncate max-w-[100px]">
+            {bike.seller?.name}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-zinc-300 ml-auto">
+            <MdAccessTime /> {bike.postedTime}
+          </span>
         </div>
       </div>
     </Link>
   );
 };
 
-// 👇 QUAN TRỌNG: Dòng này giúp sửa lỗi của bạn
 export default BikeCard;

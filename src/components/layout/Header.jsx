@@ -2,78 +2,135 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import UserMenu from "./UserMenu";
-// Import Icon
-import { MdMenu, MdPedalBike } from "react-icons/md";
+// Import Icons
+import {
+  MdMenu,
+  MdPedalBike,
+  MdSearch,
+  MdHome,
+  MdStorefront,
+  MdAdd,
+  MdFavoriteBorder,
+  MdShoppingCart,
+} from "react-icons/md";
 
 const Header = ({ onOpenSidebar }) => {
   const { user } = useAuth();
   const location = useLocation();
 
-  const isActive = (path) =>
-    location.pathname === path
-      ? "text-primary font-bold relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-primary"
-      : "text-gray-500 hover:text-primary transition-colors";
-
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 shadow-sm transition-all">
-      <div className="container mx-auto px-4 h-16 flex justify-between items-center">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={onOpenSidebar}
-          className="lg:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 hover:text-primary rounded-lg transition-colors"
-        >
-          <MdMenu size={28} />
-        </button>
+    <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)]">
+      <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between gap-6">
+        {/* --- 1. LOGO THƯƠNG HIỆU --- */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Nút Menu Mobile */}
+          <button
+            onClick={onOpenSidebar}
+            className="lg:hidden p-2 -ml-2 text-gray-500 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
+          >
+            <MdMenu size={26} />
+          </button>
 
-        {/* Logo */}
-        <Link
-          to="/"
-          className="text-2xl font-black text-gray-800 tracking-tight flex items-center gap-2 group select-none"
-        >
-          <div className="bg-primary/10 p-1.5 rounded-lg group-hover:bg-primary/20 transition-colors">
-            <MdPedalBike className="text-primary text-2xl group-hover:rotate-12 transition-transform duration-300" />
+          {/* Logo OldBike */}
+          <Link to="/" className="flex items-center gap-2 group select-none">
+            <MdPedalBike className="text-orange-600 text-3xl" />
+            <span className="hidden sm:block font-bold text-xl text-gray-900 tracking-tight">
+              Old<span className="text-orange-600">Bike</span>
+            </span>
+          </Link>
+        </div>
+
+        {/* --- 2. THANH TÌM KIẾM (ĐƠN GIẢN) --- */}
+        <div className="hidden md:flex flex-1 max-w-md mx-auto relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MdSearch className="text-gray-400 text-lg group-focus-within:text-orange-600 transition-colors" />
           </div>
-          <span>
-            Old<span className="text-primary">Bike</span>
-          </span>
-        </Link>
+          <input
+            type="text"
+            placeholder="Tìm kiếm xe đạp..."
+            className="w-full bg-gray-100 text-gray-900 rounded-full pl-10 pr-4 py-2 outline-none border border-transparent focus:bg-white focus:border-orange-200 focus:ring-2 focus:ring-orange-50 transition-all duration-200 placeholder-gray-500 text-sm font-medium"
+          />
+        </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center space-x-10 text-sm font-medium uppercase tracking-wide">
-          <Link to="/" className={isActive("/")}>
-            Trang chủ
-          </Link>
-          <Link to="/bikes" className={isActive("/bikes")}>
-            Mua xe
-          </Link>
-          <Link to="/post-bike" className={isActive("/post-bike")}>
-            Bán xe
-          </Link>
-          <Link to="/news" className={isActive("/news")}>
-            Tin tức
-          </Link>
-        </nav>
+        {/* --- 3. MENU & CÔNG CỤ --- */}
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          {/* NHÓM MÀU CAM: Trang chủ, Mua xe, Đăng tin */}
+          <div className="hidden lg:flex items-center gap-2">
+            {/* Icon Trang chủ */}
+            <Link
+              to="/"
+              title="Trang chủ"
+              className={`p-2 rounded-full transition-colors ${
+                location.pathname === "/"
+                  ? "bg-orange-50 text-orange-600"
+                  : "text-orange-600 hover:bg-orange-50"
+              }`}
+            >
+              <MdHome size={26} />
+            </Link>
 
-        {/* User Actions */}
-        <div className="flex items-center gap-4">
-          {user ? (
-            <UserMenu />
-          ) : (
-            <div className="hidden lg:flex items-center gap-3">
+            {/* Menu Mua xe */}
+            <Link
+              to="/bikes"
+              className={`flex items-center gap-1 px-3 py-2 rounded-full font-bold text-sm transition-all ${
+                location.pathname === "/bikes"
+                  ? "bg-orange-50 text-orange-600"
+                  : "text-orange-600 hover:bg-orange-50"
+              }`}
+            >
+              <MdStorefront size={22} />
+              <span>Mua xe</span>
+            </Link>
+          </div>
+
+          {/* Vách ngăn */}
+          <div className="hidden lg:block w-px h-6 bg-gray-200 mx-1"></div>
+
+          {/* NHÓM TRUNG TÍNH: Yêu thích, Giỏ hàng */}
+          <div className="flex items-center gap-1">
+            {/* Nút Đăng Tin (+) */}
+            <Link
+              to="/post-bike"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 text-white shadow-md shadow-orange-200 hover:bg-orange-700 hover:scale-105 transition-all duration-200 ml-1"
+              title="Đăng tin bán xe"
+            >
+              <MdAdd size={24} />
+            </Link>
+
+            {/* Yêu thích */}
+            <Link
+              to="/wishlist"
+              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
+              title="Danh sách yêu thích"
+            >
+              <MdFavoriteBorder size={24} />
+            </Link>
+
+            {/* Giỏ hàng */}
+            <Link
+              to="/cart"
+              className="relative p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
+              title="Giỏ hàng"
+            >
+              <MdShoppingCart size={24} />
+              {/* Chấm đỏ thông báo */}
+              <span className="absolute top-2 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            </Link>
+          </div>
+
+          {/* User Menu */}
+          <div className="pl-2 border-l border-gray-100">
+            {user ? (
+              <UserMenu />
+            ) : (
               <Link
                 to="/login"
-                className="text-gray-600 font-bold hover:text-primary transition px-4 py-2"
+                className="text-sm font-bold text-gray-900 hover:text-orange-600 px-2 transition-colors"
               >
                 Đăng nhập
               </Link>
-              <Link
-                to="/register"
-                className="bg-gray-900 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-primary hover:shadow-lg hover:shadow-orange-200 transition-all duration-300 transform hover:-translate-y-0.5"
-              >
-                Đăng ký ngay
-              </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </header>

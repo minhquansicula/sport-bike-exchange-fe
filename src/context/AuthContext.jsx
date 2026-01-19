@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext } from "react";
 
-// 👇 Đã thêm chữ 'export' để file useAuth.js có thể tìm thấy nó
+// Đã thêm chữ 'export' để file useAuth.js có thể tìm thấy nó
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
