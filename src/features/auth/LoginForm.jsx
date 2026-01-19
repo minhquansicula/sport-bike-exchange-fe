@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { loginAPI } from "../../services/authService";
 // Import Icons
 import {
   MdEmail,
@@ -13,13 +12,15 @@ import {
 } from "react-icons/md";
 
 const LoginForm = () => {
-  const [email, setEmail] = useState("buyer@gmail.com");
-  const [password, setPassword] = useState("123456");
-  const [showPassword, setShowPassword] = useState(false); // State ẩn hiện pass
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  // Điền sẵn thông tin user mock để bạn test cho nhanh
+  const [email, setEmail] = useState("user@example.com");
+  const [password, setPassword] = useState("123");
 
-  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Loading cục bộ cho nút bấm
+
+  const { login } = useAuth(); // Lấy hàm login từ Context
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -28,10 +29,13 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const userData = await loginAPI(email, password);
-      login(userData);
+      // Gọi hàm login (Context sẽ tự check mock data)
+      await login(email, password);
+
+      // Thành công -> Về trang chủ
       navigate("/");
     } catch (err) {
+      // Thất bại -> Hiện lỗi từ Context trả về
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -40,13 +44,12 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-200 px-4 py-12 relative overflow-hidden">
-      {/* Hình trang trí nền (Circles) */}
+      {/* Background Decor */}
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-50px] left-[20%] w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
       <div className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white relative z-10">
-        {/* Nút Quay lại */}
         <Link
           to="/"
           className="absolute top-6 left-6 text-gray-400 hover:text-orange-600 transition-colors"
@@ -54,7 +57,6 @@ const LoginForm = () => {
           <MdArrowBack size={24} />
         </Link>
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-block p-3 rounded-full bg-orange-100 text-orange-600 mb-4 shadow-sm">
             <MdLogin size={32} />
@@ -67,15 +69,15 @@ const LoginForm = () => {
           </p>
         </div>
 
-        {/* Error Message */}
+        {/* Thông báo lỗi */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 text-sm flex items-center gap-2">
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 text-sm flex items-center gap-2 animate-pulse">
             <span>⚠️</span> {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Input */}
+          {/* Email */}
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
               <MdEmail size={20} />
@@ -90,7 +92,7 @@ const LoginForm = () => {
             />
           </div>
 
-          {/* Password Input */}
+          {/* Password */}
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
               <MdLock size={20} />
@@ -103,7 +105,6 @@ const LoginForm = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            {/* Nút ẩn/hiện pass */}
             <button
               type="button"
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
@@ -117,7 +118,6 @@ const LoginForm = () => {
             </button>
           </div>
 
-          {/* Forgot Password Link */}
           <div className="flex justify-end">
             <a
               href="#"
@@ -127,43 +127,15 @@ const LoginForm = () => {
             </a>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Đang xử lý...
-              </span>
-            ) : (
-              "Đăng Nhập"
-            )}
+            {isLoading ? "Đang xử lý..." : "Đăng Nhập"}
           </button>
         </form>
 
-        {/* Footer */}
         <p className="mt-8 text-center text-sm text-gray-600">
           Chưa có tài khoản?{" "}
           <Link
