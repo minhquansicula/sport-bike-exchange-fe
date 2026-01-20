@@ -1,5 +1,5 @@
-import React, { useState } from "react"; // 1. Thêm useState
-import { Link, useLocation, useNavigate } from "react-router-dom"; // 2. Thêm useNavigate
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import UserMenu from "./UserMenu";
 // Import Icons
@@ -11,23 +11,22 @@ import {
   MdStorefront,
   MdAdd,
   MdFavoriteBorder,
-  MdShoppingCart,
+  // Đã xóa MdShoppingCart
 } from "react-icons/md";
 
 const Header = ({ onOpenSidebar }) => {
   const { user } = useAuth();
   const location = useLocation();
 
-  // --- LOGIC SEARCH MỚI THÊM ---
+  // --- LOGIC SEARCH ---
   const [keyword, setKeyword] = useState("");
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
-    e.preventDefault(); // Chặn reload trang
+    e.preventDefault();
     if (keyword.trim()) {
-      // Chuyển hướng sang trang danh sách kèm từ khóa
       navigate(`/bikes?search=${encodeURIComponent(keyword)}`);
-      setKeyword(""); // (Tùy chọn) Xóa ô tìm kiếm sau khi ấn Enter
+      setKeyword("");
     }
   };
 
@@ -53,8 +52,7 @@ const Header = ({ onOpenSidebar }) => {
           </Link>
         </div>
 
-        {/* --- 2. THANH TÌM KIẾM (ĐÃ CẬP NHẬT LOGIC) --- */}
-        {/* Đổi từ div sang form để bắt sự kiện Enter */}
+        {/* --- 2. THANH TÌM KIẾM --- */}
         <form
           onSubmit={handleSearch}
           className="hidden md:flex flex-1 max-w-md mx-auto relative group"
@@ -73,9 +71,8 @@ const Header = ({ onOpenSidebar }) => {
 
         {/* --- 3. MENU & CÔNG CỤ --- */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          {/* NHÓM MÀU CAM: Trang chủ, Mua xe, Đăng tin */}
+          {/* NHÓM MÀU CAM: Trang chủ, Mua xe */}
           <div className="hidden lg:flex items-center gap-2">
-            {/* Icon Trang chủ */}
             <Link
               to="/"
               title="Trang chủ"
@@ -88,7 +85,6 @@ const Header = ({ onOpenSidebar }) => {
               <MdHome size={26} />
             </Link>
 
-            {/* Menu Mua xe */}
             <Link
               to="/bikes"
               className={`flex items-center gap-1 px-3 py-2 rounded-full font-bold text-sm transition-all ${
@@ -105,7 +101,7 @@ const Header = ({ onOpenSidebar }) => {
           {/* Vách ngăn */}
           <div className="hidden lg:block w-px h-6 bg-gray-200 mx-1"></div>
 
-          {/* NHÓM TRUNG TÍNH: Yêu thích, Giỏ hàng */}
+          {/* NHÓM TRUNG TÍNH: Yêu thích, Đăng tin */}
           <div className="flex items-center gap-1">
             {/* Nút Đăng Tin (+) */}
             <Link
@@ -119,22 +115,13 @@ const Header = ({ onOpenSidebar }) => {
             {/* Yêu thích */}
             <Link
               to="/wishlist"
-              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
               title="Danh sách yêu thích"
             >
               <MdFavoriteBorder size={24} />
             </Link>
 
-            {/* Giỏ hàng */}
-            <Link
-              to="/cart"
-              className="relative p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
-              title="Giỏ hàng"
-            >
-              <MdShoppingCart size={24} />
-              {/* Chấm đỏ thông báo */}
-              <span className="absolute top-2 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </Link>
+            {/* Đã xóa phần Giỏ hàng ở đây */}
           </div>
 
           {/* User Menu */}

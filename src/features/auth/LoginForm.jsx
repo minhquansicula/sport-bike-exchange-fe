@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../hooks/useAuth"; // Đảm bảo đường dẫn đúng
 // Import Icons
 import {
   MdEmail,
@@ -12,15 +12,15 @@ import {
 } from "react-icons/md";
 
 const LoginForm = () => {
-  // Điền sẵn thông tin user mock để bạn test cho nhanh
-  const [email, setEmail] = useState("user@example.com");
+  // Điền sẵn thông tin user mock để test nhanh
+  const [email, setEmail] = useState("dominhtien@gmail.com");
   const [password, setPassword] = useState("123");
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Loading cục bộ cho nút bấm
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth(); // Lấy hàm login từ Context
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -29,14 +29,16 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      // Gọi hàm login (Context sẽ tự check mock data)
-      await login(email, password);
+      const result = login(email, password);
 
-      // Thành công -> Về trang chủ
-      navigate("/");
+      if (result.success) {
+        navigate("/");
+      } else {
+        setError(result.message);
+      }
     } catch (err) {
-      // Thất bại -> Hiện lỗi từ Context trả về
-      setError(err.message);
+      console.error("Login Error:", err);
+      setError("Có lỗi xảy ra, vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
     }

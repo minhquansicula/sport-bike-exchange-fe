@@ -7,10 +7,16 @@ import {
   MdLocationOn,
   MdVerified,
   MdSecurity,
-  MdWarning,
   MdInfoOutline,
   MdCheckCircle,
   MdArrowForward,
+  // 👇 Thêm các icon mới cho thông số kỹ thuật
+  MdStraighten, // Frame
+  MdDonutLarge, // Wheel
+  MdSpeed, // Gears
+  MdFitnessCenter, // Weight
+  MdCalendarToday, // Year
+  MdErrorOutline, // Brake
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
@@ -80,42 +86,71 @@ const BikeDetailPage = () => {
                 </span>
               </div>
 
-              {/* Specs Grid */}
+              {/* 👇 PHẦN ĐÃ SỬA: Specs Grid (Hiện thông số thực tế) */}
               <div className="mb-8">
                 <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
                   <MdInfoOutline className="text-orange-600" /> Thông số kỹ
                   thuật
                 </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  {/* Size Khung */}
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 block text-xs mb-1">
-                      Khung sườn
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdStraighten /> Size Khung
                     </span>
-                    <span className="font-semibold text-zinc-800">
-                      Nhôm Alpha Silver
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.frame || "N/A"}
                     </span>
                   </div>
+
+                  {/* Size Bánh */}
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 block text-xs mb-1">
-                      Bộ truyền động
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdDonutLarge /> Size Bánh
                     </span>
-                    <span className="font-semibold text-zinc-800">
-                      Shimano Deore
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.wheel || "N/A"}
                     </span>
                   </div>
+
+                  {/* Năm sản xuất */}
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 block text-xs mb-1">
-                      Phanh
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdCalendarToday /> Năm SX
                     </span>
-                    <span className="font-semibold text-zinc-800">
-                      Đĩa dầu thủy lực
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.year || "N/A"}
                     </span>
                   </div>
+
+                  {/* Phanh */}
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 block text-xs mb-1">
-                      Kích thước bánh
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdErrorOutline /> Phanh
                     </span>
-                    <span className="font-semibold text-zinc-800">29 inch</span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.brake || "N/A"}
+                    </span>
+                  </div>
+
+                  {/* Bộ đề */}
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdSpeed /> Bộ đề
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.gears || "N/A"}
+                    </span>
+                  </div>
+
+                  {/* Trọng lượng */}
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdFitnessCenter /> Trọng lượng
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.weight ? `${bike.weight} kg` : "N/A"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -126,10 +161,8 @@ const BikeDetailPage = () => {
                   Mô tả từ người bán
                 </h3>
                 <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                  Xe chính chủ sử dụng kỹ, bảo dưỡng định kỳ. Cam kết chưa qua
-                  sửa chữa lớn. Mình muốn đổi sang dòng Road nên pass lại cho
-                  anh em thiện chí. Xem xe tại trạm{" "}
-                  {bike.location?.split(",")[0]}.
+                  {bike.description ||
+                    "Người bán chưa cung cấp mô tả chi tiết."}
                 </p>
               </div>
             </div>
@@ -147,7 +180,7 @@ const BikeDetailPage = () => {
                 />
                 <div>
                   <h4 className="font-bold text-zinc-900 text-lg">
-                    {bike.seller?.name}
+                    {bike.seller?.name || bike.posterName}
                   </h4>
                   <p className="text-sm text-gray-500 flex items-center gap-1">
                     <MdVerified className="text-blue-500" /> Thành viên uy tín
@@ -175,8 +208,6 @@ const BikeDetailPage = () => {
                     </span>
                   </div>
                 </div>
-
-                {/* Đã xóa phần "Quy trình mua xe" ở đây */}
 
                 <div className="space-y-3">
                   {/* Nút Hành Động Chính: YÊU CẦU GIAO DỊCH */}

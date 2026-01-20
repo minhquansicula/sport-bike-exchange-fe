@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-// Import icon Material Design
 import {
   MdPerson,
-  MdDirectionsBike,
-  MdSettings,
+  MdHistory,
   MdLogout,
   MdKeyboardArrowDown,
+  MdPedalBike,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -27,15 +26,20 @@ const UserMenu = () => {
 
   if (!user) return null;
 
+  // Hàm đóng menu khi click vào link
+  const handleLinkClick = () => setIsOpen(false);
+
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 focus:outline-none group"
       >
-        <span className="hidden md:block text-sm font-semibold text-gray-700 group-hover:text-primary transition-colors">
-          {user.name}
-        </span>
+        <div className="text-right hidden md:block">
+          <p className="text-sm font-bold text-zinc-800 group-hover:text-orange-600 transition-colors">
+            {user.name}
+          </p>
+        </div>
         <div className="relative">
           <img
             src={
@@ -43,49 +47,60 @@ const UserMenu = () => {
               `https://ui-avatars.com/api/?name=${user.name}&background=random`
             }
             alt="Avatar"
-            className="w-10 h-10 rounded-full border-2 border-gray-100 group-hover:border-primary transition-colors object-cover"
+            className="w-10 h-10 rounded-full border-2 border-gray-100 group-hover:border-orange-200 transition-colors object-cover shadow-sm"
           />
-          {/* Icon mũi tên nhỏ bên cạnh avatar */}
-          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow border">
+          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow border border-gray-100">
             <MdKeyboardArrowDown className="text-gray-500" size={12} />
           </div>
         </div>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-60 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-2 z-50 transform origin-top-right animate-in fade-in slide-in-from-top-2">
+        <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 py-2 z-50 transform origin-top-right animate-in fade-in slide-in-from-top-2">
           <div className="px-5 py-3 border-b border-gray-50">
-            <p className="text-sm font-bold text-gray-800">{user.name}</p>
+            <p className="text-sm font-bold text-zinc-900 truncate">
+              {user.name}
+            </p>
             <p className="text-xs text-gray-400 truncate mt-0.5">
               {user.email}
             </p>
           </div>
 
           <div className="py-2">
+            {/* 👇 SỬA CÁC ĐƯỜNG LINK DƯỚI ĐÂY */}
             <Link
-              to="/profile"
-              className="flex items-center gap-3 px-5 py-2.5 text-sm text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors"
+              to="/profile?tab=info"
+              onClick={handleLinkClick}
+              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
             >
-              <MdPerson size={20} /> Hồ sơ cá nhân
+              <MdPerson size={20} className="text-gray-400" /> Hồ sơ cá nhân
             </Link>
+
             <Link
-              to="/my-bikes"
-              className="flex items-center gap-3 px-5 py-2.5 text-sm text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors"
+              to="/profile?tab=my-bikes"
+              onClick={handleLinkClick}
+              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
             >
-              <MdDirectionsBike size={20} /> Xe của tôi
+              <MdPedalBike size={20} className="text-gray-400" /> Xe của tôi
             </Link>
+
             <Link
-              to="/settings"
-              className="flex items-center gap-3 px-5 py-2.5 text-sm text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors"
+              to="/profile?tab=transactions"
+              onClick={handleLinkClick}
+              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
             >
-              <MdSettings size={20} /> Cài đặt tài khoản
+              <MdHistory size={20} className="text-gray-400" /> Lịch sử giao
+              dịch
             </Link>
           </div>
 
-          <div className="border-t border-gray-50 pt-2 mt-1 px-2">
+          <div className="border-t border-gray-50 pt-2 mt-1 px-3 pb-1">
             <button
-              onClick={logout}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors font-medium"
+              onClick={() => {
+                logout();
+                handleLinkClick();
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-bold"
             >
               <MdLogout size={20} /> Đăng xuất
             </button>

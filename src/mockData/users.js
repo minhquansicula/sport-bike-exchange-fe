@@ -3,13 +3,13 @@
 export const MOCK_USERS = [
   {
     id: 1,
-    email: "user@example.com",
+    email: "dominhtien@gmail.com",
     password: "123", // Mật khẩu giả định
-    name: "Nguyễn Văn A",
+    name: "Đỗ Minh Tiến",
     role: "user",
     avatar: "https://i.pravatar.cc/150?u=1",
-    phone: "0912345678",
-    address: "Đống Đa, Hà Nội",
+    phone: "0914303252",
+    address: "Tam Kỳ, Đà Nẵng",
     joinDate: "2024-01-15",
     bio: "Đam mê xe đạp địa hình, thích leo núi cuối tuần.",
   },

@@ -5,6 +5,7 @@ import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
 import BikeListPage from "./features/bicycle/pages/BikeListPage";
 import BikeDetailPage from "./features/bicycle/pages/BikeDetailPage";
+import PostBikePage from "./features/bicycle/pages/PostBikePage";
 
 // Các trang Auth
 import LoginForm from "./features/auth/LoginForm";
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> }, // Trang chủ
       { path: "bikes", element: <BikeListPage /> }, // Danh sách xe
       { path: "bikes/:id", element: <BikeDetailPage /> }, // Chi tiết xe
+      { path: "post-bike", element: <PostBikePage /> },
     ],
   },
   // Các trang Login/Register nằm riêng (không cần Header/Footer của MainLayout)
