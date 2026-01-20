@@ -11,7 +11,7 @@ export const MOCK_BIKES = [
     condition: 98, // 98%
     location: "Đống Đa, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1576435728678-38d01d52e38b?auto=format&fit=crop&w=600&q=80",
+      "https://fxbike.vn/wp-content/uploads/2022/02/Trek-Marlin-7-2022-1-600x450.jpeg",
     postedTime: "2 giờ trước",
     inspectorChecked: true, // Đã được kiểm định
     seller: {
@@ -101,7 +101,7 @@ export const MOCK_BIKES = [
     condition: 99,
     location: "Q.3, TP. Hồ Chí Minh",
     image:
-      "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&w=600&q=80",
+      "https://pinarello.com/storage/Article/c43ba97463a91e8215b71d134aed6184.jpg",
     postedTime: "1 tuần trước",
     inspectorChecked: true,
     seller: {
@@ -119,7 +119,7 @@ export const MOCK_BIKES = [
     condition: 85,
     location: "Cầu Giấy, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1505705693723-d3222eb61199?auto=format&fit=crop&w=600&q=80",
+      "https://fxbike.vn/wp-content/uploads/2023/10/Xe-Dap-Galaxy-ML200-2024-2-3.jpg",
     postedTime: "4 giờ trước",
     inspectorChecked: false,
     seller: {

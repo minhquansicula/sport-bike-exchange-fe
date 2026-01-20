@@ -1,5 +1,5 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState } from "react"; // 1. Thêm useState
+import { Link, useLocation, useNavigate } from "react-router-dom"; // 2. Thêm useNavigate
 import { useAuth } from "../../hooks/useAuth";
 import UserMenu from "./UserMenu";
 // Import Icons
@@ -17,6 +17,19 @@ import {
 const Header = ({ onOpenSidebar }) => {
   const { user } = useAuth();
   const location = useLocation();
+
+  // --- LOGIC SEARCH MỚI THÊM ---
+  const [keyword, setKeyword] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = (e) => {
+    e.preventDefault(); // Chặn reload trang
+    if (keyword.trim()) {
+      // Chuyển hướng sang trang danh sách kèm từ khóa
+      navigate(`/bikes?search=${encodeURIComponent(keyword)}`);
+      setKeyword(""); // (Tùy chọn) Xóa ô tìm kiếm sau khi ấn Enter
+    }
+  };
 
   return (
     <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)]">
@@ -40,8 +53,12 @@ const Header = ({ onOpenSidebar }) => {
           </Link>
         </div>
 
-        {/* --- 2. THANH TÌM KIẾM (ĐƠN GIẢN) --- */}
-        <div className="hidden md:flex flex-1 max-w-md mx-auto relative group">
+        {/* --- 2. THANH TÌM KIẾM (ĐÃ CẬP NHẬT LOGIC) --- */}
+        {/* Đổi từ div sang form để bắt sự kiện Enter */}
+        <form
+          onSubmit={handleSearch}
+          className="hidden md:flex flex-1 max-w-md mx-auto relative group"
+        >
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <MdSearch className="text-gray-400 text-lg group-focus-within:text-orange-600 transition-colors" />
           </div>
@@ -49,8 +66,10 @@ const Header = ({ onOpenSidebar }) => {
             type="text"
             placeholder="Tìm kiếm xe đạp..."
             className="w-full bg-gray-100 text-gray-900 rounded-full pl-10 pr-4 py-2 outline-none border border-transparent focus:bg-white focus:border-orange-200 focus:ring-2 focus:ring-orange-50 transition-all duration-200 placeholder-gray-500 text-sm font-medium"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
           />
-        </div>
+        </form>
 
         {/* --- 3. MENU & CÔNG CỤ --- */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">

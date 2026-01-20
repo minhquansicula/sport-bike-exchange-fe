@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import BikeCard from "../features/bicycle/components/BikeCard";
 import { MOCK_BIKES } from "../mockData/bikes";
 // Import Icons
@@ -12,6 +12,18 @@ import {
 } from "react-icons/md";
 
 const HomePage = () => {
+  // --- LOGIC SEARCH MỚI THÊM ---
+  const [keyword, setKeyword] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = (e) => {
+    e.preventDefault(); // Chặn reload trang
+    if (keyword.trim()) {
+      // Chuyển hướng sang trang danh sách kèm từ khóa
+      navigate(`/bikes?search=${encodeURIComponent(keyword)}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* --- 1. HERO SECTION: Gradient Đen -> Cam --- */}
@@ -48,8 +60,11 @@ const HomePage = () => {
               để chốt đơn an toàn.
             </p>
 
-            {/* SEARCH BAR */}
-            <div className="bg-white/10 backdrop-blur-md p-2 rounded-full max-w-2xl mx-auto border border-white/20 flex items-center shadow-2xl">
+            {/* --- SEARCH BAR (Đã cập nhật Logic) --- */}
+            <form
+              onSubmit={handleSearch}
+              className="bg-white/10 backdrop-blur-md p-2 rounded-full max-w-2xl mx-auto border border-white/20 flex items-center shadow-2xl relative z-20"
+            >
               <div className="pl-6 text-gray-300">
                 <MdSearch size={24} />
               </div>
@@ -57,14 +72,16 @@ const HomePage = () => {
                 type="text"
                 placeholder="Tìm dòng xe bạn thích (VD: Trek, Giant...)"
                 className="flex-1 h-12 bg-transparent border-none outline-none text-white placeholder-gray-400 text-lg px-4"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
               />
-              <Link
-                to="/bikes"
-                className="bg-orange-600 hover:bg-orange-500 text-white h-12 px-8 rounded-full font-bold transition-all flex items-center justify-center"
+              <button
+                type="submit"
+                className="bg-orange-600 hover:bg-orange-500 text-white h-12 px-8 rounded-full font-bold transition-all flex items-center justify-center cursor-pointer"
               >
                 Tìm Xe
-              </Link>
-            </div>
+              </button>
+            </form>
 
             <p className="mt-4 text-sm text-gray-400">
               *Hơn 100+ điểm giao dịch trên toàn quốc hỗ trợ kiểm tra xe

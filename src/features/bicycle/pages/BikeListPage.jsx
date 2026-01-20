@@ -3,8 +3,10 @@ import { MOCK_BIKES } from "../../../mockData/bikes";
 import BikeCard from "../components/BikeCard";
 import BikeFilter from "../components/BikeFilter";
 import { MdSort, MdSearchOff } from "react-icons/md";
+import { useSearchParams } from "react-router-dom";
 
 const BikeListPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   // State lưu bộ lọc
   const [filters, setFilters] = useState({
     search: "",
@@ -14,6 +16,13 @@ const BikeListPage = () => {
     brand: "",
     location: "",
   });
+
+  useEffect(() => {
+    const querySearch = searchParams.get("search"); // Lấy chữ sau dấu ?search=
+    if (querySearch) {
+      setFilters((prev) => ({ ...prev, search: querySearch }));
+    }
+  }, [searchParams]);
 
   // State sắp xếp
   const [sortOrder, setSortOrder] = useState("newest"); // newest | price_asc | price_desc
@@ -68,6 +77,8 @@ const BikeListPage = () => {
       location: "",
     });
     setSortOrder("newest");
+
+    setSearchParams({});
   };
 
   return (
