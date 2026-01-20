@@ -5,7 +5,7 @@ import "./index.css";
 
 // Import các Provider
 import { AuthProvider } from "./hooks/useAuth.jsx";
-import { WishlistProvider } from "./context/WishListContext.jsx";
+// import { WishlistProvider } from "./context/WishListContext.jsx";
 import { CartProvider } from "./context/CartContext";
 import { TransactionProvider } from "./context/TransactionContext";
 
@@ -22,5 +22,3 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </AuthProvider>
   </React.StrictMode>,
 );
-
-// ❌ XÓA DÒNG NÀY ĐI: export default App;
