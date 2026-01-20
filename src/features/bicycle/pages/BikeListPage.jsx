@@ -1,71 +1,146 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { MOCK_BIKES } from "../../../mockData/bikes";
 import BikeCard from "../components/BikeCard";
-import { MOCK_BIKES } from "../../../mockData/bikes"; // Đảm bảo đường dẫn này đúng với cấu trúc của bạn
+import BikeFilter from "../components/BikeFilter";
+import { MdSort, MdSearchOff } from "react-icons/md";
 
 const BikeListPage = () => {
+  // State lưu bộ lọc
+  const [filters, setFilters] = useState({
+    search: "",
+    minPrice: "",
+    maxPrice: "",
+    type: "",
+    brand: "",
+    location: "",
+  });
+
+  // State sắp xếp
+  const [sortOrder, setSortOrder] = useState("newest"); // newest | price_asc | price_desc
+
+  // --- LOGIC LỌC DỮ LIỆU ---
+  const filteredBikes = useMemo(() => {
+    return MOCK_BIKES.filter((bike) => {
+      // 1. Lọc theo tên
+      if (
+        filters.search &&
+        !bike.name.toLowerCase().includes(filters.search.toLowerCase())
+      )
+        return false;
+
+      // 2. Lọc theo giá
+      if (filters.minPrice && bike.price < Number(filters.minPrice))
+        return false;
+      if (filters.maxPrice && bike.price > Number(filters.maxPrice))
+        return false;
+
+      // 3. Lọc theo loại
+      if (filters.type && bike.type !== filters.type) return false;
+
+      // 4. Lọc theo hãng
+      if (filters.brand && bike.brand !== filters.brand) return false;
+
+      // 5. Lọc theo địa điểm (tìm tương đối)
+      if (filters.location && !bike.location.includes(filters.location))
+        return false;
+
+      return true;
+    }).sort((a, b) => {
+      // --- LOGIC SẮP XẾP ---
+      switch (sortOrder) {
+        case "price_asc":
+          return a.price - b.price;
+        case "price_desc":
+          return b.price - a.price;
+        default:
+          return b.id - a.id; // Mặc định ID lớn là mới nhất
+      }
+    });
+  }, [filters, sortOrder]);
+
+  const handleReset = () => {
+    setFilters({
+      search: "",
+      minPrice: "",
+      maxPrice: "",
+      type: "",
+      brand: "",
+      location: "",
+    });
+    setSortOrder("newest");
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* 1. Phần Tiêu đề & Bộ lọc nhanh */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-secondary">Chợ Xe Đạp</h1>
-          <p className="text-gray-500 mt-1">
-            Tìm thấy {MOCK_BIKES.length} xe đang được rao bán
-          </p>
+    <div className="min-h-screen bg-gray-50 py-8 font-sans">
+      <div className="container mx-auto px-4">
+        {/* Header trang */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-zinc-900">Mua xe đạp cũ</h1>
+            <p className="text-gray-500 mt-1">
+              Hơn {MOCK_BIKES.length}+ xe đạp chất lượng đang chờ chủ mới.
+            </p>
+          </div>
+
+          {/* Dropdown Sắp xếp */}
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
+            <MdSort className="text-gray-400" size={20} />
+            <span className="text-sm font-bold text-zinc-700">Sắp xếp:</span>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="bg-transparent text-sm font-medium outline-none cursor-pointer text-orange-600"
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="price_asc">Giá thấp đến cao</option>
+              <option value="price_desc">Giá cao đến thấp</option>
+            </select>
+          </div>
         </div>
 
-        {/* Bộ lọc giao diện (Chưa cần logic) */}
-        <div className="flex gap-3">
-          <select className="px-4 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
-            <option>Loại xe: Tất cả</option>
-            <option>Road (Đua)</option>
-            <option>MTB (Địa hình)</option>
-            <option>Touring</option>
-          </select>
-          <select className="px-4 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
-            <option>Sắp xếp: Mới nhất</option>
-            <option>Giá: Thấp đến Cao</option>
-            <option>Giá: Cao đến Thấp</option>
-          </select>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* CỘT TRÁI: BỘ LỌC */}
+          <div className="hidden lg:block lg:col-span-1">
+            <BikeFilter
+              filters={filters}
+              setFilters={setFilters}
+              onReset={handleReset}
+            />
+          </div>
+
+          {/* CỘT PHẢI: DANH SÁCH XE */}
+          <div className="lg:col-span-3">
+            {filteredBikes.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredBikes.map((bike) => (
+                  <BikeCard key={bike.id} bike={bike} />
+                ))}
+              </div>
+            ) : (
+              // Trạng thái trống (Empty State)
+              <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                  <MdSearchOff size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900 mb-2">
+                  Không tìm thấy xe nào
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm của bạn.
+                </p>
+                <button
+                  onClick={handleReset}
+                  className="bg-zinc-900 text-white px-6 py-2.5 rounded-full font-bold hover:bg-orange-600 transition-colors"
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* 2. Lưới sản phẩm */}
-      {/* Grid: Mobile 1 cột, Tablet 2 cột, Desktop 4 cột */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {MOCK_BIKES.map((bike) => (
-          <BikeCard key={bike.id} bike={bike} />
-        ))}
-        {/* Lặp lại data giả để nhìn cho đầy trang (nếu ít xe quá) */}
-        {MOCK_BIKES.map((bike) => (
-          <BikeCard key={`duplicate-${bike.id}`} bike={bike} />
-        ))}
-      </div>
-
-      {/* 3. Phân trang (Giao diện tĩnh) */}
-      <div className="flex justify-center mt-12 gap-2">
-        <button
-          className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 text-gray-600"
-          disabled
-        >
-          &laquo; Trước
-        </button>
-        <button className="px-3 py-1 bg-primary text-white rounded font-bold">
-          1
-        </button>
-        <button className="px-3 py-1 border rounded hover:bg-gray-50 text-gray-600">
-          2
-        </button>
-        <button className="px-3 py-1 border rounded hover:bg-gray-50 text-gray-600">
-          3
-        </button>
-        <button className="px-3 py-1 border rounded hover:bg-gray-50 text-gray-600">
-          Sau &raquo;
-        </button>
       </div>
     </div>
   );
 };
 
-// QUAN TRỌNG: Dòng này giúp Router tìm thấy component này
 export default BikeListPage;
