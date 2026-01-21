@@ -5,11 +5,11 @@ export const MOCK_USERS = [
     id: 1,
     email: "user@gmail.com",
     password: "123", // Mật khẩu giả định
-    name: "Đỗ Minh Tiến",
+    name: "Nguyen Van A",
     role: "user",
     avatar: "https://i.pravatar.cc/150?u=1",
     phone: "0914303252",
-    address: "Tam Kỳ, Đà Nẵng",
+    address: "Đà Nẵng",
     joinDate: "2024-01-15",
     bio: "Đam mê xe đạp địa hình, thích leo núi cuối tuần.",
   },
