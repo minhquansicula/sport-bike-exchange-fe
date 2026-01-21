@@ -198,7 +198,7 @@ export const MOCK_BIKES = [
     condition: 98,
     location: "Gò Vấp, TP. HCM",
     image:
-      "https://images.unsplash.com/photo-1565103058786-6592a95c9703?auto=format&fit=crop&w=600&q=80",
+      "https://xedapgiakho.com/wp-content/uploads/2024/06/xe-dap-dua-twitter-r10-retrospec-rs-22-4.jpg",
     postedTime: "30 phút trước",
     inspectorChecked: false,
     seller: { name: "Tuấn K", avatar: "https://i.pravatar.cc/150?u=9" },
@@ -221,7 +221,7 @@ export const MOCK_BIKES = [
     condition: 95,
     location: "Hoàn Kiếm, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1623956792404-e91c7731996f?auto=format&fit=crop&w=600&q=80",
+      "https://hellobike.vn/wp-content/uploads/2025/07/xe-ap-gap-gon-dahon-k3-001.jpg",
     postedTime: "6 giờ trước",
     inspectorChecked: true,
     seller: { name: "Minh Nhật", avatar: "https://i.pravatar.cc/150?u=10" },
@@ -267,7 +267,7 @@ export const MOCK_BIKES = [
     condition: 92,
     location: "Q.7, TP. Hồ Chí Minh",
     image:
-      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=600&q=80",
+      "https://product.hstatic.net/200000832795/product/z5697948149137_6649faef31d52d224c7b041ae2f6a298_3dc29bf950544af3909f4237c92705f7_master.jpg",
     postedTime: "3 giờ trước",
     inspectorChecked: true,
     seller: { name: "Sarah Nguyễn", avatar: "https://i.pravatar.cc/150?u=12" },
@@ -290,7 +290,7 @@ export const MOCK_BIKES = [
     condition: 90,
     location: "Hai Bà Trưng, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1505705693723-33673f464734?auto=format&fit=crop&w=600&q=80",
+      "https://file.hstatic.net/200000051564/file/aventon_mataro_2020_3a0aefe961a74b238611ccb9905bbf3c.png",
     postedTime: "12 giờ trước",
     inspectorChecked: false,
     seller: { name: "Hải Fixie", avatar: "https://i.pravatar.cc/150?u=13" },
@@ -336,7 +336,7 @@ export const MOCK_BIKES = [
     condition: 97,
     location: "Biên Hòa, Đồng Nai",
     image:
-      "https://images.unsplash.com/photo-1596732402829-9a25b340026e?auto=format&fit=crop&w=600&q=80",
+      "https://giantvietnam.vn/wp-content/uploads/2023/09/2024-XTC-800-Reu-27.5-scaled.jpg",
     postedTime: "45 phút trước",
     inspectorChecked: true,
     seller: { name: "Thành Đạt", avatar: "https://i.pravatar.cc/150?u=15" },
@@ -359,7 +359,7 @@ export const MOCK_BIKES = [
     condition: 89,
     location: "Q. Bình Thạnh, TP. HCM",
     image:
-      "https://images.unsplash.com/photo-1599557287963-3cb377033742?auto=format&fit=crop&w=600&q=80",
+      "https://salt.tikicdn.com/ts/tmp/9f/b4/f9/f33ff0fc950ec0e2fffbb8f47a53094a.jpg",
     postedTime: "2 ngày trước",
     inspectorChecked: false,
     seller: { name: "Em Gái", avatar: "https://i.pravatar.cc/150?u=16" },
@@ -405,7 +405,7 @@ export const MOCK_BIKES = [
     condition: 98,
     location: "Hà Đông, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1518600570419-869f4c907adb?auto=format&fit=crop&w=600&q=80",
+      "https://www.cyclelab.com/uploads/products/C8383757-F810-410D-9759-D7940772639A.png",
     postedTime: "8 giờ trước",
     inspectorChecked: true,
     seller: { name: "Tiến Dũng", avatar: "https://i.pravatar.cc/150?u=18" },
@@ -428,7 +428,7 @@ export const MOCK_BIKES = [
     condition: 94,
     location: "Q.2, TP. HCM",
     image:
-      "https://images.unsplash.com/photo-1623956792404-e91c7731996f?auto=format&fit=crop&w=600&q=80",
+      "https://bizweb.dktcdn.net/thumb/1024x1024/100/513/392/products/xe-dap-tro-luc-dien-himo-z20.jpg?v=1760514231880",
     postedTime: "10 giờ trước",
     inspectorChecked: true,
     seller: { name: "Tech Bike", avatar: "https://i.pravatar.cc/150?u=19" },
@@ -451,7 +451,7 @@ export const MOCK_BIKES = [
     condition: 99,
     location: "Đà Lạt, Lâm Đồng",
     image:
-      "https://images.unsplash.com/photo-1625243176472-3632cf430267?auto=format&fit=crop&w=600&q=80",
+      "https://xedapso.com/wp-content/smush-webp/2025/01/xe-dap-dua-Giant-Revolt-Adv-2-ban-2025-mau-den.jpg.webp",
     postedTime: "30 phút trước",
     inspectorChecked: true,
     seller: { name: "Lâm Gravel", avatar: "https://i.pravatar.cc/150?u=20" },
@@ -474,7 +474,7 @@ export const MOCK_BIKES = [
     condition: 95,
     location: "Thanh Xuân, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1595232235952-4752c42023ee?auto=format&fit=crop&w=600&q=80",
+      "https://www.mrbicycles.com/wp-content/uploads/2021/07/TSUNAMI-SNM100-Complete-bike-Black-Drop-bar-1.jpg",
     postedTime: "1 giờ trước",
     inspectorChecked: true,
     seller: { name: "Đức Fixed", avatar: "https://i.pravatar.cc/150?u=21" },
@@ -520,7 +520,7 @@ export const MOCK_BIKES = [
     condition: 96,
     location: "Sơn Trà, Đà Nẵng",
     image:
-      "https://images.unsplash.com/photo-1529422643029-d45757d690b5?auto=format&fit=crop&w=600&q=80",
+      "https://product.hstatic.net/200000887845/product/domaneal2disc_23_33083_b_primary_5656cfcc59d84a75b60c47763d55f8b7.jpg",
     postedTime: "30 phút trước",
     inspectorChecked: true,
     seller: { name: "Minh Trek", avatar: "https://i.pravatar.cc/150?u=23" },
@@ -566,7 +566,7 @@ export const MOCK_BIKES = [
     condition: 97,
     location: "Biên Hòa, Đồng Nai",
     image:
-      "https://images.unsplash.com/photo-1572586834953-5ab345943829?auto=format&fit=crop&w=600&q=80",
+      "https://bizweb.dktcdn.net/100/412/747/products/xe-dap-sava-x9-den.jpg?v=1700020756287",
     postedTime: "5 giờ trước",
     inspectorChecked: true,
     seller: { name: "Hùng Carbon", avatar: "https://i.pravatar.cc/150?u=25" },
@@ -589,7 +589,7 @@ export const MOCK_BIKES = [
     condition: 99,
     location: "Hoàn Kiếm, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1480101833077-9430c7042a35?auto=format&fit=crop&w=600&q=80",
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvE67aGnCIGRuhOysUv12c_btoyTrDbuCEWQ&s",
     postedTime: "3 ngày trước",
     inspectorChecked: true,
     seller: { name: "Mr. Lee", avatar: "https://i.pravatar.cc/150?u=26" },
@@ -612,7 +612,7 @@ export const MOCK_BIKES = [
     condition: 88,
     location: "Q.7, TP. HCM",
     image:
-      "https://images.unsplash.com/photo-1520106678685-30062d980c65?auto=format&fit=crop&w=600&q=80",
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJNdBlshAvypFo7908eEwDdhem-fiduBjPOA&s",
     postedTime: "7 giờ trước",
     inspectorChecked: false,
     seller: { name: "An Japan", avatar: "https://i.pravatar.cc/150?u=27" },
@@ -704,7 +704,7 @@ export const MOCK_BIKES = [
     condition: 96,
     location: "Hải Phòng",
     image:
-      "https://images.unsplash.com/photo-1518600570419-869f4c907adb?auto=format&fit=crop&w=600&q=80",
+      "https://www.serviziocorsa.com/media/image/product/21392/md/en-bianchi-oltre-xr4-disc-super-record-eps.jpg",
     postedTime: "4 ngày trước",
     inspectorChecked: true,
     seller: { name: "Dũng Bianchi", avatar: "https://i.pravatar.cc/150?u=31" },
@@ -727,7 +727,7 @@ export const MOCK_BIKES = [
     condition: 95,
     location: "Bình Thạnh, TP. HCM",
     image:
-      "https://images.unsplash.com/photo-1596732402829-9a25b340026e?auto=format&fit=crop&w=600&q=80",
+      "https://hellobike.vn/wp-content/uploads/2025/03/xe-dap-xds-rs500-bac-1000x667-1-900x600.jpg",
     postedTime: "9 giờ trước",
     inspectorChecked: true,
     seller: { name: "Shop 2Hand", avatar: "https://i.pravatar.cc/150?u=32" },
@@ -750,7 +750,7 @@ export const MOCK_BIKES = [
     condition: 80,
     location: "Huế",
     image:
-      "https://images.unsplash.com/photo-1558981852-4261600aadb0?auto=format&fit=crop&w=600&q=80",
+      "https://kaitori.buychari.com/kaitori-sys/wp-content/uploads/2023/05/5223043000705-1-880x587.jpg",
     postedTime: "1 tuần trước",
     inspectorChecked: false,
     seller: { name: "Chú Tư", avatar: "https://i.pravatar.cc/150?u=33" },
@@ -795,8 +795,7 @@ export const MOCK_BIKES = [
     type: "Touring",
     condition: 92,
     location: "Long Biên, Hà Nội",
-    image:
-      "https://images.unsplash.com/photo-1623956792404-e91c7731996f?auto=format&fit=crop&w=600&q=80",
+    image: "https://himobike.vn/wp-content/uploads/2022/03/z20-900x600-1.jpg",
     postedTime: "1 ngày trước",
     inspectorChecked: true,
     seller: { name: "E-Bike HN", avatar: "https://i.pravatar.cc/150?u=35" },
@@ -865,7 +864,7 @@ export const MOCK_BIKES = [
     condition: 95,
     location: "Đà Lạt, Lâm Đồng",
     image:
-      "https://images.unsplash.com/photo-1596732402829-9a25b340026e?auto=format&fit=crop&w=600&q=80",
+      "https://www.cubestores.co.uk/cdn/shop/files/616100.jpg?v=1727871067&width=1946",
     postedTime: "5 giờ trước",
     inspectorChecked: true,
     seller: { name: "Đạt Đà Lạt", avatar: "https://i.pravatar.cc/150?u=38" },
@@ -880,7 +879,7 @@ export const MOCK_BIKES = [
   },
   {
     id: 39,
-    name: "Totem 1100 (Xe trẻ em)",
+    name: "Totem 1100",
     price: 1200000,
     originalPrice: 2500000,
     brand: "Other",
@@ -888,7 +887,7 @@ export const MOCK_BIKES = [
     condition: 90,
     location: "Hà Đông, Hà Nội",
     image:
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80",
+      "https://ugurbisiklet.com/cdn/shop/files/bianchi-via-nirone-7-md-disc-yol-bisikleti-shimano-105-12s-ytb4rsmdrm-39310.png?v=1763197375",
     postedTime: "30 phút trước",
     inspectorChecked: false,
     seller: { name: "Mẹ Bỉm Sữa", avatar: "https://i.pravatar.cc/150?u=39" },
@@ -911,7 +910,7 @@ export const MOCK_BIKES = [
     condition: 96,
     location: "Q.2, TP. HCM",
     image:
-      "https://images.unsplash.com/photo-1565103058786-6592a95c9703?auto=format&fit=crop&w=600&q=80",
+      "https://embed.widencdn.net/img/dorelrl/skbgf6uhzf/800px@1x/C25_C11035U_SuperSix_EVO_Crb_1_RAW_D5.jpg?color=f8f8f8&q=90",
     postedTime: "1 giờ trước",
     inspectorChecked: true,
     seller: {
