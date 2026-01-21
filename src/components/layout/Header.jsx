@@ -11,7 +11,7 @@ import {
   MdStorefront,
   MdAdd,
   MdFavoriteBorder,
-  // Đã xóa MdShoppingCart
+  MdNotifications, // 1. Đã thêm icon thông báo
 } from "react-icons/md";
 
 const Header = ({ onOpenSidebar }) => {
@@ -101,7 +101,7 @@ const Header = ({ onOpenSidebar }) => {
           {/* Vách ngăn */}
           <div className="hidden lg:block w-px h-6 bg-gray-200 mx-1"></div>
 
-          {/* NHÓM TRUNG TÍNH: Yêu thích, Đăng tin */}
+          {/* NHÓM TRUNG TÍNH: Yêu thích, Đăng tin, Thông báo */}
           <div className="flex items-center gap-1">
             {/* Nút Đăng Tin (+) */}
             <Link
@@ -115,13 +115,19 @@ const Header = ({ onOpenSidebar }) => {
             {/* Yêu thích */}
             <Link
               to="/wishlist"
-              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
+              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
               title="Danh sách yêu thích"
             >
               <MdFavoriteBorder size={24} />
             </Link>
 
-            {/* Đã xóa phần Giỏ hàng ở đây */}
+            {/* 2. THÊM MỚI: Icon Thông Báo */}
+            <button
+              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
+              title="Thông báo"
+            >
+              <MdNotifications size={24} />
+            </button>
           </div>
 
           {/* User Menu */}

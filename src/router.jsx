@@ -10,7 +10,7 @@ import PostBikePage from "./features/bicycle/pages/PostBikePage";
 // Các trang Auth
 import LoginForm from "./features/auth/LoginForm";
 import RegisterForm from "./features/auth/RegisterForm";
-import UserProfilePage from "./features/auth/pages/UserProfilePage";
+import UserProfilePage from "./features/user/pages/UserProfilePage";
 
 const router = createBrowserRouter([
   {

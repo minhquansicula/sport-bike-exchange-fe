@@ -67,7 +67,6 @@ const UserMenu = () => {
           </div>
 
           <div className="py-2">
-            {/* 👇 SỬA CÁC ĐƯỜNG LINK DƯỚI ĐÂY */}
             <Link
               to="/profile?tab=info"
               onClick={handleLinkClick}
