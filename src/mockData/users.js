@@ -3,7 +3,7 @@
 export const MOCK_USERS = [
   {
     id: 1,
-    email: "dominhtien@gmail.com",
+    email: "user@gmail.com",
     password: "123", // Mật khẩu giả định
     name: "Đỗ Minh Tiến",
     role: "user",

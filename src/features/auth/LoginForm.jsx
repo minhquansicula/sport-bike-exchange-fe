@@ -13,7 +13,7 @@ import {
 
 const LoginForm = () => {
   // Điền sẵn thông tin user mock để test nhanh
-  const [email, setEmail] = useState("dominhtien@gmail.com");
+  const [email, setEmail] = useState("user@gmail.com");
   const [password, setPassword] = useState("123");
 
   const [showPassword, setShowPassword] = useState(false);
