@@ -52,11 +52,6 @@ const AdminSidebar = () => {
           icon: <MdSwapHoriz size={22} />,
           badge: "5",
         },
-        {
-          label: "Phân công Inspector",
-          path: "/admin/assign-inspector",
-          icon: <MdAssignment size={22} />,
-        },
       ],
     },
     {
@@ -84,7 +79,7 @@ const AdminSidebar = () => {
       items: [
         {
           label: "Danh sách thành viên",
-          path: "/admin/members",
+          path: "/admin/users",
           icon: <MdPeople size={22} />,
         },
         {
@@ -103,7 +98,7 @@ const AdminSidebar = () => {
     <aside className="fixed top-0 left-0 bottom-0 w-[260px] bg-zinc-900 text-white flex flex-col z-50 shadow-xl">
       {/* Logo Section */}
       <div className="h-16 flex items-center px-6 border-b border-zinc-800">
-        <Link to="/admin" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group">
           <MdPedalBike className="text-orange-500 text-3xl" />
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white tracking-tight leading-none">

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import {
-  MdSearch,
   MdNotifications,
   MdSettings,
   MdKeyboardArrowDown,
@@ -11,13 +10,11 @@ import {
   MdStorefront,
   MdDashboard,
   MdPeople,
-  MdEvent,
   MdReceipt,
 } from "react-icons/md";
 
 const AdminHeader = () => {
   const { user, logout } = useAuth();
-  const [keyword, setKeyword] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,11 +32,6 @@ const AdminHeader = () => {
       icon: <MdPeople size={18} />,
     },
     {
-      label: "Events",
-      path: "/admin/events",
-      icon: <MdEvent size={18} />,
-    },
-    {
       label: "Transactions",
       path: "/admin/transactions",
       icon: <MdReceipt size={18} />,
@@ -53,51 +45,34 @@ const AdminHeader = () => {
     return location.pathname.startsWith(path);
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (keyword.trim()) {
-      navigate(`/admin?search=${encodeURIComponent(keyword)}`);
-      setKeyword("");
-    }
-  };
-
   return (
     <header className="h-16 bg-white border-b border-gray-100 sticky top-0 z-30 flex items-center px-6 shadow-sm">
       {/* Navigation Menu */}
-      <nav className="flex items-center gap-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              isActive(item.path)
-                ? "bg-orange-50 text-orange-600"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            <span className={isActive(item.path) ? "text-orange-500" : "text-gray-400"}>
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
+      <nav className="flex items-center gap-2">
+        {navItems.map((item, index) => (
+          <React.Fragment key={item.path}>
+            <Link
+              to={item.path}
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                isActive(item.path)
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              }`}
+            >
+              <span className={isActive(item.path) ? "text-white" : "text-gray-400"}>
+                {item.icon}
+              </span>
+              {item.label}
+            </Link>
+            {index < navItems.length - 1 && (
+              <div className="w-px h-6 bg-gray-200 mx-1"></div>
+            )}
+          </React.Fragment>
         ))}
       </nav>
 
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-md mx-6">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MdSearch className="text-gray-400 text-lg" />
-          </div>
-          <input
-            type="text"
-            placeholder="Tìm kiếm..."
-            className="w-full bg-gray-50 text-gray-900 rounded-lg pl-10 pr-4 py-2 outline-none border border-gray-200 focus:bg-white focus:border-orange-300 focus:ring-2 focus:ring-orange-50 transition-all duration-200 placeholder-gray-400 text-sm"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-        </div>
-      </form>
+      {/* Spacer */}
+      <div className="flex-1"></div>
 
       {/* Right Section */}
       <div className="flex items-center gap-3 ml-auto">
@@ -117,11 +92,6 @@ const AdminHeader = () => {
           <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
             3
           </span>
-        </button>
-
-        {/* Settings Button */}
-        <button className="p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 rounded-lg transition-all">
-          <MdSettings size={22} />
         </button>
 
         {/* Divider */}

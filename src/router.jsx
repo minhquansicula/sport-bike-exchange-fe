@@ -27,8 +27,6 @@ import UserProfilePage from "./features/user/pages/UserProfilePage";
 // Các trang Admin
 import AdminHomePage from "./features/admin/pages/AdminHomePage";
 import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
-import AdminEventsPage from "./features/admin/pages/AdminEventsPage";
-import AdminEventFormPage from "./features/admin/pages/AdminEventFormPage";
 import AdminTransactionsPage from "./features/admin/pages/AdminTransactionsPage";
 
 // Các trang Inspector
@@ -76,9 +74,6 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminHomePage /> }, // Dashboard - Trang chủ Admin
           { path: "users", element: <AdminUsersPage /> }, // Quản lý Users (Member/Inspector)
-          { path: "events", element: <AdminEventsPage /> }, // Quản lý Events
-          { path: "events/create", element: <AdminEventFormPage /> }, // Tạo Event mới
-          { path: "events/:id/edit", element: <AdminEventFormPage /> }, // Sửa Event
           { path: "transactions", element: <AdminTransactionsPage /> }, // Quản lý Transactions
         ],
       },
