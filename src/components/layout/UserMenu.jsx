@@ -7,6 +7,7 @@ import {
   MdLogout,
   MdKeyboardArrowDown,
   MdPedalBike,
+  MdAdminPanelSettings,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -67,6 +68,17 @@ const UserMenu = () => {
           </div>
 
           <div className="py-2">
+            {/* Link đến trang Admin nếu user là admin */}
+            {user.role === "admin" && (
+              <Link
+                to="/admin"
+                onClick={handleLinkClick}
+                className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+              >
+                <MdAdminPanelSettings size={20} className="text-orange-500" /> Trang quản trị
+              </Link>
+            )}
+
             <Link
               to="/profile?tab=info"
               onClick={handleLinkClick}

@@ -2,14 +2,10 @@
 import React from "react";
 import { RouterProvider } from "react-router-dom";
 import router from "./router";
-import { AuthProvider } from "./context/AuthContext"; // Nhớ import cái này
+// AuthProvider đã được wrap trong RootLayout của router.jsx
 
 const App = () => {
-  return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-  );
+  return <RouterProvider router={router} />;
 };
 
 export default App;
