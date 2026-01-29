@@ -1,8 +1,8 @@
 import { createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
-import AdminLayout from "./layouts/AdminLayout";
-import InspectorLayout from "./layouts/InspectorLayout";
+import AdminLayout from "./features/admin/layouts/AdminLayout";
+import InspectorLayout from "./features/inspection/layouts/InspectorLayout";
 
 // Root Layout để wrap AuthProvider cho tất cả routes
 const RootLayout = () => {

@@ -105,10 +105,10 @@ const AdminHeader = () => {
         <Link
           to="/"
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-orange-600 transition-all text-sm font-medium"
-          title="Xem trang chính"
+          title="Trang mua sắm"
         >
           <MdStorefront size={20} />
-          <span className="hidden md:inline">Xem trang chính</span>
+          <span className="hidden md:inline">Trang mua sắm</span>
         </Link>
 
         {/* Notification Button */}

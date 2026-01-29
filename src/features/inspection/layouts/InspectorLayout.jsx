@@ -1,8 +1,8 @@
 import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import InspectorHeader from "../components/layout/InspectorHeader";
-import InspectorSidebar from "../components/layout/InspectorSidebar";
+import { useAuth } from "../../../hooks/useAuth";
+import InspectorHeader from "../components/InspectorHeader";
+import InspectorSidebar from "../components/InspectorSidebar";
 
 const InspectorLayout = () => {
   const { user, loading } = useAuth();
