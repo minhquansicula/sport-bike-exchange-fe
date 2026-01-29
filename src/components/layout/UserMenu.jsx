@@ -7,6 +7,8 @@ import {
   MdLogout,
   MdKeyboardArrowDown,
   MdPedalBike,
+  MdManageAccounts,
+  MdAdminPanelSettings,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -76,6 +78,15 @@ const UserMenu = () => {
             </Link>
 
             <Link
+              to="/profile?tab=transaction-manage"
+              onClick={handleLinkClick}
+              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+            >
+              <MdManageAccounts size={20} className="text-gray-400" /> Quản lý
+              giao dịch
+            </Link>
+
+            <Link
               to="/profile?tab=my-bikes"
               onClick={handleLinkClick}
               className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
@@ -84,7 +95,7 @@ const UserMenu = () => {
             </Link>
 
             <Link
-              to="/profile?tab=transactions"
+              to="/profile?tab=transactions-history"
               onClick={handleLinkClick}
               className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
             >

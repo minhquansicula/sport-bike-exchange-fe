@@ -16,7 +16,11 @@ const UserProfilePage = () => {
   const { user, logout } = useAuth();
   const { transactions, sellerAcceptTransaction, sellerRejectTransaction } =
     useTransaction();
-  const [searchParams] = useSearchParams();
+
+  // 1. Lấy hook để đọc và ghi URL params
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Lấy tab từ URL, nếu không có thì mặc định là 'info'
   const initialTab = searchParams.get("tab") || "info";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -28,9 +32,14 @@ const UserProfilePage = () => {
     bio: "",
   });
 
+  // 2. Sync URL -> Tab State (Quan trọng: Để khi back/forward trình duyệt hiểu)
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
-    if (tabFromUrl) setActiveTab(tabFromUrl);
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    } else {
+      setActiveTab("info"); // Fallback về mặc định
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -44,6 +53,12 @@ const UserProfilePage = () => {
       });
     }
   }, [user]);
+
+  // 3. Hàm chuyển tab MỚI: Cập nhật cả State và URL
+  const handleSwitchTab = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId }); // Thêm ?tab=... vào URL
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -86,16 +101,13 @@ const UserProfilePage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4 max-w-6xl">
-        {/* --- HEADER PROFILE (Đã chỉnh sửa khoảng cách) --- */}
-        {/* 1. Tăng margin-bottom từ 24 lên 32 để tạo khoảng trống với phần dưới */}
+        {/* --- HEADER PROFILE --- */}
         <div className="relative mb-32">
           <div className="h-48 w-full bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-3xl shadow-lg relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           </div>
 
-          {/* 2. Thay đổi -bottom-16 thành -bottom-20 để đẩy nội dung xuống sâu hơn */}
           <div className="absolute -bottom-20 left-8 flex items-end gap-6">
-            {/* 3. Thêm mb-4 vào Avatar để đẩy Avatar lên lại (bù trừ), giữ Avatar nằm giữa đường biên */}
             <div className="relative group mb-4">
               <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
                 <img
@@ -112,7 +124,6 @@ const UserProfilePage = () => {
               </button>
             </div>
 
-            {/* Phần tên giữ nguyên mb-2, do container đã xuống thấp nên tên sẽ tự động xuống theo */}
             <div className="mb-2">
               <h1 className="text-3xl font-black text-zinc-900 flex items-center gap-2">
                 {user.name} <MdVerified className="text-blue-500 text-xl" />
@@ -125,9 +136,10 @@ const UserProfilePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* SIDEBAR MENU */}
           <div className="lg:col-span-3 space-y-6">
+            {/* 4. Truyền hàm handleSwitchTab vào setActiveTab */}
             <ProfileSidebar
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={handleSwitchTab}
               logout={logout}
             />
           </div>

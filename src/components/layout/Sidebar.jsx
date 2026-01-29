@@ -26,7 +26,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       path: "/post-bike",
       icon: <MdAddCircleOutline size={24} />,
     },
-    { label: "Tin tức", path: "/news", icon: <MdArticle size={24} /> },
   ];
 
   const activeClass =

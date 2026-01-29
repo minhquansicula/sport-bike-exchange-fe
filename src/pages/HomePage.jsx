@@ -12,26 +12,25 @@ import {
 } from "react-icons/md";
 
 const HomePage = () => {
-  // --- LOGIC SEARCH MỚI THÊM ---
   const [keyword, setKeyword] = useState("");
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
-    e.preventDefault(); // Chặn reload trang
+    e.preventDefault();
     if (keyword.trim()) {
-      // Chuyển hướng sang trang danh sách kèm từ khóa
       navigate(`/bikes?search=${encodeURIComponent(keyword)}`);
     }
   };
 
+  // 👇 THÊM DÒNG NÀY: Chỉ lấy 4 xe mới nhất để hiển thị
+  // (Bạn có thể đổi số 4 thành 8 nếu muốn hiện nhiều hơn)
+  const latestBikes = MOCK_BIKES.slice(0, 8);
+
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* --- 1. HERO SECTION: Gradient Đen -> Cam --- */}
+      {/* ... (Phần 1: HERO SECTION giữ nguyên) ... */}
       <div className="relative pt-24 pb-32 overflow-hidden">
-        {/* Lớp nền Gradient chéo từ Đen sang Cam */}
         <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-orange-700 z-0"></div>
-
-        {/* Họa tiết mờ để làm dịu gradient (Optional) */}
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] z-0 mix-blend-overlay"></div>
 
         <div className="container mx-auto px-4 relative z-10">
@@ -60,7 +59,7 @@ const HomePage = () => {
               để chốt đơn an toàn.
             </p>
 
-            {/* --- SEARCH BAR (Đã cập nhật Logic) --- */}
+            {/* SEARCH BAR */}
             <form
               onSubmit={handleSearch}
               className="bg-white/10 backdrop-blur-md p-2 rounded-full max-w-2xl mx-auto border border-white/20 flex items-center shadow-2xl relative z-20"
@@ -90,7 +89,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* --- 2. LATEST BIKES (Xe Mới Về) --- */}
+      {/* --- 2. LATEST BIKES (Đã sửa logic hiển thị ít xe) --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
           <div>
@@ -111,13 +110,14 @@ const HomePage = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {MOCK_BIKES.map((bike) => (
+          {/* 👇 SỬA Ở ĐÂY: Dùng latestBikes thay vì MOCK_BIKES */}
+          {latestBikes.map((bike) => (
             <BikeCard key={bike.id} bike={bike} />
           ))}
         </div>
       </div>
 
-      {/* --- 3. WHY US (Cập nhật logic Giao dịch tại trạm) --- */}
+      {/* --- 3. WHY US (Giữ nguyên) --- */}
       <div className="bg-zinc-50 py-24 border-t border-zinc-100">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -131,7 +131,6 @@ const HomePage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Card 1 */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 hover:shadow-xl hover:border-orange-200 transition-all duration-300 group">
               <div className="w-14 h-14 bg-zinc-900 text-white rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:bg-orange-600 transition-colors">
                 <MdLocationOn />
@@ -145,7 +144,6 @@ const HomePage = () => {
               </p>
             </div>
 
-            {/* Card 2 */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 hover:shadow-xl hover:border-orange-200 transition-all duration-300 group">
               <div className="w-14 h-14 bg-zinc-900 text-white rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:bg-orange-600 transition-colors">
                 <MdVerifiedUser />
@@ -159,7 +157,6 @@ const HomePage = () => {
               </p>
             </div>
 
-            {/* Card 3 */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 hover:shadow-xl hover:border-orange-200 transition-all duration-300 group">
               <div className="w-14 h-14 bg-zinc-900 text-white rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:bg-orange-600 transition-colors">
                 <MdSecurity />
@@ -176,10 +173,9 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* --- 4. CTA BANNER (Gradient Style) --- */}
+      {/* --- 4. CTA BANNER (Giữ nguyên) --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="relative rounded-3xl p-12 md:p-20 text-center overflow-hidden">
-          {/* Background CTA Gradient giống Hero */}
           <div className="absolute inset-0 bg-gradient-to-r from-black to-orange-800 z-0"></div>
 
           <div className="relative z-10 max-w-2xl mx-auto">

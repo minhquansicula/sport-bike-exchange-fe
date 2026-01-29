@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Thêm useNavigate nếu cần xử lý logic, hoặc dùng Link trực tiếp
 
 const MyBikesTab = ({ myBikes }) => {
   return (
@@ -15,35 +15,49 @@ const MyBikesTab = ({ myBikes }) => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {myBikes.map((bike) => (
-          <div
+          // 👇 SỬA Ở ĐÂY: Biến thẻ div bao ngoài thành thẻ Link trỏ tới trang chi tiết
+          <Link
+            to={`/bikes/${bike.id}`} // Đường dẫn tới trang chi tiết (vd: /bikes/1)
             key={bike.id}
-            className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all"
+            className="block bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group"
           >
             <div className="aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden mb-4 relative">
               <img
                 src={bike.image}
                 alt={bike.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <span className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-md">
                 Đang hiển thị
               </span>
             </div>
-            <h3 className="font-bold text-zinc-900 line-clamp-1 mb-1">
+            <h3 className="font-bold text-zinc-900 line-clamp-1 mb-1 group-hover:text-orange-600 transition-colors">
               {bike.name}
             </h3>
             <p className="text-orange-600 font-bold mb-4">
               {bike.price.toLocaleString("vi-VN")} đ
             </p>
+
+            {/* Các nút hành động (Sửa/Xóa) cần chặn sự kiện click để không bị nhảy trang */}
             <div className="flex gap-2">
-              <button className="flex-1 bg-gray-50 hover:bg-gray-200 text-zinc-700 py-2 rounded-lg text-sm font-bold transition-colors">
+              <button
+                onClick={(e) => {
+                  e.preventDefault(); /* Logic sửa xe */
+                }}
+                className="flex-1 bg-gray-50 hover:bg-gray-200 text-zinc-700 py-2 rounded-lg text-sm font-bold transition-colors"
+              >
                 Sửa
               </button>
-              <button className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-bold transition-colors">
+              <button
+                onClick={(e) => {
+                  e.preventDefault(); /* Logic gỡ tin */
+                }}
+                className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-bold transition-colors"
+              >
                 Gỡ tin
               </button>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
