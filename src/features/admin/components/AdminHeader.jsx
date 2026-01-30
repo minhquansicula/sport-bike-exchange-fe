@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth"; // Nhớ kiểm tra đường dẫn này
 import {
   MdNotifications,
-  MdSettings,
   MdKeyboardArrowDown,
   MdLogout,
-  MdPerson,
   MdStorefront,
   MdDashboard,
   MdPeople,
@@ -24,17 +22,17 @@ const AdminHeader = () => {
     {
       label: "Dashboard",
       path: "/admin",
-      icon: <MdDashboard size={18} />,
+      icon: <MdDashboard size={20} />,
     },
     {
-      label: "Users",
+      label: "Người dùng",
       path: "/admin/users",
-      icon: <MdPeople size={18} />,
+      icon: <MdPeople size={20} />,
     },
     {
-      label: "Transactions",
+      label: "Giao dịch",
       path: "/admin/transactions",
-      icon: <MdReceipt size={18} />,
+      icon: <MdReceipt size={20} />,
     },
   ];
 
@@ -46,115 +44,116 @@ const AdminHeader = () => {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 sticky top-0 z-30 flex items-center px-6 shadow-sm">
-      {/* Navigation Menu */}
-      <nav className="flex items-center gap-2">
-        {navItems.map((item, index) => (
-          <React.Fragment key={item.path}>
-            <Link
-              to={item.path}
-              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+    <header className="h-20 bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 flex items-center px-4 md:px-8 shadow-sm transition-all">
+      {/* 1. NAVIGATION MENU (Đẩy sang trái vì đã bỏ Logo) */}
+      <nav className="flex items-center bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100">
+        {navItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 relative overflow-hidden group ${
+              isActive(item.path)
+                ? "text-orange-700 bg-white shadow-sm ring-1 ring-black/5"
+                : "text-gray-500 hover:text-zinc-900 hover:bg-gray-100/50"
+            }`}
+          >
+            <span
+              className={`transition-colors ${
                 isActive(item.path)
-                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "text-orange-600"
+                  : "text-gray-400 group-hover:text-zinc-600"
               }`}
             >
-              <span className={isActive(item.path) ? "text-white" : "text-gray-400"}>
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
-            {index < navItems.length - 1 && (
-              <div className="w-px h-6 bg-gray-200 mx-1"></div>
-            )}
-          </React.Fragment>
+              {item.icon}
+            </span>
+            {item.label}
+          </Link>
         ))}
       </nav>
 
-      {/* Spacer */}
+      {/* SPACER */}
       <div className="flex-1"></div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-3 ml-auto">
-        {/* Quick Link to Main Site */}
+      {/* 2. RIGHT SECTION (TOOLS & PROFILE) */}
+      <div className="flex items-center gap-4">
+        {/* Quick Link */}
         <Link
           to="/"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-orange-600 transition-all text-sm font-medium"
-          title="Trang mua sắm"
+          className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-full text-zinc-600 hover:bg-orange-50 hover:text-orange-600 transition-all text-sm font-bold bg-gray-50 border border-transparent hover:border-orange-100"
+          title="Về trang mua sắm"
         >
           <MdStorefront size={20} />
-          <span className="hidden md:inline">Trang mua sắm</span>
+          <span>Cửa hàng</span>
         </Link>
 
-        {/* Notification Button */}
-        <button className="relative p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 rounded-lg transition-all">
-          <MdNotifications size={22} />
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-            3
-          </span>
+        {/* Notification */}
+        <button className="relative w-10 h-10 flex items-center justify-center text-gray-400 hover:text-zinc-900 hover:bg-gray-50 rounded-full transition-all border border-transparent hover:border-gray-200">
+          <MdNotifications size={24} />
+          <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
         </button>
 
         {/* Divider */}
-        <div className="w-px h-8 bg-gray-200"></div>
+        <div className="w-px h-8 bg-gray-200 mx-1"></div>
 
-        {/* User Menu */}
+        {/* User Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-3 p-1.5 pr-3 rounded-lg hover:bg-gray-50 transition-all"
+            className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200 group"
           >
-            <img
-              src={user?.avatar}
-              alt="Avatar"
-              className="w-9 h-9 rounded-lg border border-gray-200 object-cover"
-            />
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-semibold text-gray-800 leading-tight">
-                {user?.name}
+            <div className="text-right hidden md:block">
+              <p className="text-sm font-bold text-zinc-900 leading-tight group-hover:text-orange-600 transition-colors">
+                {user?.name || "Admin"}
               </p>
-              <p className="text-xs text-orange-600 font-medium">Admin</p>
+              {/* Giữ lại label Admin nhỏ để biết role */}
+              <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">
+                Quản trị viên
+              </p>
             </div>
-            <MdKeyboardArrowDown
-              className={`text-gray-400 transition-transform duration-200 ${
-                showUserMenu ? "rotate-180" : ""
-              }`}
-            />
+
+            <div className="relative">
+              <img
+                src={
+                  user?.avatar ||
+                  `https://ui-avatars.com/api/?name=${
+                    user?.name || "Admin"
+                  }&background=0f172a&color=fff`
+                }
+                alt="Avatar"
+                className="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:shadow-lg transition-all object-cover"
+              />
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+            </div>
+
+            <div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 group-hover:bg-white group-hover:text-orange-600 transition-colors">
+              <MdKeyboardArrowDown
+                size={16}
+                className={`transition-transform duration-300 ${
+                  showUserMenu ? "rotate-180" : ""
+                }`}
+              />
+            </div>
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Menu (Đã bỏ thông tin Email, chỉ còn nút Logout) */}
           {showUserMenu && (
             <>
               <div
                 className="fixed inset-0 z-10"
                 onClick={() => setShowUserMenu(false)}
               ></div>
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <MdPerson size={18} className="text-gray-400" />
-                  Hồ sơ của tôi
-                </Link>
-                <Link
-                  to="/admin/settings"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <MdSettings size={18} className="text-gray-400" />
-                  Cài đặt
-                </Link>
-                <hr className="my-2 border-gray-100" />
+              <div className="absolute right-0 mt-4 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 p-2">
                 <button
                   onClick={() => {
                     logout();
                     setShowUserMenu(false);
                     navigate("/login");
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                 >
-                  <MdLogout size={18} />
+                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+                    <MdLogout size={18} />
+                  </div>
                   Đăng xuất
                 </button>
               </div>

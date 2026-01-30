@@ -15,7 +15,7 @@ export const MOCK_USERS = [
   },
   {
     id: 2,
-    email: "admin@example.com",
+    email: "admin@gmail.com",
     password: "123",
     name: "Admin OldBike",
     role: "admin",
@@ -28,7 +28,7 @@ export const MOCK_USERS = [
   },
   {
     id: 3,
-    email: "inspector@example.com",
+    email: "inspector@gmail.com",
     password: "123",
     name: "Inspector Minh",
     role: "inspector",

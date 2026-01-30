@@ -16,6 +16,9 @@ const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
+  // Kiểm tra quyền Admin (không phân biệt hoa thường)
+  const isAdmin = user?.role?.toUpperCase() === "ADMIN";
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -28,7 +31,6 @@ const UserMenu = () => {
 
   if (!user) return null;
 
-  // Hàm đóng menu khi click vào link
   const handleLinkClick = () => setIsOpen(false);
 
   return (
@@ -69,8 +71,10 @@ const UserMenu = () => {
           </div>
 
           <div className="py-2">
-            {/* Link đến trang Admin nếu user là admin */}
-            {user.role === "admin" && (
+            {/* --- LOGIC HIỂN THỊ MENU --- */}
+
+            {/* TRƯỜNG HỢP 1: LÀ ADMIN -> Chỉ hiện Trang quản trị */}
+            {isAdmin ? (
               <Link
                 to="/admin"
                 onClick={handleLinkClick}
@@ -79,43 +83,47 @@ const UserMenu = () => {
                 <MdAdminPanelSettings size={20} className="text-orange-500" />{" "}
                 Trang quản trị
               </Link>
+            ) : (
+              /* TRƯỜNG HỢP 2: USER THƯỜNG -> Hiện đầy đủ menu user */
+              <>
+                <Link
+                  to="/profile?tab=info"
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  <MdPerson size={20} className="text-gray-400" /> Hồ sơ cá nhân
+                </Link>
+
+                <Link
+                  to="/profile?tab=transaction-manage"
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  <MdManageAccounts size={20} className="text-gray-400" /> Quản
+                  lý giao dịch
+                </Link>
+
+                <Link
+                  to="/profile?tab=my-bikes"
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  <MdPedalBike size={20} className="text-gray-400" /> Xe của tôi
+                </Link>
+
+                <Link
+                  to="/profile?tab=transactions-history"
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  <MdHistory size={20} className="text-gray-400" /> Lịch sử giao
+                  dịch
+                </Link>
+              </>
             )}
-
-            <Link
-              to="/profile?tab=info"
-              onClick={handleLinkClick}
-              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-            >
-              <MdPerson size={20} className="text-gray-400" /> Hồ sơ cá nhân
-            </Link>
-
-            <Link
-              to="/profile?tab=transaction-manage"
-              onClick={handleLinkClick}
-              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-            >
-              <MdManageAccounts size={20} className="text-gray-400" /> Quản lý
-              giao dịch
-            </Link>
-
-            <Link
-              to="/profile?tab=my-bikes"
-              onClick={handleLinkClick}
-              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-            >
-              <MdPedalBike size={20} className="text-gray-400" /> Xe của tôi
-            </Link>
-
-            <Link
-              to="/profile?tab=transactions-history"
-              onClick={handleLinkClick}
-              className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-            >
-              <MdHistory size={20} className="text-gray-400" /> Lịch sử giao
-              dịch
-            </Link>
           </div>
 
+          {/* Nút Đăng xuất luôn hiện cho cả 2 */}
           <div className="border-t border-gray-50 pt-2 mt-1 px-3 pb-1">
             <button
               onClick={() => {

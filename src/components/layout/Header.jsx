@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import UserMenu from "./UserMenu";
-// Import Icons
 import {
   MdMenu,
   MdPedalBike,
@@ -11,17 +10,18 @@ import {
   MdStorefront,
   MdAdd,
   MdFavoriteBorder,
-  MdNotifications, // 1. Đã thêm icon thông báo
+  MdNotifications,
 } from "react-icons/md";
 
 const Header = ({ onOpenSidebar }) => {
   const { user } = useAuth();
   const location = useLocation();
-
-  // --- LOGIC SEARCH ---
   const [keyword, setKeyword] = useState("");
   const navigate = useNavigate();
 
+  // Kiểm tra xem user có phải là admin không
+  // Giả sử user object có thuộc tính role. Nếu không có user (chưa login) thì không phải admin.
+  const isAdmin = user?.role?.toUpperCase() === "ADMIN";
   const handleSearch = (e) => {
     e.preventDefault();
     if (keyword.trim()) {
@@ -35,7 +35,6 @@ const Header = ({ onOpenSidebar }) => {
       <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between gap-6">
         {/* --- 1. LOGO THƯƠNG HIỆU --- */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* Nút Menu Mobile */}
           <button
             onClick={onOpenSidebar}
             className="lg:hidden p-2 -ml-2 text-gray-500 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
@@ -43,7 +42,6 @@ const Header = ({ onOpenSidebar }) => {
             <MdMenu size={26} />
           </button>
 
-          {/* Logo OldBike */}
           <Link to="/" className="flex items-center gap-2 group select-none">
             <MdPedalBike className="text-orange-600 text-3xl" />
             <span className="hidden sm:block font-bold text-xl text-gray-900 tracking-tight">
@@ -71,7 +69,6 @@ const Header = ({ onOpenSidebar }) => {
 
         {/* --- 3. MENU & CÔNG CỤ --- */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          {/* NHÓM MÀU CAM: Trang chủ, Mua xe */}
           <div className="hidden lg:flex items-center gap-2">
             <Link
               to="/"
@@ -98,30 +95,33 @@ const Header = ({ onOpenSidebar }) => {
             </Link>
           </div>
 
-          {/* Vách ngăn */}
           <div className="hidden lg:block w-px h-6 bg-gray-200 mx-1"></div>
 
-          {/* NHÓM TRUNG TÍNH: Yêu thích, Đăng tin, Thông báo */}
           <div className="flex items-center gap-1">
-            {/* Nút Đăng Tin (+) */}
-            <Link
-              to="/post-bike"
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 text-white shadow-md shadow-orange-200 hover:bg-orange-700 hover:scale-105 transition-all duration-200 ml-1"
-              title="Đăng tin bán xe"
-            >
-              <MdAdd size={24} />
-            </Link>
+            {/* Logic hiển thị: Nếu KHÔNG phải Admin thì mới hiện nút Đăng tin và Wishlist */}
+            {!isAdmin && (
+              <>
+                {/* Nút Đăng Tin (+) */}
+                <Link
+                  to="/post-bike"
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 text-white shadow-md shadow-orange-200 hover:bg-orange-700 hover:scale-105 transition-all duration-200 ml-1"
+                  title="Đăng tin bán xe"
+                >
+                  <MdAdd size={24} />
+                </Link>
 
-            {/* Yêu thích */}
-            <Link
-              to="/wishlist"
-              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
-              title="Danh sách yêu thích"
-            >
-              <MdFavoriteBorder size={24} />
-            </Link>
+                {/* Yêu thích */}
+                <Link
+                  to="/wishlist"
+                  className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
+                  title="Danh sách yêu thích"
+                >
+                  <MdFavoriteBorder size={24} />
+                </Link>
+              </>
+            )}
 
-            {/* 2. THÊM MỚI: Icon Thông Báo */}
+            {/* Icon Thông Báo (Hiển thị cho cả Admin và User) */}
             <button
               className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
               title="Thông báo"
@@ -130,7 +130,6 @@ const Header = ({ onOpenSidebar }) => {
             </button>
           </div>
 
-          {/* User Menu */}
           <div className="pl-2 border-l border-gray-100">
             {user ? (
               <UserMenu />
