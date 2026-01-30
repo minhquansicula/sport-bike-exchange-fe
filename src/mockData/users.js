@@ -26,4 +26,17 @@ export const MOCK_USERS = [
     joinDate: "2023-11-20",
     bio: "Quản trị viên hệ thống OldBike.",
   },
+  {
+    id: 3,
+    email: "inspector@example.com",
+    password: "123",
+    name: "Inspector Minh",
+    role: "inspector",
+    avatar:
+      "https://ui-avatars.com/api/?name=Inspector&background=10B981&color=fff",
+    phone: "0909123456",
+    address: "Trạm Giao Dịch Quận 1",
+    joinDate: "2024-02-01",
+    bio: "Chuyên gia kiểm định xe đạp với 5 năm kinh nghiệm.",
+  },
 ];

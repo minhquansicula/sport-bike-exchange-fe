@@ -23,22 +23,32 @@ const LoginForm = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Hàm redirect theo role
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case "admin":
+        return "/admin";
+      case "inspector":
+        return "/inspector";
+      case "user":
+      default:
+        return "/";
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      const result = login(email, password);
-
-      if (result.success) {
-        navigate("/");
-      } else {
-        setError(result.message);
-      }
+      const user = await login(email, password);
+      // Redirect theo role của user
+      const redirectPath = getRedirectPath(user.role);
+      navigate(redirectPath);
     } catch (err) {
       console.error("Login Error:", err);
-      setError("Có lỗi xảy ra, vui lòng thử lại sau.");
+      setError(err.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
     }
