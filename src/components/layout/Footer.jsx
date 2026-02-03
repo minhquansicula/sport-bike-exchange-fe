@@ -135,9 +135,7 @@ const Footer = () => {
                   className="text-orange-500 mt-1 shrink-0"
                   size={20}
                 />
-                <span>
-                  Tầng 5, Tòa nhà TechHub, 123 Đường Láng, Đống Đa, Hà Nội
-                </span>
+                <span>Hồ Chí Minh: 123 Đường ABC, Phường XYZ, Quận 1</span>
               </li>
               <li className="flex items-center gap-3">
                 <MdEmail className="text-orange-500 shrink-0" size={20} />
