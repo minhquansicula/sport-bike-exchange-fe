@@ -18,7 +18,7 @@ const Footer = () => {
             >
               <MdPedalBike className="text-orange-500" />
               <span>
-                Old<span className="text-orange-500">Bike</span>
+                Velo<span className="text-orange-500">X</span>
               </span>
             </Link>
             <p className="text-sm leading-relaxed">
@@ -142,10 +142,10 @@ const Footer = () => {
               <li className="flex items-center gap-3">
                 <MdEmail className="text-orange-500 shrink-0" size={20} />
                 <a
-                  href="mailto:support@oldbike.vn"
+                  href="mailto:support@veloX.vn"
                   className="hover:text-white transition-colors"
                 >
-                  support@oldbike.vn
+                  support@veloX.vn
                 </a>
               </li>
               <li className="flex items-center gap-3">
@@ -164,7 +164,7 @@ const Footer = () => {
         {/* Phần 3: Bottom Footer */}
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm">
           <p>
-            &copy; 2026 OldBike Market. Bản quyền thuộc về Công ty TechBike
+            &copy; 2026 VeloX Market. Bản quyền thuộc về Công ty TechBike
             Vietnam.
           </p>
           <div className="flex gap-6 mt-4 md:mt-0">

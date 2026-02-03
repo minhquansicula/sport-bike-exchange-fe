@@ -17,14 +17,14 @@ export const MOCK_USERS = [
     id: 2,
     email: "admin@gmail.com",
     password: "123",
-    name: "Admin OldBike",
+    name: "Admin",
     role: "admin",
     avatar:
       "https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff",
     phone: "0987654321",
     address: "Trạm Giao Dịch Trung Tâm",
     joinDate: "2023-11-20",
-    bio: "Quản trị viên hệ thống OldBike.",
+    bio: "Quản trị viên hệ thống VeloX.",
   },
   {
     id: 3,

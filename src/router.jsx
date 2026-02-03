@@ -1,6 +1,8 @@
 import { createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
+
+// Import Layouts (Theo đúng đường dẫn bạn gửi)
 import AdminLayout from "./features/admin/layouts/AdminLayout";
 import InspectorLayout from "./features/inspection/layouts/InspectorLayout";
 
@@ -28,6 +30,14 @@ import UserProfilePage from "./features/user/pages/UserProfilePage";
 import AdminHomePage from "./features/admin/pages/AdminHomePage";
 import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
 import AdminTransactionsPage from "./features/admin/pages/AdminTransactionsPage";
+// 👇 [MỚI] Thêm 2 trang Event vào đây
+import AdminEventsPage from "./features/admin/pages/AdminEventsPage";
+import AdminEventFormPage from "./features/admin/pages/AdminEventFormPage";
+import AdminPostsPage from "./features/admin/pages/AdminPostsPage";
+import AdminPostDetailPage from "./features/admin/pages/AdminPostDetailPage";
+import AdminPricingPage from "./features/admin/pages/AdminPricingPage";
+import AdminLocationsPage from "./features/admin/pages/AdminLocationsPage";
+import AdminSettingsPage from "./features/admin/pages/AdminSettingsPage";
 
 // Các trang Inspector
 import InspectorDashboard from "./features/inspection/pages/InspectorDashboard";
@@ -75,6 +85,16 @@ const router = createBrowserRouter([
           { index: true, element: <AdminHomePage /> }, // Dashboard - Trang chủ Admin
           { path: "users", element: <AdminUsersPage /> }, // Quản lý Users (Member/Inspector)
           { path: "transactions", element: <AdminTransactionsPage /> }, // Quản lý Transactions
+
+          // 👇 [MỚI] Thêm các route cho Events vào đây
+          { path: "events", element: <AdminEventsPage /> },
+          { path: "events/create", element: <AdminEventFormPage /> },
+          { path: "events/:id/edit", element: <AdminEventFormPage /> },
+          { path: "posts", element: <AdminPostsPage /> },
+          { path: "posts/:id", element: <AdminPostDetailPage /> },
+          { path: "pricing", element: <AdminPricingPage /> },
+          { path: "locations", element: <AdminLocationsPage /> },
+          { path: "settings", element: <AdminSettingsPage /> },
         ],
       },
       // Routes cho Inspector (có InspectorLayout với sidebar và header riêng)

@@ -54,7 +54,7 @@ const HomePage = () => {
               kiểm định gặp mặt trực tiếp tại
               <span className="text-white font-bold">
                 {" "}
-                Trạm Giao Dịch OldBike
+                Trạm Giao Dịch VeloX
               </span>{" "}
               để chốt đơn an toàn.
             </p>

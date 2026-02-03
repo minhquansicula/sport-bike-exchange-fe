@@ -45,7 +45,7 @@ const Header = ({ onOpenSidebar }) => {
           <Link to="/" className="flex items-center gap-2 group select-none">
             <MdPedalBike className="text-orange-600 text-3xl" />
             <span className="hidden sm:block font-bold text-xl text-gray-900 tracking-tight">
-              Old<span className="text-orange-600">Bike</span>
+              Velo<span className="text-orange-600">X</span>
             </span>
           </Link>
         </div>

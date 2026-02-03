@@ -8,12 +8,12 @@ import {
   MdSettings,
   MdLocationOn,
   MdSwapHoriz,
-  MdAssignment,
   MdAttachMoney,
   MdLogout,
   MdPedalBike,
   MdVerified,
   MdWarning,
+  MdEvent, // 👈 ĐÃ THÊM IMPORT NÀY
 } from "react-icons/md";
 
 const AdminSidebar = () => {
@@ -29,6 +29,17 @@ const AdminSidebar = () => {
           label: "Trang chủ Admin",
           path: "/admin",
           icon: <MdHome size={22} />,
+        },
+      ],
+    },
+    // 👇 Phần này bạn đã thêm nhưng thiếu import icon nên bị lỗi
+    {
+      title: "Quản lý sự kiện",
+      items: [
+        {
+          label: "Danh sách sự kiện",
+          path: "/admin/events",
+          icon: <MdEvent size={22} />,
         },
       ],
     },
@@ -102,7 +113,7 @@ const AdminSidebar = () => {
           <MdPedalBike className="text-orange-500 text-3xl" />
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white tracking-tight leading-none">
-              Old<span className="text-orange-500">Bike</span>
+              Velo<span className="text-orange-500">X</span>
             </span>
             <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
               Admin Panel
@@ -116,9 +127,12 @@ const AdminSidebar = () => {
         <div className="p-4 border-b border-zinc-800">
           <div className="flex items-center gap-3">
             <img
-              src={user.avatar}
+              src={
+                user.avatar ||
+                `https://ui-avatars.com/api/?name=${user.name}&background=random`
+              }
               alt="Avatar"
-              className="w-10 h-10 rounded-full border-2 border-orange-500"
+              className="w-10 h-10 rounded-full border-2 border-orange-500 object-cover"
             />
             <div className="flex-1 min-w-0">
               <p className="font-bold text-white text-sm truncate">
@@ -151,7 +165,9 @@ const AdminSidebar = () => {
                     }`}
                   >
                     <span
-                      className={isActive(item.path) ? "text-white" : "text-zinc-500"}
+                      className={
+                        isActive(item.path) ? "text-white" : "text-zinc-500"
+                      }
                     >
                       {item.icon}
                     </span>
