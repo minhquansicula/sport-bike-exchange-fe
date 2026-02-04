@@ -22,7 +22,7 @@ const InspectorSidebar = () => {
       title: "Tổng quan",
       items: [
         {
-          label: "Dashboard",
+          label: "Trang chủ",
           path: "/inspector",
           icon: <MdHome size={22} />,
         },

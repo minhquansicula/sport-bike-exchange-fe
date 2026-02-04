@@ -8,6 +8,10 @@ import {
   MdClose,
   MdCameraAlt,
   MdPedalBike,
+  MdAddAPhoto,
+  MdImage,
+  MdPeople,
+  MdPerson,
 } from "react-icons/md";
 
 const CreateReportPage = () => {
@@ -22,9 +26,47 @@ const CreateReportPage = () => {
     overallScore: 85,
     notes: "",
     issues: [],
+    images: [],
   });
 
+  // State điểm danh
+  const [attendance, setAttendance] = useState({
+    buyerPresent: false,
+    sellerPresent: false,
+  });
+
+  const handleAttendanceChange = (role) => {
+    setAttendance((prev) => ({
+      ...prev,
+      [role]: !prev[role],
+    }));
+  };
+
+  const isAttendanceComplete = attendance.buyerPresent && attendance.sellerPresent;
+
   const [newIssue, setNewIssue] = useState("");
+
+  // Handle image upload
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = files.map((file) => ({
+      id: Date.now() + Math.random(),
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+    }));
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, ...newImages],
+    }));
+  };
+
+  const removeImage = (imageId) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((img) => img.id !== imageId),
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -104,6 +146,84 @@ const CreateReportPage = () => {
               <p className="text-sm text-emerald-600 font-medium">Giá: 12,500,000đ</p>
             </div>
           </div>
+        </div>
+
+        {/* Điểm danh */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <MdPeople className="text-emerald-500" />
+            Điểm danh
+            {isAttendanceComplete && (
+              <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                Đã đủ
+              </span>
+            )}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Người mua */}
+            <label
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                attendance.buyerPresent
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={attendance.buyerPresent}
+                onChange={() => handleAttendanceChange("buyerPresent")}
+                className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <img
+                src="https://i.pravatar.cc/150?u=1"
+                alt="Buyer"
+                className="w-12 h-12 rounded-full border-2 border-white shadow"
+              />
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 uppercase font-medium">Người mua</p>
+                <p className="font-semibold text-gray-900">Nguyễn Văn A</p>
+              </div>
+              {attendance.buyerPresent && (
+                <MdCheckCircle className="text-emerald-500" size={24} />
+              )}
+            </label>
+
+            {/* Người bán */}
+            <label
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                attendance.sellerPresent
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={attendance.sellerPresent}
+                onChange={() => handleAttendanceChange("sellerPresent")}
+                className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <img
+                src="https://i.pravatar.cc/150?u=2"
+                alt="Seller"
+                className="w-12 h-12 rounded-full border-2 border-white shadow"
+              />
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 uppercase font-medium">Người bán</p>
+                <p className="font-semibold text-gray-900">Trần Thị B</p>
+              </div>
+              {attendance.sellerPresent && (
+                <MdCheckCircle className="text-emerald-500" size={24} />
+              )}
+            </label>
+          </div>
+
+          {!isAttendanceComplete && (
+            <p className="mt-4 text-sm text-yellow-600 flex items-center gap-2">
+              <MdWarning size={16} />
+              Vui lòng điểm danh đủ cả hai bên trước khi tiến hành kiểm định
+            </p>
+          )}
         </div>
 
         {/* Checklist */}
@@ -226,6 +346,69 @@ const CreateReportPage = () => {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+
+        {/* Image Upload */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <MdAddAPhoto className="text-emerald-500" />
+            Thêm hình ảnh
+          </h2>
+
+          {/* Upload Area */}
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors mb-4">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <MdCameraAlt className="w-10 h-10 mb-3 text-gray-400" />
+              <p className="mb-2 text-sm text-gray-500">
+                <span className="font-semibold">Click để tải ảnh</span> hoặc kéo thả vào đây
+              </p>
+              <p className="text-xs text-gray-400">PNG, JPG (tối đa 10MB)</p>
+            </div>
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+            />
+          </label>
+
+          {/* Image Preview Grid */}
+          {formData.images.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {formData.images.map((image) => (
+                <div
+                  key={image.id}
+                  className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200"
+                >
+                  <img
+                    src={image.preview}
+                    alt={image.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => removeImage(image.id)}
+                      className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <MdClose size={18} />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                    <p className="text-white text-xs truncate">{image.name}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {formData.images.length === 0 && (
+            <div className="text-center py-4 text-gray-400 text-sm flex items-center justify-center gap-2">
+              <MdImage size={18} />
+              Chưa có hình ảnh nào được thêm
+            </div>
           )}
         </div>
 

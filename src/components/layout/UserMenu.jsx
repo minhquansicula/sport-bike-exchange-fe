@@ -8,6 +8,7 @@ import {
   MdKeyboardArrowDown,
   MdPedalBike,
   MdAdminPanelSettings,
+  MdVerifiedUser,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -76,6 +77,17 @@ const UserMenu = () => {
                 className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
               >
                 <MdAdminPanelSettings size={20} className="text-orange-500" /> Trang quản trị
+              </Link>
+            )}
+
+            {/* Link đến trang Inspector nếu user là inspector */}
+            {user.role === "inspector" && (
+              <Link
+                to="/inspector"
+                onClick={handleLinkClick}
+                className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+              >
+                <MdVerifiedUser size={20} className="text-emerald-500" /> Trang Inspector
               </Link>
             )}
 

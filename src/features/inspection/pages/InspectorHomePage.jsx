@@ -49,7 +49,7 @@ const MOCK_TASKS = [
   },
 ];
 
-const InspectorDashboard = () => {
+const InspectorHomePage = () => {
   const { user } = useAuth();
 
   // Thống kê
@@ -232,4 +232,4 @@ const InspectorDashboard = () => {
   );
 };
 
-export default InspectorDashboard;
+export default InspectorHomePage;
