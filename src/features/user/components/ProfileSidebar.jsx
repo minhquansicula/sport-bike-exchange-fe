@@ -24,7 +24,7 @@ const ProfileSidebar = ({ activeTab, setActiveTab, logout }) => {
       id: "transaction-manage",
       icon: <MdManageAccounts size={20} />,
       label: "Quản lý giao dịch",
-    }, // 👈 MỚI
+    },
     { id: "my-bikes", icon: <MdPedalBike size={20} />, label: "Xe của tôi" },
     {
       id: "transactions-history",

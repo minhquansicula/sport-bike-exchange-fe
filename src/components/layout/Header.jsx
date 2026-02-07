@@ -22,6 +22,7 @@ const Header = ({ onOpenSidebar }) => {
   // Kiểm tra xem user có phải là admin không
   // Giả sử user object có thuộc tính role. Nếu không có user (chưa login) thì không phải admin.
   const isAdmin = user?.role?.toUpperCase() === "ADMIN";
+  const isInspector = user?.role?.toUpperCase() === "INSPECTOR";
   const handleSearch = (e) => {
     e.preventDefault();
     if (keyword.trim()) {

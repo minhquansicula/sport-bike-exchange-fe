@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth"; // Đảm bảo đường dẫn đúng
+import { useAuth } from "../../context/AuthContext"; // Giữ nguyên đường dẫn Context của bạn
 // Import Icons
 import {
   MdEmail,
@@ -9,11 +9,12 @@ import {
   MdVisibilityOff,
   MdArrowBack,
   MdLogin,
+  MdPerson,
 } from "react-icons/md";
 
 const LoginForm = () => {
-  // Điền sẵn thông tin user mock để test nhanh
-  const [email, setEmail] = useState("user@gmail.com");
+  // Cập nhật thông tin mặc định để khớp với MOCK_USERS giúp bạn test nhanh
+  const [username, setUsername] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123");
 
   const [showPassword, setShowPassword] = useState(false);
@@ -23,17 +24,13 @@ const LoginForm = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Hàm redirect theo role
+  // Hàm redirect theo role - Giữ nguyên logic của bạn
   const getRedirectPath = (role) => {
-    switch (role) {
-      case "admin":
-        return "/admin";
-      case "inspector":
-        return "/inspector";
-      case "user":
-      default:
-        return "/";
-    }
+    const roleLower = role ? role.toLowerCase() : "";
+
+    if (roleLower.includes("admin")) return "/admin";
+    if (roleLower.includes("inspector")) return "/inspector";
+    return "/";
   };
 
   const handleSubmit = async (e) => {
@@ -42,12 +39,15 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const user = await login(email, password);
-      // Redirect theo role của user
+      // Gọi hàm login từ AuthContext (hiện tại đã được trỏ vào Mock Data)
+      const user = await login(username, password);
+
+      // Redirect theo role của user - Giữ nguyên logic của bạn
       const redirectPath = getRedirectPath(user.role);
       navigate(redirectPath);
     } catch (err) {
       console.error("Login Error:", err);
+      // Hiển thị lỗi từ Promise reject trong AuthContext
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
@@ -56,7 +56,7 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-200 px-4 py-12 relative overflow-hidden">
-      {/* Background Decor */}
+      {/* Background Decor - Giữ nguyên thiết kế Blobs của bạn */}
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-50px] left-[20%] w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
@@ -77,7 +77,7 @@ const LoginForm = () => {
             Chào mừng trở lại!
           </h2>
           <p className="text-gray-500 text-sm mt-2">
-            Đăng nhập để tiếp tục mua bán xe đạp
+            Đăng nhập để vào hệ thống quản trị
           </p>
         </div>
 
@@ -89,17 +89,17 @@ const LoginForm = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
+          {/* Username / Email */}
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
-              <MdEmail size={20} />
+              <MdPerson size={20} />
             </div>
             <input
-              type="email"
+              type="text"
               className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
-              placeholder="Địa chỉ Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Username hoặc Email"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
