@@ -13,9 +13,9 @@ import {
 } from "react-icons/md";
 
 const LoginForm = () => {
-  // Cập nhật thông tin mặc định để khớp với MOCK_USERS giúp bạn test nhanh
-  const [username, setUsername] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("123");
+  // ĐÃ CẬP NHẬT: Khớp với username 'admin' và password '1' từ ApplicationInitConfig ở Backend
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("1");
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +24,6 @@ const LoginForm = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Hàm redirect theo role - Giữ nguyên logic của bạn
   const getRedirectPath = (role) => {
     const roleLower = role ? role.toLowerCase() : "";
 
@@ -39,7 +38,7 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      // Gọi hàm login từ AuthContext (hiện tại đã được trỏ vào Mock Data)
+      // Gọi hàm login từ AuthContext (hiện tại đã được trỏ vào API thật)
       const user = await login(username, password);
 
       // Redirect theo role của user - Giữ nguyên logic của bạn
@@ -47,7 +46,7 @@ const LoginForm = () => {
       navigate(redirectPath);
     } catch (err) {
       console.error("Login Error:", err);
-      // Hiển thị lỗi từ Promise reject trong AuthContext
+      // Hiển thị lỗi từ Promise reject trong AuthContext hoặc từ API phản hồi
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);

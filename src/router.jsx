@@ -1,8 +1,9 @@
 import { createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
+import ProtectedRoute from "./components/common/ProtectedRoute"; // Import ProtectedRoute để bảo vệ các trang
 
-// Import Layouts (Theo đúng đường dẫn bạn gửi)
+// Import Layouts
 import AdminLayout from "./features/admin/layouts/AdminLayout";
 import InspectorLayout from "./features/inspection/layouts/InspectorLayout";
 
@@ -30,7 +31,6 @@ import UserProfilePage from "./features/user/pages/UserProfilePage";
 import AdminHomePage from "./features/admin/pages/AdminHomePage";
 import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
 import AdminTransactionsPage from "./features/admin/pages/AdminTransactionsPage";
-// 👇 [MỚI] Thêm 2 trang Event vào đây
 import AdminEventsPage from "./features/admin/pages/AdminEventsPage";
 import AdminEventFormPage from "./features/admin/pages/AdminEventFormPage";
 import AdminPostsPage from "./features/admin/pages/AdminPostsPage";
@@ -49,21 +49,19 @@ import UnauthorizedPage from "./pages/UnauthorizedPage";
 
 const router = createBrowserRouter([
   {
-    // Root route bọc AuthProvider cho tất cả routes con
     element: <RootLayout />,
     children: [
       {
         path: "/",
-        element: <MainLayout />, // Áp dụng khung sườn có Header
+        element: <MainLayout />,
         children: [
-          { index: true, element: <HomePage /> }, // Trang chủ
-          { path: "bikes", element: <BikeListPage /> }, // Danh sách xe
-          { path: "bikes/:id", element: <BikeDetailPage /> }, // Chi tiết xe
+          { index: true, element: <HomePage /> },
+          { path: "bikes", element: <BikeListPage /> },
+          { path: "bikes/:id", element: <BikeDetailPage /> },
           { path: "post-bike", element: <PostBikePage /> },
           { path: "profile", element: <UserProfilePage /> },
         ],
       },
-      // Các trang Login/Register nằm riêng (không cần Header/Footer của MainLayout)
       {
         path: "/login",
         element: <LoginForm />,
@@ -72,21 +70,22 @@ const router = createBrowserRouter([
         path: "/register",
         element: <RegisterForm />,
       },
-      // Trang không có quyền truy cập
       {
         path: "/unauthorized",
         element: <UnauthorizedPage />,
       },
-      // Routes cho Admin (có AdminLayout với sidebar và header riêng)
+      // Routes cho Admin - Đã được bọc ProtectedRoute với requiredRole="ADMIN"
       {
         path: "/admin",
-        element: <AdminLayout />,
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { index: true, element: <AdminHomePage /> }, // Dashboard - Trang chủ Admin
-          { path: "users", element: <AdminUsersPage /> }, // Quản lý Users (Member/Inspector)
-          { path: "transactions", element: <AdminTransactionsPage /> }, // Quản lý Transactions
-
-          // 👇 [MỚI] Thêm các route cho Events vào đây
+          { index: true, element: <AdminHomePage /> },
+          { path: "users", element: <AdminUsersPage /> },
+          { path: "transactions", element: <AdminTransactionsPage /> },
           { path: "events", element: <AdminEventsPage /> },
           { path: "events/create", element: <AdminEventFormPage /> },
           { path: "events/:id/edit", element: <AdminEventFormPage /> },
@@ -97,16 +96,20 @@ const router = createBrowserRouter([
           { path: "settings", element: <AdminSettingsPage /> },
         ],
       },
-      // Routes cho Inspector (có InspectorLayout với sidebar và header riêng)
+      // Routes cho Inspector - Đã được bọc ProtectedRoute với requiredRole="INSPECTOR"
       {
         path: "/inspector",
-        element: <InspectorLayout />,
+        element: (
+          <ProtectedRoute requiredRole="INSPECTOR">
+            <InspectorLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { index: true, element: <InspectorDashboard /> }, // Dashboard Inspector
-          { path: "tasks", element: <InspectorTaskPage /> }, // Danh sách nhiệm vụ
-          { path: "tasks/:id", element: <InspectorTaskPage /> }, // Chi tiết nhiệm vụ
-          { path: "create-report", element: <CreateReportPage /> }, // Tạo báo cáo
-          { path: "history", element: <InspectorTaskPage /> }, // Lịch sử (tạm dùng chung)
+          { index: true, element: <InspectorDashboard /> },
+          { path: "tasks", element: <InspectorTaskPage /> },
+          { path: "tasks/:id", element: <InspectorTaskPage /> },
+          { path: "create-report", element: <CreateReportPage /> },
+          { path: "history", element: <InspectorTaskPage /> },
         ],
       },
     ],

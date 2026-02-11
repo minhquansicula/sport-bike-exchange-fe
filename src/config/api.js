@@ -1,14 +1,12 @@
 import axios from "axios";
 
 const api = axios.create({
-  // Gọi trực tiếp vào port 8080 của Backend
-  baseURL: "http://localhost:8080",
+  baseURL: "/api", // Gọi qua proxy của Vite để tránh CORS
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Interceptor giữ nguyên (để gắn Token)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -17,9 +15,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 export default api;
