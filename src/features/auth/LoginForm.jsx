@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth"; // Đảm bảo đường dẫn đúng tới hook của bạn
-// Import Icons
+import { useAuth } from "../../hooks/useAuth";
+// Import Icons - GIỮ NGUYÊN
 import {
   MdLock,
   MdVisibility,
@@ -12,7 +12,6 @@ import {
 } from "react-icons/md";
 
 const LoginForm = () => {
-  // 👇 ĐÃ SỬA: Để trống username và password, không điền sẵn nữa
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -23,9 +22,9 @@ const LoginForm = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Logic chuyển trang theo role
   const getRedirectPath = (role) => {
     const roleLower = role ? role.toLowerCase() : "";
-
     if (roleLower.includes("admin")) return "/admin";
     if (roleLower.includes("inspector")) return "/inspector";
     return "/";
@@ -37,15 +36,19 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      // Gọi hàm login từ AuthContext
+      // Gọi hàm login đã sửa ở Context
       const user = await login(username, password);
 
-      // Redirect theo role của user
+      // Điều hướng
       const redirectPath = getRedirectPath(user.role);
       navigate(redirectPath);
     } catch (err) {
       console.error("Login Error:", err);
-      setError(err.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
+      // Hiển thị thông báo lỗi từ backend trả về (nếu có)
+      setError(
+        err.response?.data?.message ||
+          "Tên đăng nhập hoặc mật khẩu không đúng.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +56,7 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-200 px-4 py-12 relative overflow-hidden">
-      {/* Background Decor */}
+      {/* Background Decor - GIỮ NGUYÊN */}
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-50px] left-[20%] w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
@@ -128,12 +131,12 @@ const LoginForm = () => {
           </div>
 
           <div className="flex justify-end">
-            <a
-              href="#"
-              className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline"
+            <button
+              type="button"
+              className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline bg-transparent border-none cursor-pointer"
             >
               Quên mật khẩu?
-            </a>
+            </button>
           </div>
 
           <button

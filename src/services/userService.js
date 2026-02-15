@@ -9,7 +9,7 @@ export const userService = {
 
   // 2. Cập nhật thông tin (Gọi vào PUT /users/{id})
   updateUser: async (userId, data) => {
-    // data ở đây là object chứa các trường cần sửa (fullName, phone, address...)
+    // data là object chứa: fullName, phone, address, email...
     const response = await api.put(`/users/${userId}`, data);
     return response.data;
   },

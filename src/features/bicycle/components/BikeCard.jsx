@@ -4,7 +4,7 @@ import formatCurrency from "../../../utils/formatCurrency";
 // Import Icons
 import {
   MdLocationOn,
-  MdAddShoppingCart,
+  MdHandshake, // Thay thế icon Giỏ hàng bằng icon Bắt tay (Giao dịch)
   MdFavoriteBorder,
   MdAccessTime,
 } from "react-icons/md";
@@ -23,19 +23,17 @@ const BikeCard = ({ bike }) => {
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         />
 
-        {/* Đã xóa Badge "Inspector Verified" ở đây theo yêu cầu */}
-
-        {/* Badge: Độ mới (Vẫn giữ lại vì người bán tự khai báo tình trạng) */}
+        {/* Badge: Độ mới */}
         <div className="absolute top-3 right-3 bg-zinc-900/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">
           Mới {bike.condition}%
         </div>
 
-        {/* Nút Tim (Chỉ hiện khi hover) */}
+        {/* Nút Tim */}
         <button
           className="absolute bottom-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:scale-110 transition-all shadow-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 duration-300"
           onClick={(e) => {
-            e.preventDefault(); // Chặn click vào Link cha
-            // Xử lý logic yêu thích tại đây
+            e.preventDefault();
+            // Xử lý logic yêu thích
           }}
         >
           <MdFavoriteBorder />
@@ -50,8 +48,7 @@ const BikeCard = ({ bike }) => {
             {bike.brand} • {bike.type}
           </span>
           <span className="flex items-center gap-1 text-[11px] text-zinc-400">
-            <MdLocationOn /> {bike.location?.split(",")[0]}{" "}
-            {/* Chỉ hiện Quận/Huyện */}
+            <MdLocationOn /> {bike.location?.split(",")[0]}
           </span>
         </div>
 
@@ -60,7 +57,7 @@ const BikeCard = ({ bike }) => {
           {bike.name}
         </h3>
 
-        {/* Giá & Nút Mua */}
+        {/* Giá & Nút Yêu cầu Giao dịch */}
         <div className="mt-auto pt-4 flex items-end justify-between">
           <div className="flex flex-col">
             {bike.originalPrice && (
@@ -73,18 +70,26 @@ const BikeCard = ({ bike }) => {
             </span>
           </div>
 
+          {/* 👇 ĐÃ SỬA: Thay nút Giỏ hàng thành nút Yêu cầu giao dịch */}
           <button
-            className="w-10 h-10 rounded-full bg-zinc-50 border border-zinc-100 text-zinc-400 hover:bg-orange-600 hover:text-white hover:border-orange-600 flex items-center justify-center transition-all duration-300 shadow-sm"
+            className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 text-blue-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 flex items-center justify-center transition-all duration-300 shadow-sm group/btn relative"
+            title="Gửi yêu cầu giao dịch"
             onClick={(e) => {
               e.preventDefault();
-              // Xử lý thêm vào giỏ
+              // Xử lý mở Modal Yêu cầu giao dịch hoặc chuyển hướng
+              console.log("Mở modal yêu cầu giao dịch cho xe:", bike.id);
             }}
           >
-            <MdAddShoppingCart size={18} />
+            <MdHandshake size={20} />
+
+            {/* Tooltip nhỏ hiện khi hover */}
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+              Yêu cầu giao dịch
+            </span>
           </button>
         </div>
 
-        {/* Footer Card: Người bán & Thời gian */}
+        {/* Footer Card */}
         <div className="mt-4 pt-3 border-t border-dashed border-gray-100 flex items-center gap-2">
           <img
             src={bike.seller?.avatar || "https://ui-avatars.com/api/?name=User"}

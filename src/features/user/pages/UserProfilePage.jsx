@@ -32,10 +32,10 @@ const UserProfilePage = () => {
 
   const [formData, setFormData] = useState({
     id: "", // Cần ID để gọi API update
-    name: "",
+    name: "", // Frontend dùng name
     email: "",
     phone: "",
-    address: "", // Trường địa chỉ từ DB
+    address: "",
     bio: "",
   });
 
@@ -49,7 +49,7 @@ const UserProfilePage = () => {
     }
   }, [searchParams]);
 
-  // 👇 LOGIC MỚI: Gọi API lấy thông tin thật từ Backend (thay thế logic lấy từ local storage cũ)
+  // 👇 LOGIC MỚI: Gọi API lấy thông tin thật từ Backend
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -58,12 +58,12 @@ const UserProfilePage = () => {
 
         // Map dữ liệu từ Backend vào Form
         setFormData({
-          id: userData.id,
+          id: userData.userId, // Backend trả về userId
           name: userData.fullName || "", // Backend trả về fullName -> Frontend dùng name
           email: userData.email || "",
           phone: userData.phone || "",
           address: userData.address || "", // Lấy địa chỉ từ DB
-          bio: userData.bio || "",
+          bio: "", // Backend chưa có field bio nên tạm thời để trống
         });
       } catch (error) {
         console.error("Lỗi lấy thông tin user:", error);
@@ -90,19 +90,23 @@ const UserProfilePage = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Chuẩn bị object để gửi lên Backend
+      // Chuẩn bị object để gửi lên Backend (Mapping đúng field name của Backend)
       const updateData = {
         fullName: formData.name, // Backend cần field fullName
         phone: formData.phone,
         address: formData.address,
+        email: formData.email,
         // bio: formData.bio // Mở comment nếu backend đã hỗ trợ bio
       };
 
       await userService.updateUser(formData.id, updateData);
       alert("Cập nhật hồ sơ thành công!");
+
+      // Tùy chọn: Reload lại trang hoặc cập nhật lại context nếu cần
+      // window.location.reload();
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
-      alert("Cập nhật thất bại.");
+      alert("Cập nhật thất bại. Vui lòng thử lại.");
     } finally {
       setIsSaving(false);
     }
@@ -110,6 +114,7 @@ const UserProfilePage = () => {
 
   const myBikes = MOCK_BIKES.slice(0, 3);
 
+  // Giao diện khi chưa đăng nhập
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans px-4">
@@ -142,22 +147,25 @@ const UserProfilePage = () => {
     );
   }
 
+  // Giao diện chính
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* --- HEADER PROFILE --- */}
         <div className="relative mb-32">
+          {/* Banner */}
           <div className="h-48 w-full bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-3xl shadow-lg relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           </div>
 
+          {/* Avatar & Info */}
           <div className="absolute -bottom-20 left-8 flex items-end gap-6">
             <div className="relative group mb-4">
               <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
                 <img
                   src={
                     user.avatar ||
-                    `https://ui-avatars.com/api/?name=${formData.name || user.name}`
+                    `https://ui-avatars.com/api/?name=${formData.name || user.name}&background=random&color=fff&background=ea580c`
                   }
                   alt="Avatar"
                   className="w-full h-full object-cover"
@@ -191,17 +199,20 @@ const UserProfilePage = () => {
           {/* CONTENT AREA */}
           <div className="lg:col-span-9">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[500px]">
+              {/* TAB 1: USER INFO (Gọi component con) */}
               {activeTab === "info" && (
                 <UserInfoTab
                   formData={formData}
                   handleChange={handleChange}
-                  onSave={handleSave} // Truyền hàm lưu xuống component con
-                  loading={isSaving} // Truyền trạng thái loading
+                  onSave={handleSave}
+                  loading={isSaving}
                 />
               )}
 
+              {/* TAB 2: MY BIKES */}
               {activeTab === "my-bikes" && <MyBikesTab myBikes={myBikes} />}
 
+              {/* TAB 3: TRANSACTION MANAGE */}
               {activeTab === "transaction-manage" && (
                 <TransactionManagementTab
                   transactions={transactions}
@@ -210,10 +221,12 @@ const UserProfilePage = () => {
                 />
               )}
 
+              {/* TAB 4: HISTORY */}
               {activeTab === "transactions-history" && (
                 <TransactionHistoryTab transactions={transactions} />
               )}
 
+              {/* TAB 5: SECURITY */}
               {activeTab === "security" && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-zinc-900 mb-6 pb-4 border-b border-gray-100">
@@ -225,6 +238,7 @@ const UserProfilePage = () => {
                 </div>
               )}
 
+              {/* TAB 6: NOTIFICATION */}
               {activeTab === "notification" && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-zinc-900 mb-6 pb-4 border-b border-gray-100">

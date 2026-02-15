@@ -6,11 +6,13 @@ import ProtectedRoute from "./components/common/ProtectedRoute"; // Import Prote
 // Import Layouts
 import AdminLayout from "./features/admin/layouts/AdminLayout";
 import InspectorLayout from "./features/inspection/layouts/InspectorLayout";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 // Root Layout để wrap AuthProvider cho tất cả routes
 const RootLayout = () => {
   return (
     <AuthProvider>
+      <ScrollToTop />
       <Outlet />
     </AuthProvider>
   );

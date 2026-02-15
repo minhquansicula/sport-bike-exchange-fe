@@ -1,94 +1,82 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "../config/api";
+import { jwtDecode } from "jwt-decode"; // Dùng thư viện chuẩn để không lỗi font chữ
+import { authService } from "../services/authService";
 
 export const AuthContext = createContext();
-
-/**
- * Decode JWT payload
- */
-const parseJwt = (token) => {
-  try {
-    const base64Payload = token.split(".")[1];
-    const payload = atob(base64Payload);
-    return JSON.parse(payload);
-  } catch (e) {
-    return null;
-  }
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /**
-   * Load user từ localStorage khi refresh page
-   */
+  // Hàm check xem token còn hạn dùng không
+  const isTokenValid = (token) => {
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      return decoded.exp > currentTime; // True nếu còn hạn
+    } catch (e) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
 
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      // Logic mới: Chỉ set user nếu token còn hạn
+      if (isTokenValid(token)) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        // Token hết hạn thì logout luôn cho sạch
+        logout();
+      }
     }
-
     setLoading(false);
   }, []);
 
-  /**
-   * Login
-   */
   const login = async (username, password) => {
     setLoading(true);
     try {
-      const response = await api.post("/auth/login", {
-        username,
-        password,
-      });
-
-      const data = response.data;
+      // Gọi qua service
+      const data = await authService.login(username, password);
 
       if (data?.result?.token) {
         const token = data.result.token;
-        localStorage.setItem("token", token);
 
-        // ✅ FIX: LẤY ROLE TỪ JWT THAY VÌ HARDCODE
-        const payload = parseJwt(token);
-        const role = payload?.scope || "USER";
+        // Giải mã token an toàn
+        const decoded = jwtDecode(token);
 
+        // Tạo object user từ token (đảm bảo đúng field backend trả về)
         const userPayload = {
-          username,
-          role,
+          username: username,
+          role: decoded.scope || "USER", // Lấy role từ token
+          ...decoded, // Lưu thêm các thông tin khác nếu cần
         };
 
-        setUser(userPayload);
+        // Lưu vào Storage
+        localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(userPayload));
 
+        // Cập nhật State
+        setUser(userPayload);
         setLoading(false);
         return userPayload;
       }
 
-      throw new Error("Login failed");
+      throw new Error("Không nhận được token");
     } catch (error) {
       setLoading(false);
-      throw new Error(
-        error.response?.data?.message ||
-          "Tên đăng nhập hoặc mật khẩu không đúng",
-      );
+      throw error; // Ném lỗi ra để LoginForm hiển thị
     }
   };
 
-  /**
-   * Logout
-   */
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
   };
 
-  /**
-   * Update user info (nếu cần)
-   */
   const updateUser = (updatedData) => {
     const newUser = { ...user, ...updatedData };
     setUser(newUser);
@@ -96,15 +84,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        updateUser,
-        loading,
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
