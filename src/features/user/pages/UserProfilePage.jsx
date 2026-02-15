@@ -14,6 +14,7 @@ import UserInfoTab from "../components/UserInfoTab";
 import MyBikesTab from "../components/MyBikesTab";
 import TransactionManagementTab from "../components/TransactionManagementTab";
 import TransactionHistoryTab from "../components/TransactionHistoryTab";
+import SecurityTab from "../components/SecurityTab";
 
 const UserProfilePage = () => {
   const { user, logout } = useAuth();
@@ -181,7 +182,7 @@ const UserProfilePage = () => {
                 {formData.name || user.name}{" "}
                 <MdVerified className="text-blue-500 text-xl" />
               </h1>
-              <p className="text-gray-500 font-medium">Thành viên OldBike</p>
+              <p className="text-gray-500 font-medium">Thành viên VeloX</p>
             </div>
           </div>
         </div>
@@ -227,16 +228,7 @@ const UserProfilePage = () => {
               )}
 
               {/* TAB 5: SECURITY */}
-              {activeTab === "security" && (
-                <div className="animate-in fade-in duration-300">
-                  <h2 className="text-2xl font-bold text-zinc-900 mb-6 pb-4 border-b border-gray-100">
-                    Bảo mật
-                  </h2>
-                  <p className="text-gray-500 italic">
-                    Chức năng đổi mật khẩu đang được bảo trì.
-                  </p>
-                </div>
-              )}
+              {activeTab === "security" && <SecurityTab />}
 
               {/* TAB 6: NOTIFICATION */}
               {activeTab === "notification" && (
