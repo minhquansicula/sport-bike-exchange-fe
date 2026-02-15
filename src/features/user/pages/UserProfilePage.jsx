@@ -5,6 +5,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { MOCK_BIKES } from "../../../mockData/bikes";
 import { MdCameraAlt, MdVerified, MdLock } from "react-icons/md";
 
+// 👇 IMPORT SERVICE ĐỂ GỌI API
+import { userService } from "../../../services/userService";
+
 // Import các thành phần con
 import ProfileSidebar from "../components/ProfileSidebar";
 import UserInfoTab from "../components/UserInfoTab";
@@ -24,44 +27,85 @@ const UserProfilePage = () => {
   const initialTab = searchParams.get("tab") || "info";
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // Thêm state loading cho nút Save
+  const [isSaving, setIsSaving] = useState(false);
+
   const [formData, setFormData] = useState({
+    id: "", // Cần ID để gọi API update
     name: "",
     email: "",
     phone: "",
-    address: "",
+    address: "", // Trường địa chỉ từ DB
     bio: "",
   });
 
-  // 2. Sync URL -> Tab State (Quan trọng: Để khi back/forward trình duyệt hiểu)
+  // 2. Sync URL -> Tab State
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
     } else {
-      setActiveTab("info"); // Fallback về mặc định
+      setActiveTab("info");
     }
   }, [searchParams]);
 
+  // 👇 LOGIC MỚI: Gọi API lấy thông tin thật từ Backend (thay thế logic lấy từ local storage cũ)
   useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await userService.getMyInfo();
+        const userData = response.result;
+
+        // Map dữ liệu từ Backend vào Form
+        setFormData({
+          id: userData.id,
+          name: userData.fullName || "", // Backend trả về fullName -> Frontend dùng name
+          email: userData.email || "",
+          phone: userData.phone || "",
+          address: userData.address || "", // Lấy địa chỉ từ DB
+          bio: userData.bio || "",
+        });
+      } catch (error) {
+        console.error("Lỗi lấy thông tin user:", error);
+      }
+    };
+
+    // Chỉ gọi khi có user (đã đăng nhập)
     if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        address: user.address || "",
-        bio: user.bio || "",
-      });
+      fetchUserInfo();
     }
   }, [user]);
 
-  // 3. Hàm chuyển tab MỚI: Cập nhật cả State và URL
+  // 3. Hàm chuyển tab
   const handleSwitchTab = (tabId) => {
     setActiveTab(tabId);
-    setSearchParams({ tab: tabId }); // Thêm ?tab=... vào URL
+    setSearchParams({ tab: tabId });
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 👇 LOGIC MỚI: Hàm lưu dữ liệu
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Chuẩn bị object để gửi lên Backend
+      const updateData = {
+        fullName: formData.name, // Backend cần field fullName
+        phone: formData.phone,
+        address: formData.address,
+        // bio: formData.bio // Mở comment nếu backend đã hỗ trợ bio
+      };
+
+      await userService.updateUser(formData.id, updateData);
+      alert("Cập nhật hồ sơ thành công!");
+    } catch (error) {
+      console.error("Lỗi cập nhật:", error);
+      alert("Cập nhật thất bại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const myBikes = MOCK_BIKES.slice(0, 3);
@@ -113,7 +157,7 @@ const UserProfilePage = () => {
                 <img
                   src={
                     user.avatar ||
-                    `https://ui-avatars.com/api/?name=${user.name}`
+                    `https://ui-avatars.com/api/?name=${formData.name || user.name}`
                   }
                   alt="Avatar"
                   className="w-full h-full object-cover"
@@ -126,7 +170,8 @@ const UserProfilePage = () => {
 
             <div className="mb-2">
               <h1 className="text-3xl font-black text-zinc-900 flex items-center gap-2">
-                {user.name} <MdVerified className="text-blue-500 text-xl" />
+                {formData.name || user.name}{" "}
+                <MdVerified className="text-blue-500 text-xl" />
               </h1>
               <p className="text-gray-500 font-medium">Thành viên OldBike</p>
             </div>
@@ -136,7 +181,6 @@ const UserProfilePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* SIDEBAR MENU */}
           <div className="lg:col-span-3 space-y-6">
-            {/* 4. Truyền hàm handleSwitchTab vào setActiveTab */}
             <ProfileSidebar
               activeTab={activeTab}
               setActiveTab={handleSwitchTab}
@@ -148,7 +192,12 @@ const UserProfilePage = () => {
           <div className="lg:col-span-9">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[500px]">
               {activeTab === "info" && (
-                <UserInfoTab formData={formData} handleChange={handleChange} />
+                <UserInfoTab
+                  formData={formData}
+                  handleChange={handleChange}
+                  onSave={handleSave} // Truyền hàm lưu xuống component con
+                  loading={isSaving} // Truyền trạng thái loading
+                />
               )}
 
               {activeTab === "my-bikes" && <MyBikesTab myBikes={myBikes} />}

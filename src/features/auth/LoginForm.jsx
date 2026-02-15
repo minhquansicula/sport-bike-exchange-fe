@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext"; // Giữ nguyên đường dẫn Context của bạn
+import { useAuth } from "../../hooks/useAuth"; // Đảm bảo đường dẫn đúng tới hook của bạn
 // Import Icons
 import {
-  MdEmail,
   MdLock,
   MdVisibility,
   MdVisibilityOff,
@@ -13,9 +12,9 @@ import {
 } from "react-icons/md";
 
 const LoginForm = () => {
-  // ĐÃ CẬP NHẬT: Khớp với username 'admin' và password '1' từ ApplicationInitConfig ở Backend
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("1");
+  // 👇 ĐÃ SỬA: Để trống username và password, không điền sẵn nữa
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -38,15 +37,14 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      // Gọi hàm login từ AuthContext (hiện tại đã được trỏ vào API thật)
+      // Gọi hàm login từ AuthContext
       const user = await login(username, password);
 
-      // Redirect theo role của user - Giữ nguyên logic của bạn
+      // Redirect theo role của user
       const redirectPath = getRedirectPath(user.role);
       navigate(redirectPath);
     } catch (err) {
       console.error("Login Error:", err);
-      // Hiển thị lỗi từ Promise reject trong AuthContext hoặc từ API phản hồi
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
@@ -55,7 +53,7 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-gray-200 px-4 py-12 relative overflow-hidden">
-      {/* Background Decor - Giữ nguyên thiết kế Blobs của bạn */}
+      {/* Background Decor */}
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
       <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-50px] left-[20%] w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>

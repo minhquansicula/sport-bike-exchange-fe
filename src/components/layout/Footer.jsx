@@ -24,7 +24,7 @@ const Footer = () => {
             <p className="text-sm leading-relaxed">
               Sàn thương mại điện tử mua bán xe đạp cũ uy tín hàng đầu Việt Nam.
               Tất cả xe đều được kiểm định chất lượng bởi đội ngũ Inspector
-              chuyên nghiệp 🛡️.
+              chuyên nghiệp.
             </p>
             {/* Social Icons */}
             <div className="flex gap-4">

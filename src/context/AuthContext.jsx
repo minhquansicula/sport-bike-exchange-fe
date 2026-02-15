@@ -1,42 +1,64 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import api from "../config/api"; //
+import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "../config/api";
 
 export const AuthContext = createContext();
+
+/**
+ * Decode JWT payload
+ */
+const parseJwt = (token) => {
+  try {
+    const base64Payload = token.split(".")[1];
+    const payload = atob(base64Payload);
+    return JSON.parse(payload);
+  } catch (e) {
+    return null;
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Giữ nguyên logic kiểm tra user khi F5
+  /**
+   * Load user từ localStorage khi refresh page
+   */
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token"); // Kiểm tra thêm token
+    const token = localStorage.getItem("token");
 
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
+
     setLoading(false);
   }, []);
 
-  // Sửa logic login để gọi API thật nhưng giữ nguyên cấu trúc async/await
+  /**
+   * Login
+   */
   const login = async (username, password) => {
     setLoading(true);
     try {
-      // Gọi đúng endpoint /auth/login của Backend
       const response = await api.post("/auth/login", {
         username,
         password,
       });
 
-      const data = response.data; // Cấu trúc ApiResponse từ Backend
+      const data = response.data;
 
-      if (data.result && data.result.token) {
-        // 1. Lưu Token để các request sau tự động đính kèm Bearer
-        localStorage.setItem("token", data.result.token);
+      if (data?.result?.token) {
+        const token = data.result.token;
+        localStorage.setItem("token", token);
 
-        // 2. Tạo payload user (vì login trả về token, ta map role để điều hướng)
-        // Backend mặc định admin là user đầu tiên
-        const userPayload = { username, role: "ADMIN" };
+        // ✅ FIX: LẤY ROLE TỪ JWT THAY VÌ HARDCODE
+        const payload = parseJwt(token);
+        const role = payload?.scope || "USER";
+
+        const userPayload = {
+          username,
+          role,
+        };
 
         setUser(userPayload);
         localStorage.setItem("user", JSON.stringify(userPayload));
@@ -44,21 +66,29 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return userPayload;
       }
+
+      throw new Error("Login failed");
     } catch (error) {
       setLoading(false);
-      // Giữ nguyên cách bạn ném lỗi để LoginForm bắt được
       throw new Error(
-        error.response?.data?.message || "Email hoặc mật khẩu không chính xác!",
+        error.response?.data?.message ||
+          "Tên đăng nhập hoặc mật khẩu không đúng",
       );
     }
   };
 
+  /**
+   * Logout
+   */
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
-    localStorage.removeItem("token"); // Xóa cả token khi đăng xuất
+    localStorage.removeItem("token");
   };
 
+  /**
+   * Update user info (nếu cần)
+   */
   const updateUser = (updatedData) => {
     const newUser = { ...user, ...updatedData };
     setUser(newUser);
@@ -66,8 +96,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
-      {/* Giữ nguyên logic render children không đợi loading để tránh màn hình trắng */}
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        updateUser,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

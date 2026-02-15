@@ -140,7 +140,7 @@ const HomePage = () => {
               </h3>
               <p className="text-zinc-500 leading-relaxed">
                 Không ship xe. Người mua và người bán hẹn gặp nhau tại các Trạm
-                giao dịch ủy quyền của OldBike để xem xe thực tế.
+                giao dịch ủy quyền của VeloX để xem xe thực tế.
               </p>
             </div>
 

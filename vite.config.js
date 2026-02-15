@@ -19,7 +19,6 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
-        // THÊM DÒNG NÀY ĐỂ XÓA CHỮ /api KHI GỬI SANG BACKEND
       },
     },
   },

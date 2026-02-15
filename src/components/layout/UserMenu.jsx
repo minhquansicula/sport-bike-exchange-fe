@@ -16,8 +16,19 @@ const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Kiểm tra quyền Admin (không phân biệt hoa thường)
-  const isAdmin = user?.role?.toUpperCase() === "ADMIN";
+  // 1. Xử lý hiển thị Tên: Ưu tiên fullName từ DB, nếu không có thì dùng username/name từ Token
+  const displayName =
+    user?.fullName || user?.name || user?.username || "Người dùng";
+
+  // 2. Xử lý Avatar: Nếu user chưa có avatar, tạo avatar tự động dựa trên tên hiển thị
+  const displayAvatar =
+    user?.avatar ||
+    `https://ui-avatars.com/api/?name=${displayName}&background=random&color=fff&background=ea580c`;
+
+  // 3. Kiểm tra quyền Admin (Xử lý chuỗi an toàn)
+  // Backend trả về role có thể là chuỗi hoặc mảng, nên convert về string để check
+  const userRole = String(user?.role || "").toUpperCase();
+  const isAdmin = userRole.includes("ADMIN");
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -41,15 +52,12 @@ const UserMenu = () => {
       >
         <div className="text-right hidden md:block">
           <p className="text-sm font-bold text-zinc-800 group-hover:text-orange-600 transition-colors">
-            {user.name}
+            {displayName} {/* ✅ Đã sửa */}
           </p>
         </div>
         <div className="relative">
           <img
-            src={
-              user.avatar ||
-              `https://ui-avatars.com/api/?name=${user.name}&background=random`
-            }
+            src={displayAvatar} // ✅ Đã sửa
             alt="Avatar"
             className="w-10 h-10 rounded-full border-2 border-gray-100 group-hover:border-orange-200 transition-colors object-cover shadow-sm"
           />
@@ -63,17 +71,18 @@ const UserMenu = () => {
         <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 py-2 z-50 transform origin-top-right animate-in fade-in slide-in-from-top-2">
           <div className="px-5 py-3 border-b border-gray-50">
             <p className="text-sm font-bold text-zinc-900 truncate">
-              {user.name}
+              {displayName} {/* ✅ Đã sửa */}
             </p>
             <p className="text-xs text-gray-400 truncate mt-0.5">
-              {user.email}
+              {user.email || "Chưa cập nhật email"}{" "}
+              {/* ✅ Fallback nếu thiếu email */}
             </p>
           </div>
 
           <div className="py-2">
             {/* --- LOGIC HIỂN THỊ MENU --- */}
 
-            {/* TRƯỜNG HỢP 1: LÀ ADMIN -> Chỉ hiện Trang quản trị */}
+            {/* TRƯỜNG HỢP 1: LÀ ADMIN */}
             {isAdmin ? (
               <Link
                 to="/admin"
@@ -84,7 +93,7 @@ const UserMenu = () => {
                 Trang quản trị
               </Link>
             ) : (
-              /* TRƯỜNG HỢP 2: USER THƯỜNG -> Hiện đầy đủ menu user */
+              /* TRƯỜNG HỢP 2: USER THƯỜNG */
               <>
                 <Link
                   to="/profile?tab=info"
@@ -123,7 +132,6 @@ const UserMenu = () => {
             )}
           </div>
 
-          {/* Nút Đăng xuất luôn hiện cho cả 2 */}
           <div className="border-t border-gray-50 pt-2 mt-1 px-3 pb-1">
             <button
               onClick={() => {
