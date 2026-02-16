@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTransaction } from "../../../context/TransactionContext";
 import { Link, useSearchParams } from "react-router-dom";
 import { MOCK_BIKES } from "../../../mockData/bikes";
 import { MdCameraAlt, MdVerified, MdLock } from "react-icons/md";
 
-// 👇 IMPORT SERVICE ĐỂ GỌI API
+// Import Services
 import { userService } from "../../../services/userService";
+import { uploadService } from "../../../services/uploadService";
 
-// Import các thành phần con
+// Import Components
 import ProfileSidebar from "../components/ProfileSidebar";
 import UserInfoTab from "../components/UserInfoTab";
 import MyBikesTab from "../components/MyBikesTab";
@@ -21,63 +22,104 @@ const UserProfilePage = () => {
   const { transactions, sellerAcceptTransaction, sellerRejectTransaction } =
     useTransaction();
 
-  // 1. Lấy hook để đọc và ghi URL params
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // Lấy tab từ URL, nếu không có thì mặc định là 'info'
   const initialTab = searchParams.get("tab") || "info";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  // Thêm state loading cho nút Save
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true); // Thêm state loading ban đầu
 
+  // Ref cho input file
+  const fileInputRef = useRef(null);
+
+  // Khởi tạo state với dữ liệu có sẵn từ Context (để hiển thị ngay lập tức)
   const [formData, setFormData] = useState({
-    id: "", // Cần ID để gọi API update
-    name: "", // Frontend dùng name
-    email: "",
+    id: user?.userId || "",
+    name: user?.fullName || user?.name || "",
+    email: user?.email || "",
     phone: "",
     address: "",
     bio: "",
+    avatar: user?.avatar || "",
   });
 
-  // 2. Sync URL -> Tab State
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-    } else {
-      setActiveTab("info");
-    }
+    if (tabFromUrl) setActiveTab(tabFromUrl);
+    else setActiveTab("info");
   }, [searchParams]);
 
-  // 👇 LOGIC MỚI: Gọi API lấy thông tin thật từ Backend
+  // Lấy thông tin User chi tiết từ API
   useEffect(() => {
     const fetchUserInfo = async () => {
+      setIsLoadingData(true);
       try {
         const response = await userService.getMyInfo();
         const userData = response.result;
 
-        // Map dữ liệu từ Backend vào Form
         setFormData({
-          id: userData.userId, // Backend trả về userId
-          name: userData.fullName || "", // Backend trả về fullName -> Frontend dùng name
+          id: userData.userId,
+          name: userData.fullName || "",
           email: userData.email || "",
           phone: userData.phone || "",
-          address: userData.address || "", // Lấy địa chỉ từ DB
-          bio: "", // Backend chưa có field bio nên tạm thời để trống
+          address: userData.address || "",
+          bio: "",
+          avatar: userData.avatar || "",
         });
       } catch (error) {
         console.error("Lỗi lấy thông tin user:", error);
+      } finally {
+        // Tắt loading sau một khoảng ngắn để hiệu ứng mượt hơn
+        setTimeout(() => setIsLoadingData(false), 300);
       }
     };
 
-    // Chỉ gọi khi có user (đã đăng nhập)
-    if (user) {
-      fetchUserInfo();
-    }
+    if (user) fetchUserInfo();
   }, [user]);
 
-  // 3. Hàm chuyển tab
+  // Hàm kích hoạt input file
+  const triggerFileInput = () => {
+    fileInputRef.current.click();
+  };
+
+  // --- LOGIC UPLOAD VÀ LƯU ẢNH NGAY LẬP TỨC ---
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn file ảnh!");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // 1. Upload lên Cloudinary
+      const response = await uploadService.uploadImage(file);
+      const imageUrl = response.result;
+
+      // 2. Gọi API cập nhật User ngay lập tức (Gửi kèm các thông tin cũ để tránh bị null nếu backend required)
+      const updatePayload = {
+        fullName: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        email: formData.email,
+        avatar: imageUrl, // Ảnh mới
+      };
+
+      await userService.updateUser(formData.id, updatePayload);
+
+      // 3. Cập nhật giao diện ngay lập tức
+      setFormData((prev) => ({ ...prev, avatar: imageUrl }));
+    } catch (error) {
+      console.error("Upload avatar lỗi:", error);
+      alert("Cập nhật avatar thất bại. Vui lòng thử lại.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSwitchTab = (tabId) => {
     setActiveTab(tabId);
     setSearchParams({ tab: tabId });
@@ -87,27 +129,24 @@ const UserProfilePage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 👇 LOGIC MỚI: Hàm lưu dữ liệu
+  // Lưu thông tin Text (Tên, SĐT, Địa chỉ...)
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Chuẩn bị object để gửi lên Backend (Mapping đúng field name của Backend)
       const updateData = {
-        fullName: formData.name, // Backend cần field fullName
+        fullName: formData.name,
         phone: formData.phone,
         address: formData.address,
         email: formData.email,
-        // bio: formData.bio // Mở comment nếu backend đã hỗ trợ bio
+        avatar: formData.avatar,
       };
 
       await userService.updateUser(formData.id, updateData);
       alert("Cập nhật hồ sơ thành công!");
-
-      // Tùy chọn: Reload lại trang hoặc cập nhật lại context nếu cần
-      // window.location.reload();
+      window.location.reload();
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
-      alert("Cập nhật thất bại. Vui lòng thử lại.");
+      alert("Cập nhật thất bại.");
     } finally {
       setIsSaving(false);
     }
@@ -115,7 +154,21 @@ const UserProfilePage = () => {
 
   const myBikes = MOCK_BIKES.slice(0, 3);
 
-  // Giao diện khi chưa đăng nhập
+  // --- SKELETON LOADING UI (Hiển thị khi đang tải dữ liệu lần đầu) ---
+  if (isLoadingData && !formData.name && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 font-sans flex justify-center pt-32">
+        <div className="container mx-auto px-4 max-w-6xl animate-pulse">
+          <div className="h-48 bg-gray-200 rounded-3xl mb-12"></div>
+          <div className="flex gap-8">
+            <div className="w-1/4 h-96 bg-gray-200 rounded-2xl"></div>
+            <div className="w-3/4 h-96 bg-gray-200 rounded-2xl"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans px-4">
@@ -148,31 +201,51 @@ const UserProfilePage = () => {
     );
   }
 
-  // Giao diện chính
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* --- HEADER PROFILE --- */}
         <div className="relative mb-32">
-          {/* Banner */}
           <div className="h-48 w-full bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-3xl shadow-lg relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           </div>
 
-          {/* Avatar & Info */}
           <div className="absolute -bottom-20 left-8 flex items-end gap-6">
             <div className="relative group mb-4">
-              <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
+              <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white relative">
+                {/* Loading khi đang upload ảnh */}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-full">
+                    <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+
                 <img
                   src={
+                    formData.avatar ||
                     user.avatar ||
                     `https://ui-avatars.com/api/?name=${formData.name || user.name}&background=random&color=fff&background=ea580c`
                   }
                   alt="Avatar"
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover rounded-full transition-opacity duration-300 ${isLoadingData ? "opacity-0" : "opacity-100"}`}
+                  onLoad={(e) => e.target.classList.remove("opacity-0")}
                 />
               </div>
-              <button className="absolute bottom-0 right-0 p-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-md cursor-pointer transition-transform hover:scale-110">
+
+              {/* Input & Button Camera */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                className="hidden"
+                accept="image/*"
+              />
+              <button
+                type="button"
+                onClick={triggerFileInput}
+                className="absolute bottom-0 right-0 p-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-md cursor-pointer transition-transform hover:scale-110"
+                disabled={isUploading}
+              >
                 <MdCameraAlt />
               </button>
             </div>
@@ -188,7 +261,7 @@ const UserProfilePage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* SIDEBAR MENU */}
+          {/* SIDEBAR */}
           <div className="lg:col-span-3 space-y-6">
             <ProfileSidebar
               activeTab={activeTab}
@@ -197,10 +270,11 @@ const UserProfilePage = () => {
             />
           </div>
 
-          {/* CONTENT AREA */}
+          {/* CONTENT */}
           <div className="lg:col-span-9">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[500px]">
-              {/* TAB 1: USER INFO (Gọi component con) */}
+            <div
+              className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[500px] transition-opacity duration-300 ${isLoadingData ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+            >
               {activeTab === "info" && (
                 <UserInfoTab
                   formData={formData}
@@ -210,10 +284,8 @@ const UserProfilePage = () => {
                 />
               )}
 
-              {/* TAB 2: MY BIKES */}
               {activeTab === "my-bikes" && <MyBikesTab myBikes={myBikes} />}
 
-              {/* TAB 3: TRANSACTION MANAGE */}
               {activeTab === "transaction-manage" && (
                 <TransactionManagementTab
                   transactions={transactions}
@@ -222,15 +294,12 @@ const UserProfilePage = () => {
                 />
               )}
 
-              {/* TAB 4: HISTORY */}
               {activeTab === "transactions-history" && (
                 <TransactionHistoryTab transactions={transactions} />
               )}
 
-              {/* TAB 5: SECURITY */}
               {activeTab === "security" && <SecurityTab />}
 
-              {/* TAB 6: NOTIFICATION */}
               {activeTab === "notification" && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-zinc-900 mb-6 pb-4 border-b border-gray-100">

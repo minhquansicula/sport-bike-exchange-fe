@@ -97,7 +97,7 @@ const RegisterForm = () => {
             Tạo Tài Khoản
           </h2>
           <p className="text-gray-500 text-sm mt-2">
-            Tham gia cộng đồng OldBike ngay hôm nay
+            Tham gia cộng đồng VeloX ngay hôm nay
           </p>
         </div>
 
