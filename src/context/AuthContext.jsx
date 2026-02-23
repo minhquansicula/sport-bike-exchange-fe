@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode"; // Dùng thư viện chuẩn để không lỗi font chữ
+import { jwtDecode } from "jwt-decode";
 import { authService } from "../services/authService";
 
 export const AuthContext = createContext();
@@ -8,12 +8,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Hàm check xem token còn hạn dùng không
   const isTokenValid = (token) => {
     try {
       const decoded = jwtDecode(token);
       const currentTime = Date.now() / 1000;
-      return decoded.exp > currentTime; // True nếu còn hạn
+      return decoded.exp > currentTime;
     } catch (e) {
       return false;
     }
@@ -24,11 +23,9 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
 
     if (storedUser && token) {
-      // Logic mới: Chỉ set user nếu token còn hạn
       if (isTokenValid(token)) {
         setUser(JSON.parse(storedUser));
       } else {
-        // Token hết hạn thì logout luôn cho sạch
         logout();
       }
     }
@@ -38,27 +35,24 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     setLoading(true);
     try {
-      // Gọi qua service
       const data = await authService.login(username, password);
 
       if (data?.result?.token) {
         const token = data.result.token;
-
-        // Giải mã token an toàn
         const decoded = jwtDecode(token);
 
-        // Tạo object user từ token (đảm bảo đúng field backend trả về)
+        // Đảm bảo lấy rõ ràng avatar và fullName từ Token Backend gửi về
         const userPayload = {
           username: username,
-          role: decoded.scope || "USER", // Lấy role từ token
-          ...decoded, // Lưu thêm các thông tin khác nếu cần
+          role: decoded.scope || "USER",
+          avatar: decoded.avatar || "",
+          fullName: decoded.FullName || "",
+          ...decoded,
         };
 
-        // Lưu vào Storage
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(userPayload));
 
-        // Cập nhật State
         setUser(userPayload);
         setLoading(false);
         return userPayload;
@@ -67,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error("Không nhận được token");
     } catch (error) {
       setLoading(false);
-      throw error; // Ném lỗi ra để LoginForm hiển thị
+      throw error;
     }
   };
 

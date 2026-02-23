@@ -15,4 +15,11 @@ export const userService = {
   },
 
   // 3. (Tuỳ chọn) Đổi mật khẩu hoặc các tác vụ khác liên quan user...
+  changePassword: async (userId, oldPassword, newPassword) => {
+    const response = await api.put(`/users/password/${userId}`, {
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    });
+    return response.data;
+  },
 };

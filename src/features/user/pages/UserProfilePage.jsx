@@ -4,12 +4,8 @@ import { useTransaction } from "../../../context/TransactionContext";
 import { Link, useSearchParams } from "react-router-dom";
 import { MOCK_BIKES } from "../../../mockData/bikes";
 import { MdCameraAlt, MdVerified, MdLock } from "react-icons/md";
-
-// Import Services
 import { userService } from "../../../services/userService";
 import { uploadService } from "../../../services/uploadService";
-
-// Import Components
 import ProfileSidebar from "../components/ProfileSidebar";
 import UserInfoTab from "../components/UserInfoTab";
 import MyBikesTab from "../components/MyBikesTab";
@@ -18,22 +14,19 @@ import TransactionHistoryTab from "../components/TransactionHistoryTab";
 import SecurityTab from "../components/SecurityTab";
 
 const UserProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { transactions, sellerAcceptTransaction, sellerRejectTransaction } =
     useTransaction();
-
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "info";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(true); // Thêm state loading ban đầu
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // Ref cho input file
   const fileInputRef = useRef(null);
 
-  // Khởi tạo state với dữ liệu có sẵn từ Context (để hiển thị ngay lập tức)
   const [formData, setFormData] = useState({
     id: user?.userId || "",
     name: user?.fullName || user?.name || "",
@@ -50,14 +43,12 @@ const UserProfilePage = () => {
     else setActiveTab("info");
   }, [searchParams]);
 
-  // Lấy thông tin User chi tiết từ API
   useEffect(() => {
     const fetchUserInfo = async () => {
       setIsLoadingData(true);
       try {
         const response = await userService.getMyInfo();
         const userData = response.result;
-
         setFormData({
           id: userData.userId,
           name: userData.fullName || "",
@@ -70,20 +61,16 @@ const UserProfilePage = () => {
       } catch (error) {
         console.error("Lỗi lấy thông tin user:", error);
       } finally {
-        // Tắt loading sau một khoảng ngắn để hiệu ứng mượt hơn
         setTimeout(() => setIsLoadingData(false), 300);
       }
     };
-
     if (user) fetchUserInfo();
   }, [user]);
 
-  // Hàm kích hoạt input file
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
 
-  // --- LOGIC UPLOAD VÀ LƯU ẢNH NGAY LẬP TỨC ---
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -95,23 +82,22 @@ const UserProfilePage = () => {
 
     setIsUploading(true);
     try {
-      // 1. Upload lên Cloudinary
       const response = await uploadService.uploadImage(file);
       const imageUrl = response.result;
 
-      // 2. Gọi API cập nhật User ngay lập tức (Gửi kèm các thông tin cũ để tránh bị null nếu backend required)
       const updatePayload = {
         fullName: formData.name,
         phone: formData.phone,
         address: formData.address,
         email: formData.email,
-        avatar: imageUrl, // Ảnh mới
+        avatar: imageUrl,
       };
 
       await userService.updateUser(formData.id, updatePayload);
-
-      // 3. Cập nhật giao diện ngay lập tức
       setFormData((prev) => ({ ...prev, avatar: imageUrl }));
+
+      // ĐỒNG BỘ LÊN HEADER NGAY LẬP TỨC
+      if (updateUser) updateUser({ avatar: imageUrl });
     } catch (error) {
       console.error("Upload avatar lỗi:", error);
       alert("Cập nhật avatar thất bại. Vui lòng thử lại.");
@@ -129,7 +115,6 @@ const UserProfilePage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Lưu thông tin Text (Tên, SĐT, Địa chỉ...)
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -142,8 +127,12 @@ const UserProfilePage = () => {
       };
 
       await userService.updateUser(formData.id, updateData);
+
+      // ĐỒNG BỘ LÊN HEADER NGAY LẬP TỨC
+      if (updateUser)
+        updateUser({ fullName: formData.name, avatar: formData.avatar });
+
       alert("Cập nhật hồ sơ thành công!");
-      window.location.reload();
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
       alert("Cập nhật thất bại.");
@@ -154,7 +143,6 @@ const UserProfilePage = () => {
 
   const myBikes = MOCK_BIKES.slice(0, 3);
 
-  // --- SKELETON LOADING UI (Hiển thị khi đang tải dữ liệu lần đầu) ---
   if (isLoadingData && !formData.name && !user) {
     return (
       <div className="min-h-screen bg-gray-50 py-8 font-sans flex justify-center pt-32">
@@ -204,7 +192,6 @@ const UserProfilePage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4 max-w-6xl">
-        {/* --- HEADER PROFILE --- */}
         <div className="relative mb-32">
           <div className="h-48 w-full bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-3xl shadow-lg relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
@@ -213,13 +200,11 @@ const UserProfilePage = () => {
           <div className="absolute -bottom-20 left-8 flex items-end gap-6">
             <div className="relative group mb-4">
               <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white relative">
-                {/* Loading khi đang upload ảnh */}
                 {isUploading && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-full">
                     <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
-
                 <img
                   src={
                     formData.avatar ||
@@ -232,7 +217,6 @@ const UserProfilePage = () => {
                 />
               </div>
 
-              {/* Input & Button Camera */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -261,7 +245,6 @@ const UserProfilePage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* SIDEBAR */}
           <div className="lg:col-span-3 space-y-6">
             <ProfileSidebar
               activeTab={activeTab}
@@ -270,7 +253,6 @@ const UserProfilePage = () => {
             />
           </div>
 
-          {/* CONTENT */}
           <div className="lg:col-span-9">
             <div
               className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[500px] transition-opacity duration-300 ${isLoadingData ? "opacity-60 pointer-events-none" : "opacity-100"}`}
@@ -283,9 +265,7 @@ const UserProfilePage = () => {
                   loading={isSaving}
                 />
               )}
-
               {activeTab === "my-bikes" && <MyBikesTab myBikes={myBikes} />}
-
               {activeTab === "transaction-manage" && (
                 <TransactionManagementTab
                   transactions={transactions}
@@ -293,13 +273,10 @@ const UserProfilePage = () => {
                   sellerRejectTransaction={sellerRejectTransaction}
                 />
               )}
-
               {activeTab === "transactions-history" && (
                 <TransactionHistoryTab transactions={transactions} />
               )}
-
               {activeTab === "security" && <SecurityTab />}
-
               {activeTab === "notification" && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-zinc-900 mb-6 pb-4 border-b border-gray-100">
