@@ -1,7 +1,7 @@
 import { createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
-import ProtectedRoute from "./components/common/ProtectedRoute"; // Import ProtectedRoute để bảo vệ các trang
+import ProtectedRoute from "./components/common/ProtectedRoute";
 
 // Import Layouts
 import AdminLayout from "./features/admin/layouts/AdminLayout";
@@ -23,6 +23,8 @@ import HomePage from "./pages/HomePage";
 import BikeListPage from "./features/bicycle/pages/BikeListPage";
 import BikeDetailPage from "./features/bicycle/pages/BikeDetailPage";
 import PostBikePage from "./features/bicycle/pages/PostBikePage";
+import EventListPage from "./features/event-meeting/pages/EventListPage";
+import EventDetailPage from "./features/event-meeting/pages/EventDetailPage";
 
 // Các trang Auth
 import LoginForm from "./features/auth/LoginForm";
@@ -62,6 +64,8 @@ const router = createBrowserRouter([
           { path: "bikes/:id", element: <BikeDetailPage /> },
           { path: "post-bike", element: <PostBikePage /> },
           { path: "profile", element: <UserProfilePage /> },
+          { path: "events", element: <EventListPage /> },
+          { path: "events/:id", element: <EventDetailPage /> },
         ],
       },
       {
@@ -76,7 +80,7 @@ const router = createBrowserRouter([
         path: "/unauthorized",
         element: <UnauthorizedPage />,
       },
-      // Routes cho Admin - Đã được bọc ProtectedRoute với requiredRole="ADMIN"
+      // Routes cho Admin
       {
         path: "/admin",
         element: (
@@ -98,7 +102,7 @@ const router = createBrowserRouter([
           { path: "settings", element: <AdminSettingsPage /> },
         ],
       },
-      // Routes cho Inspector - Đã được bọc ProtectedRoute với requiredRole="INSPECTOR"
+      // Routes cho Inspector
       {
         path: "/inspector",
         element: (

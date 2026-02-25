@@ -61,7 +61,13 @@ const InspectorSidebar = () => {
     },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  // ĐÃ SỬA LỖI Ở ĐÂY: Đồng bộ logic active giống Header
+  const isActive = (path) => {
+    if (path === "/inspector") {
+      return location.pathname === "/inspector";
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <aside className="fixed top-0 left-0 bottom-0 w-[260px] bg-emerald-900 text-white flex flex-col z-50 shadow-xl">
@@ -120,7 +126,9 @@ const InspectorSidebar = () => {
                     }`}
                   >
                     <span
-                      className={isActive(item.path) ? "text-white" : "text-emerald-400"}
+                      className={
+                        isActive(item.path) ? "text-white" : "text-emerald-400"
+                      }
                     >
                       {item.icon}
                     </span>

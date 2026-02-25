@@ -6,11 +6,12 @@ import {
   MdMenu,
   MdPedalBike,
   MdSearch,
-  MdHome,
   MdStorefront,
   MdAdd,
   MdFavoriteBorder,
   MdNotifications,
+  MdEvent,
+  MdFactCheck, // Import thêm icon cho lối tắt Inspector
 } from "react-icons/md";
 
 const Header = ({ onOpenSidebar }) => {
@@ -19,10 +20,11 @@ const Header = ({ onOpenSidebar }) => {
   const [keyword, setKeyword] = useState("");
   const navigate = useNavigate();
 
-  // Kiểm tra xem user có phải là admin không
-  // Giả sử user object có thuộc tính role. Nếu không có user (chưa login) thì không phải admin.
-  const isAdmin = user?.role?.toUpperCase() === "ADMIN";
-  const isInspector = user?.role?.toUpperCase() === "INSPECTOR";
+  // Kiểm tra role cẩn thận bằng cách ép kiểu sang string
+  const userRole = String(user?.role || "").toUpperCase();
+  const isAdmin = userRole.includes("ADMIN");
+  const isInspector = userRole.includes("INSPECTOR");
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (keyword.trim()) {
@@ -72,18 +74,6 @@ const Header = ({ onOpenSidebar }) => {
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <div className="hidden lg:flex items-center gap-2">
             <Link
-              to="/"
-              title="Trang chủ"
-              className={`p-2 rounded-full transition-colors ${
-                location.pathname === "/"
-                  ? "bg-orange-50 text-orange-600"
-                  : "text-orange-600 hover:bg-orange-50"
-              }`}
-            >
-              <MdHome size={26} />
-            </Link>
-
-            <Link
               to="/bikes"
               className={`flex items-center gap-1 px-3 py-2 rounded-full font-bold text-sm transition-all ${
                 location.pathname === "/bikes"
@@ -94,15 +84,26 @@ const Header = ({ onOpenSidebar }) => {
               <MdStorefront size={22} />
               <span>Mua xe</span>
             </Link>
+
+            <Link
+              to="/events"
+              className={`flex items-center gap-1 px-3 py-2 rounded-full font-bold text-sm transition-all ${
+                location.pathname.includes("/events")
+                  ? "bg-orange-50 text-orange-600"
+                  : "text-orange-600 hover:bg-orange-50"
+              }`}
+            >
+              <MdEvent size={22} />
+              <span>Hội chợ</span>
+            </Link>
           </div>
 
           <div className="hidden lg:block w-px h-6 bg-gray-200 mx-1"></div>
 
           <div className="flex items-center gap-1">
-            {/* Logic hiển thị: Nếu KHÔNG phải Admin thì mới hiện nút Đăng tin và Wishlist */}
-            {!isAdmin && (
+            {/* Logic hiển thị: Nếu KHÔNG phải Admin và KHÔNG phải Inspector thì mới hiện nút Đăng tin và Wishlist */}
+            {!isAdmin && !isInspector && (
               <>
-                {/* Nút Đăng Tin (+) */}
                 <Link
                   to="/post-bike"
                   className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 text-white shadow-md shadow-orange-200 hover:bg-orange-700 hover:scale-105 transition-all duration-200 ml-1"
@@ -111,7 +112,6 @@ const Header = ({ onOpenSidebar }) => {
                   <MdAdd size={24} />
                 </Link>
 
-                {/* Yêu thích */}
                 <Link
                   to="/wishlist"
                   className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
@@ -122,7 +122,7 @@ const Header = ({ onOpenSidebar }) => {
               </>
             )}
 
-            {/* Icon Thông Báo (Hiển thị cho cả Admin và User) */}
+            {/* Icon Thông Báo (Hiển thị cho tất cả mọi người) */}
             <button
               className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
               title="Thông báo"

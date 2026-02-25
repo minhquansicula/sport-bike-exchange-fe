@@ -1,15 +1,28 @@
 import api from "../config/api";
 
 export const bikeService = {
-  // Lấy danh sách xe thật từ Database
-  getAllBikes: async () => {
-    const response = await api.get("/bike-listings");
-    return response.data.result; // Trả về mảng xe từ result của ApiResponse
+  createBikeListing: async (data) => {
+    const response = await api.post("/bike-listings", data);
+    return response.data;
   },
 
-  // Đăng tin mới lên Server
-  createBike: async (bikeData) => {
-    const response = await api.post("/bike-listings", bikeData);
+  getAllBikeListings: async () => {
+    const response = await api.get("/bike-listings");
+    return response.data;
+  },
+
+  getBikeListingById: async (listingId) => {
+    const response = await api.get(`/bike-listings/${listingId}`);
+    return response.data;
+  },
+
+  updateBikeListing: async (listingId, data) => {
+    const response = await api.put(`/bike-listings/${listingId}`, data);
+    return response.data;
+  },
+
+  deleteBikeListing: async (listingId) => {
+    const response = await api.delete(`/bike-listings/${listingId}`);
     return response.data;
   },
 };

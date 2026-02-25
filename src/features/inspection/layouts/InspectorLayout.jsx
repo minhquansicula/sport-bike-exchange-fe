@@ -24,8 +24,9 @@ const InspectorLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect nếu không phải inspector
-  if (user.role !== "inspector") {
+  // Redirect nếu không phải inspector (ĐÃ SỬA LỖI Ở ĐÂY)
+  const userRole = String(user.role).toLowerCase();
+  if (!userRole.includes("inspector")) {
     return <Navigate to="/unauthorized" replace />;
   }
 

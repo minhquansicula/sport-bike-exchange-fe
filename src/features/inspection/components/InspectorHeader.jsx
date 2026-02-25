@@ -6,7 +6,6 @@ import {
   MdNotifications,
   MdKeyboardArrowDown,
   MdLogout,
-  MdPerson,
   MdStorefront,
   MdHome,
   MdAssignment,
@@ -74,7 +73,11 @@ const InspectorHeader = () => {
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
-            <span className={isActive(item.path) ? "text-emerald-500" : "text-gray-400"}>
+            <span
+              className={
+                isActive(item.path) ? "text-emerald-500" : "text-gray-400"
+              }
+            >
               {item.icon}
             </span>
             {item.label}
@@ -153,15 +156,6 @@ const InspectorHeader = () => {
                 onClick={() => setShowUserMenu(false)}
               ></div>
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                <Link
-                  to="/inspector/profile"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <MdPerson size={18} className="text-gray-400" />
-                  Hồ sơ của tôi
-                </Link>
-                <hr className="my-2 border-gray-100" />
                 <button
                   onClick={() => {
                     logout();

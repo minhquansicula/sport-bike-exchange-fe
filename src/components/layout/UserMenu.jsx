@@ -9,6 +9,7 @@ import {
   MdPedalBike,
   MdManageAccounts,
   MdAdminPanelSettings,
+  MdFactCheck,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -19,7 +20,6 @@ const UserMenu = () => {
   const displayName =
     user?.fullName || user?.name || user?.username || "Người dùng";
 
-  // Sửa lỗi dư dấu phẩy ở hàm encodeURIComponent
   const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     displayName,
   )}&background=random&color=fff&background=ea580c&size=128`;
@@ -27,9 +27,9 @@ const UserMenu = () => {
   const displayAvatar =
     user?.avatar && user.avatar.trim() !== "" ? user.avatar : fallbackAvatar;
 
-  const isAdmin = String(user?.role || "")
-    .toUpperCase()
-    .includes("ADMIN");
+  const userRole = String(user?.role || "").toUpperCase();
+  const isAdmin = userRole.includes("ADMIN");
+  const isInspector = userRole.includes("INSPECTOR");
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -95,9 +95,19 @@ const UserMenu = () => {
                 {user.email || "Chưa cập nhật email"}
               </p>
               <span
-                className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${isAdmin ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}
+                className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${
+                  isAdmin
+                    ? "bg-red-100 text-red-700"
+                    : isInspector
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-orange-100 text-orange-700"
+                }`}
               >
-                {isAdmin ? "Quản trị viên" : "Thành viên"}
+                {isAdmin
+                  ? "Quản trị viên"
+                  : isInspector
+                    ? "Kiểm định viên"
+                    : "Thành viên"}
               </span>
             </div>
           </div>
@@ -111,6 +121,15 @@ const UserMenu = () => {
               >
                 <MdAdminPanelSettings size={20} className="text-white" /> Trang
                 quản trị
+              </Link>
+            ) : isInspector ? (
+              <Link
+                to="/inspector"
+                onClick={handleLinkClick}
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-md hover:shadow-lg transition-all"
+              >
+                <MdFactCheck size={20} className="text-white" /> Khu vực kiểm
+                định
               </Link>
             ) : (
               <>
