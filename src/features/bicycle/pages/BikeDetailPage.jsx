@@ -2,6 +2,8 @@ import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { MOCK_BIKES } from "../../../mockData/bikes";
 import formatCurrency from "../../../utils/formatCurrency";
+import { useAuth } from "../../../hooks/useAuth"; // 👇 Import thêm useAuth
+
 // Import Icons
 import {
   MdLocationOn,
@@ -10,20 +12,25 @@ import {
   MdInfoOutline,
   MdCheckCircle,
   MdArrowForward,
-  // 👇 Thêm các icon mới cho thông số kỹ thuật
-  MdStraighten, // Frame
-  MdDonutLarge, // Wheel
-  MdSpeed, // Gears
-  MdFitnessCenter, // Weight
-  MdCalendarToday, // Year
-  MdErrorOutline, // Brake
+  MdStraighten,
+  MdDonutLarge,
+  MdSpeed,
+  MdFitnessCenter,
+  MdCalendarToday,
+  MdErrorOutline,
+  MdBlock, // Thêm icon báo khóa
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
   const { id } = useParams();
+  const { user } = useAuth(); // 👇 Lấy thông tin user
 
   // Tìm xe trong mock data
   const bike = MOCK_BIKES.find((b) => b.id === Number(id)) || MOCK_BIKES[0];
+
+  // Logic kiểm tra role
+  const userRole = String(user?.role || "").toUpperCase();
+  const isStaff = userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
 
   if (!bike)
     return (
@@ -86,14 +93,13 @@ const BikeDetailPage = () => {
                 </span>
               </div>
 
-              {/* 👇 PHẦN ĐÃ SỬA: Specs Grid (Hiện thông số thực tế) */}
+              {/* Specs Grid */}
               <div className="mb-8">
                 <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
                   <MdInfoOutline className="text-orange-600" /> Thông số kỹ
                   thuật
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  {/* Size Khung */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdStraighten /> Size Khung
@@ -103,7 +109,6 @@ const BikeDetailPage = () => {
                     </span>
                   </div>
 
-                  {/* Size Bánh */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdDonutLarge /> Size Bánh
@@ -113,7 +118,6 @@ const BikeDetailPage = () => {
                     </span>
                   </div>
 
-                  {/* Năm sản xuất */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdCalendarToday /> Năm SX
@@ -123,7 +127,6 @@ const BikeDetailPage = () => {
                     </span>
                   </div>
 
-                  {/* Phanh */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdErrorOutline /> Phanh
@@ -133,7 +136,6 @@ const BikeDetailPage = () => {
                     </span>
                   </div>
 
-                  {/* Bộ đề */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdSpeed /> Bộ đề
@@ -143,7 +145,6 @@ const BikeDetailPage = () => {
                     </span>
                   </div>
 
-                  {/* Trọng lượng */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdFitnessCenter /> Trọng lượng
@@ -202,7 +203,6 @@ const BikeDetailPage = () => {
                 <div className="mb-6 border-b border-gray-100 pb-4">
                   <p className="text-sm text-gray-500 mb-1">Giá niêm yết</p>
                   <div className="flex items-end gap-3">
-                    {/* GIÁ MÀU ĐEN */}
                     <span className="text-3xl md:text-4xl font-black text-zinc-900 tracking-tight">
                       {formatCurrency(bike.price)}
                     </span>
@@ -210,16 +210,28 @@ const BikeDetailPage = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {/* Nút Hành Động Chính: YÊU CẦU GIAO DỊCH */}
-                  <button className="w-full bg-zinc-900 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-gray-200 hover:shadow-orange-200 flex items-center justify-center gap-2 group animate-in fade-in">
-                    Gửi Yêu Cầu Giao Dịch
-                    <MdArrowForward className="group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  {/* 👇 ĐÃ CẬP NHẬT LOGIC NÚT DỰA VÀO ROLE 👇 */}
+                  {isStaff ? (
+                    <button
+                      disabled
+                      className="w-full bg-gray-100 text-gray-400 font-bold py-4 rounded-xl cursor-not-allowed flex items-center justify-center gap-2 border border-gray-200"
+                    >
+                      <MdBlock size={20} />
+                      Tài khoản nội bộ không thể mua xe
+                    </button>
+                  ) : (
+                    <>
+                      <button className="w-full bg-zinc-900 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-gray-200 hover:shadow-orange-200 flex items-center justify-center gap-2 group animate-in fade-in">
+                        Gửi Yêu Cầu Giao Dịch
+                        <MdArrowForward className="group-hover:translate-x-1 transition-transform" />
+                      </button>
 
-                  <p className="text-xs text-gray-500 text-center px-2 leading-relaxed">
-                    *Bạn cần gửi yêu cầu trước. Sau khi người bán xác nhận, chức
-                    năng <strong>Đặt Cọc</strong> sẽ được mở khóa.
-                  </p>
+                      <p className="text-xs text-gray-500 text-center px-2 leading-relaxed">
+                        *Bạn cần gửi yêu cầu trước. Sau khi người bán xác nhận,
+                        chức năng <strong>Đặt Cọc</strong> sẽ được mở khóa.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
 
