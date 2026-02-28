@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
 // Import Icons - GIỮ NGUYÊN
 import {
   MdLock,
@@ -11,13 +13,18 @@ import {
   MdPerson,
 } from "react-icons/md";
 
-const LoginForm = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+// Validation Schema với Yup
+const loginValidationSchema = Yup.object({
+  username: Yup.string()
+    .required("Vui lòng nhập tên đăng nhập hoặc email")
+    .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự"),
+  password: Yup.string()
+    .required("Vui lòng nhập mật khẩu")
+    .min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+});
 
+const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -30,14 +37,12 @@ const LoginForm = () => {
     return "/";
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const handleSubmit = async (values, { setSubmitting, setStatus }) => {
+    setStatus(null);
 
     try {
       // Gọi hàm login đã sửa ở Context
-      const user = await login(username, password);
+      const user = await login(values.username, values.password);
 
       // Điều hướng
       const redirectPath = getRedirectPath(user.role);
@@ -45,12 +50,12 @@ const LoginForm = () => {
     } catch (err) {
       console.error("Login Error:", err);
       // Hiển thị thông báo lỗi từ backend trả về (nếu có)
-      setError(
+      setStatus(
         err.response?.data?.message ||
           "Tên đăng nhập hoặc mật khẩu không đúng.",
       );
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -81,72 +86,92 @@ const LoginForm = () => {
           </p>
         </div>
 
-        {/* Thông báo lỗi */}
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 text-sm flex items-center gap-2 animate-pulse">
-            <span>⚠️</span> {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Username / Email */}
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
-              <MdPerson size={20} />
-            </div>
-            <input
-              type="text"
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
-              placeholder="Username hoặc Email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
-              <MdLock size={20} />
-            </div>
-            <input
-              type={showPassword ? "text" : "password"}
-              className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
-              placeholder="Mật khẩu"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button
-              type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <MdVisibilityOff size={20} />
-              ) : (
-                <MdVisibility size={20} />
+        <Formik
+          initialValues={{ username: "", password: "" }}
+          validationSchema={loginValidationSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ errors, touched, isSubmitting, status }) => (
+            <>
+              {/* Thông báo lỗi */}
+              {status && (
+                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 text-sm flex items-center gap-2 animate-pulse">
+                  <span>⚠️</span> {status}
+                </div>
               )}
-            </button>
-          </div>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline bg-transparent border-none cursor-pointer"
-            >
-              Quên mật khẩu?
-            </button>
-          </div>
+              <Form className="space-y-5">
+                {/* Username / Email */}
+                <div>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
+                      <MdPerson size={20} />
+                    </div>
+                    <Field
+                      name="username"
+                      type="text"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
+                      placeholder="Username hoặc Email"
+                    />
+                  </div>
+                  {errors.username && touched.username && (
+                    <div className="text-red-500 text-sm mt-1 ml-1">
+                      {errors.username}
+                    </div>
+                  )}
+                </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Đang xử lý..." : "Đăng Nhập"}
-          </button>
-        </form>
+                {/* Password */}
+                <div>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
+                      <MdLock size={20} />
+                    </div>
+                    <Field
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
+                      placeholder="Mật khẩu"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <MdVisibilityOff size={20} />
+                      ) : (
+                        <MdVisibility size={20} />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && touched.password && (
+                    <div className="text-red-500 text-sm mt-1 ml-1">
+                      {errors.password}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline bg-transparent border-none cursor-pointer"
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? "Đang xử lý..." : "Đăng Nhập"}
+                </button>
+              </Form>
+            </>
+          )}
+        </Formik>
 
         <p className="mt-8 text-center text-sm text-gray-600">
           Chưa có tài khoản?{" "}
