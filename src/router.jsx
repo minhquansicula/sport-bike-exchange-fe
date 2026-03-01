@@ -44,9 +44,10 @@ import AdminLocationsPage from "./features/admin/pages/AdminLocationsPage";
 import AdminSettingsPage from "./features/admin/pages/AdminSettingsPage";
 
 // Các trang Inspector
-import InspectorDashboard from "./features/inspection/pages/InspectorDashboard";
+import InspectorHomePage from "./features/inspection/pages/InspectorHomePage";
 import InspectorTaskPage from "./features/inspection/pages/InspectorTaskPage";
 import CreateReportPage from "./features/inspection/pages/CreateReportPage";
+import InspectorProfilePage from "./features/inspection/pages/InspectorProfilePage";
 
 // Trang lỗi
 import UnauthorizedPage from "./pages/UnauthorizedPage";
@@ -111,11 +112,12 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { index: true, element: <InspectorDashboard /> },
-          { path: "tasks", element: <InspectorTaskPage /> },
-          { path: "tasks/:id", element: <InspectorTaskPage /> },
-          { path: "create-report", element: <CreateReportPage /> },
-          { path: "history", element: <InspectorTaskPage /> },
+          { index: true, element: <InspectorHomePage /> }, // Trang chủ Inspector
+          { path: "tasks", element: <InspectorTaskPage /> }, // Danh sách nhiệm vụ
+          { path: "tasks/:id", element: <InspectorTaskPage /> }, // Chi tiết nhiệm vụ
+          { path: "create-report", element: <CreateReportPage /> }, // Tạo báo cáo
+          { path: "history", element: <InspectorTaskPage /> }, // Lịch sử (tạm dùng chung)
+          { path: "profile", element: <InspectorProfilePage /> }, // Hồ sơ cá nhân
         ],
       },
     ],
