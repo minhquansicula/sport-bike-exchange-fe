@@ -102,13 +102,13 @@ const EventDetailPage = () => {
                 <MdLocalOffer size={24} />
                 Đăng ký bán xe
               </button>
-              <button
+              {/* <button
                 onClick={handleRegisterView}
                 className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-xl font-bold text-lg transition-all flex items-center gap-2 hover:-translate-y-1"
               >
                 <MdOutlineDirectionsBike size={24} />
                 Đăng ký tới xem
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
