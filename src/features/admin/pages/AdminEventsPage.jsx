@@ -2,421 +2,671 @@ import React, { useState } from "react";
 import {
   MdSearch,
   MdFilterList,
-  MdAccessTime,
+  MdAdd,
+  MdEdit,
+  MdDeleteOutline,
   MdLocationOn,
-  MdPerson,
-  MdCheckCircle,
-  MdCancel,
-  MdRemoveRedEye,
-  MdWarning,
-  MdAssignment,
+  MdCalendarToday,
+  MdPedalBike,
+  MdEvent,
+  MdArrowForward,
+  MdClose,
+  MdSave,
+  MdPercent,
+  MdMoreVert,
 } from "react-icons/md";
 
-// --- MOCK DATA: LỊCH HẸN GIAO DỊCH ---
-const MOCK_MEETUPS = [
+// --- MOCK DATA ---
+const MOCK_EVENTS = [
   {
-    id: "EVT-2024-001",
-    transactionId: "TXN-9981",
-    bikeName: "Trek Marlin 7 Gen 2",
-    meetupTime: "2026-02-03 09:00", // Thời gian hẹn
-    location: "Trạm OldBike Đống Đa - HN",
-    inspector: {
-      name: "Lê Thanh Tra",
-      avatar: "https://i.pravatar.cc/150?u=insp1",
-    },
-    buyer: { name: "Nguyễn Văn A", phone: "098***111" },
-    seller: { name: "Trần Văn B", phone: "091***222" },
-    status: "completed", // scheduled, in_progress, report_submitted, completed, cancelled
-
-    // Báo cáo từ Inspector (Quan trọng)
-    report: {
-      submittedAt: "2026-02-03 09:15",
-      buyerArrived: true, // Người mua ĐẾN
-      sellerArrived: true, // Người bán ĐẾN
-      result: "success", // Giao dịch tiếp tục
-      note: "Hai bên đã gặp nhau, đang kiểm tra xe.",
-      images: [
-        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
-      ],
-    },
+    eventId: 1,
+    name: "VeloX Fest 2026 - Lễ Hội Xe Đạp Thể Thao",
+    bikeType: "MTB, Road",
+    location: "Công viên Yên Sở",
+    address: "Hoàng Mai, Hà Nội",
+    startDate: "2026-03-15",
+    endDate: "2026-03-17",
+    sellerDepositRate: 10.0,
+    buyerDepositRate: 10.0,
+    platformFeeRate: 2.5,
+    status: "upcoming",
   },
   {
-    id: "EVT-2024-002",
-    transactionId: "TXN-7722",
-    bikeName: "Giant Escape 2",
-    meetupTime: "2026-02-03 14:00",
-    location: "Trạm OldBike Q1 - HCM",
-    inspector: {
-      name: "Phạm Kiểm Định",
-      avatar: "https://i.pravatar.cc/150?u=insp2",
-    },
-    buyer: { name: "Lê Thị C", phone: "090***333" },
-    seller: { name: "Hoàng D", phone: "093***444" },
-    status: "report_submitted", // Inspector đã báo cáo, chờ Admin xử lý
-
-    // Trường hợp BOM HÀNG
-    report: {
-      submittedAt: "2026-02-03 14:30",
-      buyerArrived: false, // Người mua KHÔNG ĐẾN
-      sellerArrived: true, // Người bán ĐẾN
-      result: "failed", // Giao dịch thất bại
-      note: "Đã đợi 30p, gọi điện người mua không nghe máy. Người bán yêu cầu bồi thường cọc.",
-      images: [
-        "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=400",
-      ],
-    },
-  },
-  {
-    id: "EVT-2024-003",
-    transactionId: "TXN-5511",
-    bikeName: "Honda Cub Custom (Xe cổ)",
-    meetupTime: "2026-02-04 10:00", // Ngày mai
-    location: "Trạm OldBike Đà Nẵng",
-    inspector: {
-      name: "Trần Giám Sát",
-      avatar: "https://i.pravatar.cc/150?u=insp3",
-    },
-    buyer: { name: "Phan E", phone: "099***555" },
-    seller: { name: "Võ F", phone: "088***666" },
-    status: "scheduled", // Chưa diễn ra
-    report: null,
+    eventId: 2,
+    name: "Touring Weekend Expo TP.HCM",
+    bikeType: "Touring",
+    location: "Phố đi bộ Nguyễn Huệ",
+    address: "Quận 1, TP.HCM",
+    startDate: "2026-04-04",
+    endDate: "2026-04-05",
+    sellerDepositRate: 15.0,
+    buyerDepositRate: 15.0,
+    platformFeeRate: 3.0,
+    status: "draft",
   },
 ];
 
 const AdminEventsPage = () => {
-  const [meetups, setMeetups] = useState(MOCK_MEETUPS);
+  const [events, setEvents] = useState(MOCK_EVENTS);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedEvent, setSelectedEvent] = useState(null); // State để mở Modal chi tiết
 
-  // Logic lọc
-  const filteredMeetups = meetups.filter((m) =>
-    filterStatus === "all" ? true : m.status === filterStatus,
-  );
+  const [viewEvent, setViewEvent] = useState(null);
+  const [editEvent, setEditEvent] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Helper: Badge trạng thái chung
+  const [newEvent, setNewEvent] = useState({
+    name: "",
+    bikeType: "",
+    location: "",
+    address: "",
+    startDate: "",
+    endDate: "",
+    sellerDepositRate: 0,
+    buyerDepositRate: 0,
+    platformFeeRate: 0,
+    status: "draft",
+  });
+
+  const filteredEvents = events.filter((evt) => {
+    const matchSearch =
+      evt.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      evt.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus =
+      filterStatus === "all" ? true : evt.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
   const getStatusBadge = (status) => {
-    switch (status) {
-      case "scheduled":
-        return (
-          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">
-            Sắp diễn ra
-          </span>
-        );
-      case "report_submitted":
-        return (
-          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
-            <MdWarning /> Có báo cáo
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">
-            Hoàn tất
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">
-            Khác
-          </span>
-        );
-    }
-  };
+    const styles = {
+      draft: "bg-slate-100 text-slate-600 border-slate-200",
+      upcoming: "bg-blue-50 text-blue-600 border-blue-200",
+      ongoing: "bg-emerald-50 text-emerald-600 border-emerald-200",
+      completed: "bg-zinc-100 text-zinc-500 border-zinc-200",
+      cancelled: "bg-red-50 text-red-600 border-red-200",
+    };
 
-  // Helper: Hiển thị nhanh trạng thái điểm danh (Icon nhỏ ở bảng)
-  const renderAttendanceMini = (report) => {
-    if (!report) return <span className="text-gray-400 text-xs">--</span>;
+    const labels = {
+      draft: "Bản nháp",
+      upcoming: "Sắp diễn ra",
+      ongoing: "Đang diễn ra",
+      completed: "Đã kết thúc",
+      cancelled: "Đã hủy",
+    };
+
     return (
-      <div className="flex gap-2">
-        <div
-          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${report.sellerArrived ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`}
-        >
-          Bán: {report.sellerArrived ? <MdCheckCircle /> : <MdCancel />}
-        </div>
-        <div
-          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${report.buyerArrived ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`}
-        >
-          Mua: {report.buyerArrived ? <MdCheckCircle /> : <MdCancel />}
-        </div>
-      </div>
+      <span
+        className={`px-3 py-1 rounded-full text-[11px] font-bold border tracking-wide uppercase ${
+          styles[status] || styles.draft
+        }`}
+      >
+        {labels[status] || "Unknown"}
+      </span>
     );
   };
 
+  const handleSaveEdit = (updatedEvent) => {
+    setEvents(
+      events.map((e) =>
+        e.eventId === updatedEvent.eventId ? updatedEvent : e,
+      ),
+    );
+    setEditEvent(null);
+  };
+
+  const handleCreateEvent = () => {
+    const newId =
+      events.length > 0 ? Math.max(...events.map((e) => e.eventId)) + 1 : 1;
+    const eventToAdd = {
+      ...newEvent,
+      eventId: newId,
+    };
+    setEvents([eventToAdd, ...events]);
+    setShowCreateModal(false);
+    setNewEvent({
+      name: "",
+      bikeType: "",
+      location: "",
+      address: "",
+      startDate: "",
+      endDate: "",
+      sellerDepositRate: 0,
+      buyerDepositRate: 0,
+      platformFeeRate: 0,
+      status: "draft",
+    });
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
+      setEvents(events.filter((e) => e.eventId !== id));
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* --- HEADER --- */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Điều phối Giao dịch
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            Sự kiện & Hội chợ
           </h1>
-          <p className="text-gray-500 text-sm">
-            Giám sát các cuộc hẹn giao dịch trực tiếp & Báo cáo điểm danh
+          <p className="text-slate-500 mt-2 text-sm">
+            Quản lý các chiến dịch, hội chợ giao thương và sự kiện offline.
           </p>
         </div>
-        <div className="flex gap-2">
-          {/* Bộ lọc đơn giản */}
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-500/30 active:scale-95"
+        >
+          <MdAdd size={20} /> Tạo sự kiện mới
+        </button>
+      </div>
+
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          {
+            label: "Tổng sự kiện",
+            value: events.length,
+            icon: MdEvent,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+          },
+          {
+            label: "Sắp diễn ra",
+            value: events.filter((e) => e.status === "upcoming").length,
+            icon: MdCalendarToday,
+            color: "text-orange-600",
+            bg: "bg-orange-50",
+          },
+          {
+            label: "Đã hoàn thành",
+            value: events.filter((e) => e.status === "completed").length,
+            icon: MdPedalBike,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+          },
+        ].map((stat, idx) => (
+          <div
+            key={idx}
+            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 transition-all hover:shadow-md"
+          >
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center ${stat.bg} ${stat.color}`}
+            >
+              <stat.icon size={26} />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500 font-medium mb-1">
+                {stat.label}
+              </p>
+              <p className="text-3xl font-black text-slate-900">{stat.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters Section */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex-1 relative">
+          <MdSearch
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={22}
+          />
+          <input
+            type="text"
+            placeholder="Tìm kiếm sự kiện, địa điểm..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none"
+          />
+        </div>
+        <div className="relative min-w-[200px]">
+          <MdFilterList
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={22}
+          />
           <select
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full pl-12 pr-10 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none appearance-none cursor-pointer font-medium text-slate-700"
           >
-            <option value="all">Tất cả lịch hẹn</option>
-            <option value="scheduled">Sắp diễn ra</option>
-            <option value="report_submitted">Mới có báo cáo (Cần xử lý)</option>
-            <option value="completed">Đã xong</option>
+            <option value="all">Tất cả trạng thái</option>
+            <option value="upcoming">Sắp diễn ra</option>
+            <option value="draft">Bản nháp</option>
+            <option value="completed">Đã kết thúc</option>
           </select>
         </div>
       </div>
 
-      {/* --- TABLE DANH SÁCH --- */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">
-                  Thời gian / Địa điểm
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">
-                  Giao dịch
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">
-                  Inspector
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">
-                  Điểm danh (Seller/Buyer)
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredMeetups.map((evt) => (
-                <tr key={evt.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-gray-800 flex items-center gap-1">
-                        <MdAccessTime className="text-orange-500" />{" "}
-                        {evt.meetupTime.split(" ")[1]}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {evt.meetupTime.split(" ")[0]}
-                      </span>
-                      <div className="text-xs text-gray-600 mt-1 flex items-center gap-1">
-                        <MdLocationOn className="text-gray-400" />{" "}
-                        {evt.location}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">
-                      {evt.bikeName}
-                    </div>
-                    <div className="text-xs text-blue-600 font-mono bg-blue-50 inline-block px-1 rounded mt-1">
-                      {evt.transactionId}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={evt.inspector.avatar}
-                        alt="Insp"
-                        className="w-6 h-6 rounded-full border border-gray-200"
-                      />
-                      <span className="text-sm text-gray-700">
-                        {evt.inspector.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {renderAttendanceMini(evt.report)}
-                  </td>
-                  <td className="px-6 py-4">{getStatusBadge(evt.status)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => setSelectedEvent(evt)}
-                      className="text-gray-500 hover:text-orange-600 p-2 rounded-full hover:bg-orange-50 transition-all"
-                      title="Xem báo cáo chi tiết"
-                    >
-                      <MdAssignment size={20} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Events Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {filteredEvents.map((evt) => (
+          <div
+            key={evt.eventId}
+            className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+          >
+            {/* Card Header */}
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <span className="text-sm font-bold text-slate-400">
+                  #{evt.eventId}
+                </span>
+                {getStatusBadge(evt.status)}
+              </div>
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setEditEvent(evt)}
+                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                >
+                  <MdEdit size={20} />
+                </button>
+                <button
+                  onClick={() => handleDelete(evt.eventId)}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                >
+                  <MdDeleteOutline size={20} />
+                </button>
+              </div>
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900 leading-tight mb-4 group-hover:text-orange-600 transition-colors">
+              {evt.name}
+            </h3>
+
+            {/* Card Info */}
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-3 text-sm text-slate-600">
+                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
+                  <MdCalendarToday size={16} className="text-slate-400" />
+                </div>
+                <span className="font-medium">
+                  {evt.startDate} <span className="text-slate-400 mx-1">→</span>{" "}
+                  {evt.endDate}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-slate-600">
+                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
+                  <MdLocationOn size={18} className="text-slate-400" />
+                </div>
+                <span className="truncate font-medium">
+                  {evt.location}{" "}
+                  <span className="text-slate-400 font-normal">
+                    ({evt.address})
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* Metrics Pills */}
+            <div className="flex flex-wrap gap-3 mt-auto mb-6">
+              <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
+                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                  Loại
+                </span>
+                <span className="text-sm font-bold text-slate-800">
+                  {evt.bikeType}
+                </span>
+              </div>
+              <div className="px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-100 flex items-center gap-2">
+                <span className="text-[10px] text-orange-600/80 uppercase font-bold tracking-wider">
+                  Cọc
+                </span>
+                <span className="text-sm font-bold text-orange-700">
+                  {evt.sellerDepositRate}% / {evt.buyerDepositRate}%
+                </span>
+              </div>
+              <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-2">
+                <span className="text-[10px] text-emerald-600/80 uppercase font-bold tracking-wider">
+                  Phí
+                </span>
+                <span className="text-sm font-bold text-emerald-700">
+                  {evt.platformFeeRate}%
+                </span>
+              </div>
+            </div>
+
+            {/* Card Footer */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+              <button
+                onClick={() => setViewEvent(evt)}
+                className="text-sm font-bold text-slate-900 hover:text-orange-600 flex items-center gap-1.5 transition-colors"
+              >
+                Xem chi tiết <MdArrowForward size={18} />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* --- MODAL CHI TIẾT BÁO CÁO (Quan trọng nhất) --- */}
-      {selectedEvent && (
-        <ReportDetailModal
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-        />
-      )}
-    </div>
-  );
-};
-
-// Component Modal tách riêng cho gọn
-const ReportDetailModal = ({ event, onClose }) => {
-  if (!event) return null;
-  const { report } = event;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              Báo cáo hiện trường
-            </h3>
-            <p className="text-xs text-gray-500">
-              Mã giao dịch: {event.transactionId} • Inspector:{" "}
-              {event.inspector.name}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-white rounded-full hover:bg-gray-200 transition-colors"
-          >
-            <MdCancel size={22} className="text-gray-500" />
-          </button>
+      {filteredEvents.length === 0 && (
+        <div className="text-center py-20 bg-white border border-slate-100 rounded-3xl">
+          <MdEvent size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-lg font-bold text-slate-800 mb-1">
+            Không tìm thấy sự kiện
+          </h3>
+          <p className="text-slate-500">
+            Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+          </p>
         </div>
+      )}
 
-        {/* Modal Body - Scrollable */}
-        <div className="p-6 overflow-y-auto">
-          {/* 1. Thông tin điểm danh (Attendance) */}
-          <div className="mb-6">
-            <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
-              Kết quả điểm danh
-            </h4>
-            {!report ? (
-              <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-500">
-                Inspector chưa gửi báo cáo cho cuộc hẹn này.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {/* Thẻ Seller */}
-                <div
-                  className={`p-4 rounded-xl border-2 flex items-center justify-between ${report.sellerArrived ? "border-green-100 bg-green-50" : "border-red-100 bg-red-50"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <MdPerson size={20} className="text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-bold uppercase">
-                        Người bán
-                      </p>
-                      <p className="font-bold text-gray-900">
-                        {event.seller.name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {report.sellerArrived ? (
-                      <span className="flex flex-col items-center text-green-600 font-bold text-sm">
-                        <MdCheckCircle size={24} /> Đã đến
-                      </span>
-                    ) : (
-                      <span className="flex flex-col items-center text-red-600 font-bold text-sm">
-                        <MdCancel size={24} /> Vắng mặt
-                      </span>
-                    )}
-                  </div>
-                </div>
+      {/* POPUP XEM CHI TIẾT */}
+      {viewEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-lg font-bold text-slate-900">
+                Chi tiết sự kiện
+              </h3>
+              <button
+                onClick={() => setViewEvent(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <MdClose size={24} />
+              </button>
+            </div>
 
-                {/* Thẻ Buyer */}
-                <div
-                  className={`p-4 rounded-xl border-2 flex items-center justify-between ${report.buyerArrived ? "border-green-100 bg-green-50" : "border-red-100 bg-red-50"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <MdPerson size={20} className="text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-bold uppercase">
-                        Người mua
-                      </p>
-                      <p className="font-bold text-gray-900">
-                        {event.buyer.name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {report.buyerArrived ? (
-                      <span className="flex flex-col items-center text-green-600 font-bold text-sm">
-                        <MdCheckCircle size={24} /> Đã đến
-                      </span>
-                    ) : (
-                      <span className="flex flex-col items-center text-red-600 font-bold text-sm">
-                        <MdCancel size={24} /> Vắng mặt
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 2. Ghi chú & Hình ảnh từ Inspector */}
-          {report && (
-            <div className="space-y-4">
+            <div className="p-8 space-y-6">
               <div>
-                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Ghi chú hiện trường
-                </h4>
-                <div className="bg-gray-50 p-4 rounded-xl text-gray-700 text-sm border border-gray-100">
-                  "{report.note}"
-                  <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
-                    <MdAccessTime /> Gửi lúc: {report.submittedAt}
-                  </div>
+                <div className="mb-3">{getStatusBadge(viewEvent.status)}</div>
+                <h2 className="text-2xl font-black text-slate-900 leading-tight">
+                  {viewEvent.name}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <div>
+                  <span className="block text-slate-500 mb-1">Loại xe</span>{" "}
+                  <strong className="text-slate-900">
+                    {viewEvent.bikeType}
+                  </strong>
+                </div>
+                <div>
+                  <span className="block text-slate-500 mb-1">ID Hệ thống</span>{" "}
+                  <strong className="text-slate-900">
+                    #{viewEvent.eventId}
+                  </strong>
+                </div>
+                <div>
+                  <span className="block text-slate-500 mb-1">Bắt đầu</span>{" "}
+                  <strong className="text-slate-900">
+                    {viewEvent.startDate}
+                  </strong>
+                </div>
+                <div>
+                  <span className="block text-slate-500 mb-1">Kết thúc</span>{" "}
+                  <strong className="text-slate-900">
+                    {viewEvent.endDate}
+                  </strong>
+                </div>
+                <div className="md:col-span-2">
+                  <span className="block text-slate-500 mb-1">Địa điểm</span>
+                  <strong className="text-slate-900">
+                    {viewEvent.location} - {viewEvent.address}
+                  </strong>
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Hình ảnh xác thực
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {report.images.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt="Proof"
-                      className="rounded-lg object-cover w-full h-24 border border-gray-200 cursor-pointer hover:opacity-90"
-                    />
-                  ))}
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Cọc Bán
+                  </span>
+                  <strong className="text-xl text-slate-900">
+                    {viewEvent.sellerDepositRate}%
+                  </strong>
+                </div>
+                <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
+                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Cọc Mua
+                  </span>
+                  <strong className="text-xl text-slate-900">
+                    {viewEvent.buyerDepositRate}%
+                  </strong>
+                </div>
+                <div className="p-4 rounded-2xl border border-orange-100 bg-orange-50 shadow-sm">
+                  <span className="block text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">
+                    Phí Sàn
+                  </span>
+                  <strong className="text-xl text-orange-700">
+                    {viewEvent.platformFeeRate}%
+                  </strong>
                 </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Modal Footer - Actions */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-all"
-          >
-            Đóng
-          </button>
-          {/* Nút xử lý chỉ hiện khi có vấn đề (Ví dụ 1 bên vắng mặt) */}
-          {report && (!report.buyerArrived || !report.sellerArrived) && (
-            <button className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-lg shadow-red-200 transition-all">
-              Xử lý vi phạm (Phạt cọc)
-            </button>
-          )}
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+              <button
+                onClick={() => setViewEvent(null)}
+                className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl font-bold transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* POPUP TẠO/CHỈNH SỬA DÙNG CHUNG FORM */}
+      {(showCreateModal || editEvent) &&
+        (() => {
+          const isEdit = !!editEvent;
+          const formData = isEdit ? editEvent : newEvent;
+          const setFormData = isEdit ? setEditEvent : setNewEvent;
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
+              <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    {isEdit ? "Chỉnh sửa sự kiện" : "Tạo sự kiện mới"}
+                  </h3>
+                  <button
+                    onClick={() =>
+                      isEdit ? setEditEvent(null) : setShowCreateModal(false)
+                    }
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <MdClose size={24} />
+                  </button>
+                </div>
+
+                <div className="p-8 overflow-y-auto space-y-6">
+                  {/* Tên & Loại */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Tên sự kiện
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="VD: VeloX Fest 2026..."
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Loại xe tham gia
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="VD: MTB, Road, Touring..."
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        value={formData.bikeType}
+                        onChange={(e) =>
+                          setFormData({ ...formData, bikeType: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Thời gian */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Ngày bắt đầu
+                      </label>
+                      <input
+                        type="date"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all text-slate-700"
+                        value={formData.startDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            startDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Ngày kết thúc
+                      </label>
+                      <input
+                        type="date"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all text-slate-700"
+                        value={formData.endDate}
+                        onChange={(e) =>
+                          setFormData({ ...formData, endDate: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Địa điểm */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Khu vực (Tên Tòa nhà/Công viên)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="VD: Công viên Yên Sở"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        value={formData.location}
+                        onChange={(e) =>
+                          setFormData({ ...formData, location: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Địa chỉ chi tiết (Đường, Quận)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="VD: Hoàng Mai, Hà Nội"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        value={formData.address}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tỷ lệ phí */}
+                  <div className="grid grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Cọc Bán (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:border-orange-500 outline-none transition-all font-medium text-slate-900"
+                        value={formData.sellerDepositRate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sellerDepositRate: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Cọc Mua (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:border-orange-500 outline-none transition-all font-medium text-slate-900"
+                        value={formData.buyerDepositRate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            buyerDepositRate: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">
+                        Phí Sàn (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="w-full px-3 py-2.5 bg-white border border-orange-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all font-medium text-orange-700"
+                        value={formData.platformFeeRate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            platformFeeRate: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Trạng thái
+                    </label>
+                    <select
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all appearance-none font-medium text-slate-700"
+                      value={formData.status}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
+                    >
+                      <option value="draft">Bản nháp</option>
+                      <option value="upcoming">Sắp diễn ra</option>
+                      <option value="completed">Đã kết thúc</option>
+                      <option value="cancelled">Đã hủy</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
+                  <button
+                    onClick={() =>
+                      isEdit ? setEditEvent(null) : setShowCreateModal(false)
+                    }
+                    className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={() =>
+                      isEdit ? handleSaveEdit(formData) : handleCreateEvent()
+                    }
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-orange-500 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center gap-2"
+                  >
+                    {isEdit ? "Lưu thay đổi" : "Tạo sự kiện"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 };

@@ -32,19 +32,19 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (usernameOrEmail, password) => {
     setLoading(true);
     try {
-      const data = await authService.login(username, password);
+      const data = await authService.login(usernameOrEmail, password);
 
       if (data?.result?.token) {
         const token = data.result.token;
         const decoded = jwtDecode(token);
 
-        // Đảm bảo lấy rõ ràng avatar và fullName từ Token Backend gửi về
         const userPayload = {
-          username: username,
-          role: decoded.scope || "USER",
+          // Ưu tiên lấy Username thực từ token (nếu có), nếu không có mới dùng dữ liệu người dùng nhập
+          username: decoded.sub || usernameOrEmail,
+          role: decoded.scope || decoded.role || "USER",
           avatar: decoded.avatar || "",
           fullName: decoded.FullName || "",
           ...decoded,
