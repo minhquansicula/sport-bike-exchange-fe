@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { MOCK_BIKES } from "../../../mockData/bikes";
 import BikeCard from "../components/BikeCard";
 import BikeFilter from "../components/BikeFilter";
+import { bikeService } from "../../../services/bikeService"; // Đảm bảo đúng đường dẫn
 import {
   MdSort,
   MdSearchOff,
@@ -12,6 +12,10 @@ import { useSearchParams } from "react-router-dom";
 
 const BikeListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // --- STATE LƯU DỮ LIỆU API ---
+  const [bikes, setBikes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // --- 1. CONFIG PHÂN TRANG ---
   const ITEMS_PER_PAGE = 12;
@@ -27,6 +31,29 @@ const BikeListPage = () => {
     location: "",
   });
 
+  // Gọi API Lấy dữ liệu xe
+  useEffect(() => {
+    const fetchBikes = async () => {
+      try {
+        setLoading(true);
+        const response = await bikeService.getAllBikeListings();
+        // Backend trả về ApiResponse có bọc dữ liệu trong biến result
+        if (response && response.result) {
+          // Lọc ra các xe đang ở trạng thái AVAILABLE
+          const availableBikes = response.result.filter(
+            (b) => b.status === "AVAILABLE",
+          );
+          setBikes(availableBikes);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách xe:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBikes();
+  }, []);
+
   useEffect(() => {
     const querySearch = searchParams.get("search");
     if (querySearch) {
@@ -37,37 +64,37 @@ const BikeListPage = () => {
   // State sắp xếp
   const [sortOrder, setSortOrder] = useState("newest");
 
-  // --- 2. LOGIC LỌC & SẮP XẾP DỮ LIỆU (Giữ nguyên của bạn) ---
+  // --- 2. LOGIC LỌC & SẮP XẾP DỮ LIỆU ---
   const filteredBikes = useMemo(() => {
-    return MOCK_BIKES.filter((bike) => {
-      if (
-        filters.search &&
-        !bike.name.toLowerCase().includes(filters.search.toLowerCase())
-      )
-        return false;
-      if (filters.minPrice && bike.price < Number(filters.minPrice))
-        return false;
-      if (filters.maxPrice && bike.price > Number(filters.maxPrice))
-        return false;
-      if (filters.type && bike.type !== filters.type) return false;
-      if (filters.brand && bike.brand !== filters.brand) return false;
-      if (filters.location && !bike.location.includes(filters.location))
-        return false;
-      return true;
-    }).sort((a, b) => {
-      switch (sortOrder) {
-        case "price_asc":
-          return a.price - b.price;
-        case "price_desc":
-          return b.price - a.price;
-        default:
-          return b.id - a.id;
-      }
-    });
-  }, [filters, sortOrder]);
+    return bikes
+      .filter((bike) => {
+        // Map đúng tên trường từ DB: title thay vì name, category thay vì type
+        if (
+          filters.search &&
+          !bike.title?.toLowerCase().includes(filters.search.toLowerCase())
+        )
+          return false;
+        if (filters.minPrice && bike.price < Number(filters.minPrice))
+          return false;
+        if (filters.maxPrice && bike.price > Number(filters.maxPrice))
+          return false;
+        if (filters.type && bike.category !== filters.type) return false;
+        if (filters.brand && bike.brand !== filters.brand) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortOrder) {
+          case "price_asc":
+            return a.price - b.price;
+          case "price_desc":
+            return b.price - a.price;
+          default: // newest
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+      });
+  }, [bikes, filters, sortOrder]);
 
-  // --- 3. LOGIC CẮT TRANG (MỚI THÊM) ---
-  // Mỗi khi filter thay đổi, reset về trang 1
+  // --- 3. LOGIC CẮT TRANG ---
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortOrder]);
@@ -134,12 +161,20 @@ const BikeListPage = () => {
 
           {/* CỘT PHẢI: DANH SÁCH XE */}
           <div className="lg:col-span-3">
-            {currentBikes.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+              </div>
+            ) : currentBikes.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {/* Render danh sách đã cắt trang (currentBikes) thay vì toàn bộ (filteredBikes) */}
-                  {currentBikes.map((bike) => (
-                    <BikeCard key={bike.id} bike={bike} />
+                  {currentBikes.map((bike, index) => (
+                    <BikeCard
+                      key={
+                        bike.listingId || bike.listing_id || bike.id || index
+                      }
+                      bike={bike}
+                    />
                   ))}
                 </div>
 

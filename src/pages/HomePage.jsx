@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BikeCard from "../features/bicycle/components/BikeCard";
-import { MOCK_BIKES } from "../mockData/bikes";
-// Import Icons
+import { bikeService } from "../services/bikeService"; // Đảm bảo đúng đường dẫn
 import {
   MdArrowForward,
   MdVerifiedUser,
@@ -13,7 +12,31 @@ import {
 
 const HomePage = () => {
   const [keyword, setKeyword] = useState("");
+  const [latestBikes, setLatestBikes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Gọi API lấy danh sách 8 xe mới nhất
+  useEffect(() => {
+    const fetchLatestBikes = async () => {
+      try {
+        const response = await bikeService.getAllBikeListings();
+        if (response && response.result) {
+          const sortedBikes = response.result
+            .filter((b) => b.status === "AVAILABLE")
+            .sort((a, b) => b.listingId - a.listingId) // Sắp xếp ID lớn (mới nhất) lên đầu
+            .slice(0, 8); // Chỉ lấy 8 chiếc
+
+          setLatestBikes(sortedBikes);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải xe mới nhất:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLatestBikes();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -22,13 +45,9 @@ const HomePage = () => {
     }
   };
 
-  // 👇 THÊM DÒNG NÀY: Chỉ lấy 4 xe mới nhất để hiển thị
-  // (Bạn có thể đổi số 4 thành 8 nếu muốn hiện nhiều hơn)
-  const latestBikes = MOCK_BIKES.slice(0, 8);
-
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* ... (Phần 1: HERO SECTION giữ nguyên) ... */}
+      {/* --- 1. HERO SECTION --- */}
       <div className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-orange-700 z-0"></div>
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] z-0 mix-blend-overlay"></div>
@@ -81,7 +100,6 @@ const HomePage = () => {
                 Tìm Xe
               </button>
             </form>
-
             <p className="mt-4 text-sm text-gray-400">
               *Hơn 100+ điểm giao dịch trên toàn quốc hỗ trợ kiểm tra xe
             </p>
@@ -89,7 +107,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* --- 2. LATEST BIKES (Đã sửa logic hiển thị ít xe) --- */}
+      {/* --- 2. LATEST BIKES --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
           <div>
@@ -109,15 +127,23 @@ const HomePage = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* 👇 SỬA Ở ĐÂY: Dùng latestBikes thay vì MOCK_BIKES */}
-          {latestBikes.map((bike) => (
-            <BikeCard key={bike.id} bike={bike} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {latestBikes.map((bike, index) => (
+              <BikeCard
+                key={bike.listingId || bike.listing_id || bike.id || index}
+                bike={bike}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* --- 3. WHY US (Giữ nguyên) --- */}
+      {/* --- 3. WHY US --- */}
       <div className="bg-zinc-50 py-24 border-t border-zinc-100">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -173,7 +199,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* --- 4. CTA BANNER (Giữ nguyên) --- */}
+      {/* --- 4. CTA BANNER --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="relative rounded-3xl p-12 md:p-20 text-center overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-black to-orange-800 z-0"></div>
