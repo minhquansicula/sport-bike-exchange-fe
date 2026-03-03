@@ -1,30 +1,15 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
+import { eventService } from "../../../services/eventService";
 import {
   MdLocationOn,
   MdCalendarToday,
   MdStorefront,
   MdCheckCircle,
-  MdOutlineDirectionsBike,
   MdLocalOffer,
   MdWarning,
 } from "react-icons/md";
-
-// Mock data chi tiết 1 sự kiện
-const EVENT_DETAIL = {
-  id: 1,
-  title: "VeloX Fest 2026",
-  date: "Chủ Nhật, 15/03/2026 | 08:00 - 17:00",
-  location: "Công viên Yên Sở, Quận Hoàng Mai, TP. Hà Nội",
-  image:
-    "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2000",
-  description:
-    "Cơ hội tuyệt vời để trải nghiệm thực tế, lái thử và mua bán hàng trăm mẫu xe đạp thể thao chất lượng cao. Mang xe của bạn đến để được kiểm định và bán ngay tại sự kiện!",
-  // Admin quy định:
-  allowedBrands: ["Trek", "Giant", "Specialized"],
-  allowedCategories: ["MTB", "Road"],
-};
 
 const MOCK_EVENT_BIKES = [
   {
@@ -48,9 +33,26 @@ const MOCK_EVENT_BIKES = [
 ];
 
 const EventDetailPage = () => {
-  const { id } = useParams(); // Lấy ID sự kiện từ URL
+  const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [eventDetail, setEventDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventDetail = async () => {
+      try {
+        const response = await eventService.getEventById(id);
+        setEventDetail(response.result);
+      } catch (error) {
+        console.error("Lỗi khi tải chi tiết sự kiện:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEventDetail();
+  }, [id]);
 
   const handleRegisterSell = () => {
     if (!user) {
@@ -58,19 +60,30 @@ const EventDetailPage = () => {
       navigate("/login");
       return;
     }
-    // Chuyển sang trang đăng xe, truyền ID sự kiện
     navigate(`/post-bike?eventId=${id}`);
   };
 
-  const handleRegisterView = () => {
-    if (!user) {
-      alert("Vui lòng đăng nhập để đăng ký tham quan!");
-      navigate("/login");
-      return;
-    }
-    // Gọi API đăng ký tham quan ở đây
-    alert("Đăng ký tới xem thành công! Hẹn gặp bạn tại sự kiện nhé.");
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Đang tải...
+      </div>
+    );
+  }
+
+  if (!eventDetail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Sự kiện không tồn tại.
+      </div>
+    );
+  }
+
+  // Tạm dùng ảnh và mô tả mặc định
+  const fallbackImage =
+    "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2000";
+  const defaultDescription =
+    "Cơ hội tuyệt vời để trải nghiệm thực tế, lái thử và mua bán hàng trăm mẫu xe đạp thể thao chất lượng cao. Mang xe của bạn đến để được kiểm định và bán ngay tại sự kiện!";
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans">
@@ -78,20 +91,22 @@ const EventDetailPage = () => {
       <div className="bg-zinc-900 text-white relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: `url(${EVENT_DETAIL.image})` }}
+          style={{ backgroundImage: `url(${fallbackImage})` }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-transparent"></div>
 
         <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="max-w-2xl">
             <span className="inline-block px-4 py-1.5 bg-purple-600 text-white rounded-full text-sm font-bold tracking-wide mb-6 uppercase shadow-lg">
-              Đang mở đăng ký
+              {eventDetail.status === "ongoing"
+                ? "Đang diễn ra"
+                : "Sắp diễn ra"}
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
-              {EVENT_DETAIL.title}
+              {eventDetail.name}
             </h1>
             <p className="text-lg text-gray-300 mb-10 leading-relaxed">
-              {EVENT_DETAIL.description}
+              {defaultDescription}
             </p>
 
             <div className="flex flex-wrap gap-4">
@@ -102,13 +117,6 @@ const EventDetailPage = () => {
                 <MdLocalOffer size={24} />
                 Đăng ký bán xe
               </button>
-              {/* <button
-                onClick={handleRegisterView}
-                className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-xl font-bold text-lg transition-all flex items-center gap-2 hover:-translate-y-1"
-              >
-                <MdOutlineDirectionsBike size={24} />
-                Đăng ký tới xem
-              </button> */}
             </div>
           </div>
         </div>
@@ -123,7 +131,8 @@ const EventDetailPage = () => {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-lg">Thời gian</h3>
-              <p className="text-gray-500 mt-1">{EVENT_DETAIL.date}</p>
+              <p className="text-gray-500 mt-1">Từ: {eventDetail.startDate}</p>
+              <p className="text-gray-500">Đến: {eventDetail.endDate}</p>
             </div>
           </div>
 
@@ -133,7 +142,8 @@ const EventDetailPage = () => {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-lg">Địa điểm</h3>
-              <p className="text-gray-500 mt-1">{EVENT_DETAIL.location}</p>
+              <p className="text-gray-500 mt-1">{eventDetail.location}</p>
+              <p className="text-gray-500 text-sm">{eventDetail.address}</p>
             </div>
           </div>
 
@@ -146,17 +156,13 @@ const EventDetailPage = () => {
                 Quy định sự kiện
               </h3>
               <p className="text-gray-600 mt-1 text-sm">
-                <strong>Hãng xe:</strong>{" "}
-                {EVENT_DETAIL.allowedBrands.join(", ")}
-                <br />
-                <strong>Loại xe:</strong>{" "}
-                {EVENT_DETAIL.allowedCategories.join(", ")}
+                <strong>Loại xe ưu tiên:</strong> {eventDetail.bikeType}
               </p>
             </div>
           </div>
         </div>
 
-        {/* DANH SÁCH XE THAM GIA */}
+        {/* DANH SÁCH XE THAM GIA (Mock) */}
         <div className="mb-8 flex items-end justify-between">
           <div>
             <h2 className="text-3xl font-black text-gray-900 flex items-center gap-3">
@@ -185,7 +191,6 @@ const EventDetailPage = () => {
                   <MdCheckCircle /> Đã duyệt
                 </div>
               </div>
-
               <div className="p-5 flex flex-col flex-1">
                 <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
                   {bike.title}
@@ -200,7 +205,6 @@ const EventDetailPage = () => {
                   <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                   <span>Độ mới: {bike.condition}</span>
                 </div>
-
                 <div className="mt-auto flex items-center justify-between">
                   <p className="text-xl font-black text-orange-600">
                     {bike.price.toLocaleString("vi-VN")}đ

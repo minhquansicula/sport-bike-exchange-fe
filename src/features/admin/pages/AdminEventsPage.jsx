@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MdSearch,
   MdFilterList,
@@ -12,42 +12,12 @@ import {
   MdArrowForward,
   MdClose,
   MdSave,
-  MdPercent,
-  MdMoreVert,
 } from "react-icons/md";
-
-// --- MOCK DATA ---
-const MOCK_EVENTS = [
-  {
-    eventId: 1,
-    name: "VeloX Fest 2026 - Lễ Hội Xe Đạp Thể Thao",
-    bikeType: "MTB, Road",
-    location: "Công viên Yên Sở",
-    address: "Hoàng Mai, Hà Nội",
-    startDate: "2026-03-15",
-    endDate: "2026-03-17",
-    sellerDepositRate: 10.0,
-    buyerDepositRate: 10.0,
-    platformFeeRate: 2.5,
-    status: "upcoming",
-  },
-  {
-    eventId: 2,
-    name: "Touring Weekend Expo TP.HCM",
-    bikeType: "Touring",
-    location: "Phố đi bộ Nguyễn Huệ",
-    address: "Quận 1, TP.HCM",
-    startDate: "2026-04-04",
-    endDate: "2026-04-05",
-    sellerDepositRate: 15.0,
-    buyerDepositRate: 15.0,
-    platformFeeRate: 3.0,
-    status: "draft",
-  },
-];
+import { eventService } from "../../../services/eventService"; // Nhớ import đúng đường dẫn
 
 const AdminEventsPage = () => {
-  const [events, setEvents] = useState(MOCK_EVENTS);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -62,16 +32,35 @@ const AdminEventsPage = () => {
     address: "",
     startDate: "",
     endDate: "",
-    sellerDepositRate: 0,
-    buyerDepositRate: 0,
-    platformFeeRate: 0,
     status: "draft",
   });
 
+  // 1. Lấy danh sách sự kiện từ API
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await eventService.getAllEvents();
+      // API Backend bọc data trong 'result'
+      if (response && response.result) {
+        setEvents(response.result);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách sự kiện:", error);
+      alert("Không thể tải danh sách sự kiện!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  // Lọc dữ liệu trên Frontend
   const filteredEvents = events.filter((evt) => {
     const matchSearch =
-      evt.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      evt.location.toLowerCase().includes(searchTerm.toLowerCase());
+      evt.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      evt.location?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus =
       filterStatus === "all" ? true : evt.status === filterStatus;
     return matchSearch && matchStatus;
@@ -105,41 +94,70 @@ const AdminEventsPage = () => {
     );
   };
 
-  const handleSaveEdit = (updatedEvent) => {
-    setEvents(
-      events.map((e) =>
-        e.eventId === updatedEvent.eventId ? updatedEvent : e,
-      ),
-    );
-    setEditEvent(null);
+  // 2. Xử lý Tạo sự kiện mới qua API
+  const handleCreateEvent = async () => {
+    try {
+      // Gọi API POST /events
+      // Dùng authService hoặc api client đã cấu hình token nếu API yêu cầu ROLE_ADMIN
+      await eventService.createEvent(newEvent);
+
+      alert("Tạo sự kiện thành công!");
+      setShowCreateModal(false);
+      setNewEvent({
+        name: "",
+        bikeType: "",
+        location: "",
+        address: "",
+        startDate: "",
+        endDate: "",
+        status: "draft",
+      });
+      // Load lại danh sách
+      fetchEvents();
+    } catch (error) {
+      console.error("Lỗi tạo sự kiện:", error);
+      alert("Lỗi khi tạo sự kiện, vui lòng thử lại.");
+    }
   };
 
-  const handleCreateEvent = () => {
-    const newId =
-      events.length > 0 ? Math.max(...events.map((e) => e.eventId)) + 1 : 1;
-    const eventToAdd = {
-      ...newEvent,
-      eventId: newId,
-    };
-    setEvents([eventToAdd, ...events]);
-    setShowCreateModal(false);
-    setNewEvent({
-      name: "",
-      bikeType: "",
-      location: "",
-      address: "",
-      startDate: "",
-      endDate: "",
-      sellerDepositRate: 0,
-      buyerDepositRate: 0,
-      platformFeeRate: 0,
-      status: "draft",
-    });
+  // 3. Xử lý Cập nhật qua API
+  const handleSaveEdit = async (updatedEvent) => {
+    try {
+      // Tạo body request (loại bỏ các trường dư thừa nếu cần, chỉ gửi trường trong EventUpdateRequest)
+      const requestBody = {
+        name: updatedEvent.name,
+        bikeType: updatedEvent.bikeType,
+        location: updatedEvent.location,
+        address: updatedEvent.address,
+        startDate: updatedEvent.startDate,
+        endDate: updatedEvent.endDate,
+        status: updatedEvent.status,
+      };
+
+      // Gọi API PUT /events/{eventId}
+      await eventService.updateEvent(updatedEvent.eventId, requestBody);
+
+      alert("Cập nhật thành công!");
+      setEditEvent(null);
+      // Load lại danh sách
+      fetchEvents();
+    } catch (error) {
+      console.error("Lỗi cập nhật sự kiện:", error);
+      alert("Lỗi khi cập nhật sự kiện!");
+    }
   };
 
-  const handleDelete = (id) => {
+  // 4. Xử lý Xóa qua API
+  const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
-      setEvents(events.filter((e) => e.eventId !== id));
+      try {
+        await eventService.deleteEvent(id);
+        // Load lại danh sách sau khi xóa
+        fetchEvents();
+      } catch (error) {
+        console.error("Lỗi xóa sự kiện:", error);
+        alert("Lỗi khi xóa sự kiện!");
+      }
     }
   };
 
@@ -201,7 +219,9 @@ const AdminEventsPage = () => {
               <p className="text-sm text-slate-500 font-medium mb-1">
                 {stat.label}
               </p>
-              <p className="text-3xl font-black text-slate-900">{stat.value}</p>
+              <p className="text-3xl font-black text-slate-900">
+                {loading ? "-" : stat.value}
+              </p>
             </div>
           </div>
         ))}
@@ -234,6 +254,7 @@ const AdminEventsPage = () => {
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="upcoming">Sắp diễn ra</option>
+            <option value="ongoing">Đang diễn ra</option>
             <option value="draft">Bản nháp</option>
             <option value="completed">Đã kết thúc</option>
           </select>
@@ -241,115 +262,108 @@ const AdminEventsPage = () => {
       </div>
 
       {/* Events Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {filteredEvents.map((evt) => (
-          <div
-            key={evt.eventId}
-            className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
-          >
-            {/* Card Header */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex flex-wrap items-center gap-3 mb-2">
-                <span className="text-sm font-bold text-slate-400">
-                  #{evt.eventId}
-                </span>
-                {getStatusBadge(evt.status)}
-              </div>
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => setEditEvent(evt)}
-                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                >
-                  <MdEdit size={20} />
-                </button>
-                <button
-                  onClick={() => handleDelete(evt.eventId)}
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                >
-                  <MdDeleteOutline size={20} />
-                </button>
-              </div>
-            </div>
-
-            <h3 className="text-xl font-bold text-slate-900 leading-tight mb-4 group-hover:text-orange-600 transition-colors">
-              {evt.name}
-            </h3>
-
-            {/* Card Info */}
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-3 text-sm text-slate-600">
-                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
-                  <MdCalendarToday size={16} className="text-slate-400" />
-                </div>
-                <span className="font-medium">
-                  {evt.startDate} <span className="text-slate-400 mx-1">→</span>{" "}
-                  {evt.endDate}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-slate-600">
-                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
-                  <MdLocationOn size={18} className="text-slate-400" />
-                </div>
-                <span className="truncate font-medium">
-                  {evt.location}{" "}
-                  <span className="text-slate-400 font-normal">
-                    ({evt.address})
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            {/* Metrics Pills */}
-            <div className="flex flex-wrap gap-3 mt-auto mb-6">
-              <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
-                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
-                  Loại
-                </span>
-                <span className="text-sm font-bold text-slate-800">
-                  {evt.bikeType}
-                </span>
-              </div>
-              <div className="px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-100 flex items-center gap-2">
-                <span className="text-[10px] text-orange-600/80 uppercase font-bold tracking-wider">
-                  Cọc
-                </span>
-                <span className="text-sm font-bold text-orange-700">
-                  {evt.sellerDepositRate}% / {evt.buyerDepositRate}%
-                </span>
-              </div>
-              <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-2">
-                <span className="text-[10px] text-emerald-600/80 uppercase font-bold tracking-wider">
-                  Phí
-                </span>
-                <span className="text-sm font-bold text-emerald-700">
-                  {evt.platformFeeRate}%
-                </span>
-              </div>
-            </div>
-
-            {/* Card Footer */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
-              <button
-                onClick={() => setViewEvent(evt)}
-                className="text-sm font-bold text-slate-900 hover:text-orange-600 flex items-center gap-1.5 transition-colors"
-              >
-                Xem chi tiết <MdArrowForward size={18} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredEvents.length === 0 && (
-        <div className="text-center py-20 bg-white border border-slate-100 rounded-3xl">
-          <MdEvent size={48} className="mx-auto text-slate-300 mb-4" />
-          <h3 className="text-lg font-bold text-slate-800 mb-1">
-            Không tìm thấy sự kiện
-          </h3>
-          <p className="text-slate-500">
-            Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
-          </p>
+      {loading ? (
+        <div className="text-center py-10 text-slate-500">
+          Đang tải dữ liệu...
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {filteredEvents.map((evt) => (
+              <div
+                key={evt.eventId}
+                className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+              >
+                {/* Card Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <span className="text-sm font-bold text-slate-400">
+                      #{evt.eventId}
+                    </span>
+                    {getStatusBadge(evt.status)}
+                  </div>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setEditEvent(evt)}
+                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                    >
+                      <MdEdit size={20} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(evt.eventId)}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                    >
+                      <MdDeleteOutline size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-900 leading-tight mb-4 group-hover:text-orange-600 transition-colors">
+                  {evt.name}
+                </h3>
+
+                {/* Card Info */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
+                      <MdCalendarToday size={16} className="text-slate-400" />
+                    </div>
+                    <span className="font-medium">
+                      {evt.startDate}{" "}
+                      <span className="text-slate-400 mx-1">→</span>{" "}
+                      {evt.endDate}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
+                      <MdLocationOn size={18} className="text-slate-400" />
+                    </div>
+                    <span className="truncate font-medium">
+                      {evt.location}{" "}
+                      <span className="text-slate-400 font-normal">
+                        ({evt.address})
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Metrics Pills */}
+                <div className="flex flex-wrap gap-3 mt-auto mb-6">
+                  <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
+                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                      Loại
+                    </span>
+                    <span className="text-sm font-bold text-slate-800">
+                      {evt.bikeType}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Footer */}
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+                  <button
+                    onClick={() => setViewEvent(evt)}
+                    className="text-sm font-bold text-slate-900 hover:text-orange-600 flex items-center gap-1.5 transition-colors"
+                  >
+                    Xem chi tiết <MdArrowForward size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!loading && filteredEvents.length === 0 && (
+            <div className="text-center py-20 bg-white border border-slate-100 rounded-3xl">
+              <MdEvent size={48} className="mx-auto text-slate-300 mb-4" />
+              <h3 className="text-lg font-bold text-slate-800 mb-1">
+                Không tìm thấy sự kiện
+              </h3>
+              <p className="text-slate-500">
+                Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       {/* POPUP XEM CHI TIẾT */}
@@ -405,33 +419,6 @@ const AdminEventsPage = () => {
                   <span className="block text-slate-500 mb-1">Địa điểm</span>
                   <strong className="text-slate-900">
                     {viewEvent.location} - {viewEvent.address}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    Cọc Bán
-                  </span>
-                  <strong className="text-xl text-slate-900">
-                    {viewEvent.sellerDepositRate}%
-                  </strong>
-                </div>
-                <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                  <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    Cọc Mua
-                  </span>
-                  <strong className="text-xl text-slate-900">
-                    {viewEvent.buyerDepositRate}%
-                  </strong>
-                </div>
-                <div className="p-4 rounded-2xl border border-orange-100 bg-orange-50 shadow-sm">
-                  <span className="block text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">
-                    Phí Sàn
-                  </span>
-                  <strong className="text-xl text-orange-700">
-                    {viewEvent.platformFeeRate}%
                   </strong>
                 </div>
               </div>
@@ -571,61 +558,6 @@ const AdminEventsPage = () => {
                     </div>
                   </div>
 
-                  {/* Tỷ lệ phí */}
-                  <div className="grid grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                        Cọc Bán (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:border-orange-500 outline-none transition-all font-medium text-slate-900"
-                        value={formData.sellerDepositRate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            sellerDepositRate: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                        Cọc Mua (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg focus:border-orange-500 outline-none transition-all font-medium text-slate-900"
-                        value={formData.buyerDepositRate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            buyerDepositRate: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">
-                        Phí Sàn (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="w-full px-3 py-2.5 bg-white border border-orange-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all font-medium text-orange-700"
-                        value={formData.platformFeeRate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            platformFeeRate: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
                       Trạng thái
@@ -639,6 +571,7 @@ const AdminEventsPage = () => {
                     >
                       <option value="draft">Bản nháp</option>
                       <option value="upcoming">Sắp diễn ra</option>
+                      <option value="ongoing">Đang diễn ra</option>
                       <option value="completed">Đã kết thúc</option>
                       <option value="cancelled">Đã hủy</option>
                     </select>
