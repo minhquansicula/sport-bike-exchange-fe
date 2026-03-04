@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MOCK_BIKES } from "../../../mockData/bikes";
+import { bikeService } from "../../../services/bikeService";
 import formatCurrency from "../../../utils/formatCurrency";
-import { useAuth } from "../../../hooks/useAuth"; // 👇 Import thêm useAuth
+import { useAuth } from "../../../hooks/useAuth";
 
-// Import Icons
 import {
   MdLocationOn,
   MdVerified,
@@ -18,19 +17,45 @@ import {
   MdFitnessCenter,
   MdCalendarToday,
   MdErrorOutline,
-  MdBlock, // Thêm icon báo khóa
+  MdBlock,
+  MdColorLens,
+  MdPrecisionManufacturing,
+  MdHardware,
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
   const { id } = useParams();
-  const { user } = useAuth(); // 👇 Lấy thông tin user
+  const { user } = useAuth();
 
-  // Tìm xe trong mock data
-  const bike = MOCK_BIKES.find((b) => b.id === Number(id)) || MOCK_BIKES[0];
+  const [bike, setBike] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Logic kiểm tra role
+  useEffect(() => {
+    const fetchBikeDetail = async () => {
+      try {
+        const response = await bikeService.getBikeListingById(id);
+        if (response && response.result) {
+          setBike(response.result);
+        }
+      } catch (error) {
+        console.error("Lỗi tải chi tiết xe:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBikeDetail();
+  }, [id]);
+
   const userRole = String(user?.role || "").toUpperCase();
   const isStaff = userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   if (!bike)
     return (
@@ -42,7 +67,6 @@ const BikeDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4">
-        {/* --- BREADCRUMB --- */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link to="/" className="hover:text-orange-600 transition-colors">
             Trang chủ
@@ -53,19 +77,20 @@ const BikeDetailPage = () => {
           </Link>
           <span>/</span>
           <span className="text-zinc-900 font-medium truncate max-w-[200px]">
-            {bike.name}
+            {bike.title}
           </span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* --- CỘT TRÁI: ẢNH & CHI TIẾT --- */}
           <div className="lg:col-span-2 space-y-8">
-            {/* 1. Hình ảnh chính */}
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative group">
               <div className="aspect-[16/10] overflow-hidden bg-gray-100">
                 <img
-                  src={bike.image}
-                  alt={bike.name}
+                  src={
+                    bike.image_url ||
+                    "https://via.placeholder.com/800x600?text=No+Image"
+                  }
+                  alt={bike.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -75,25 +100,23 @@ const BikeDetailPage = () => {
               </div>
             </div>
 
-            {/* 2. Thông tin Xe & Mô tả */}
             <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
               <h1 className="text-2xl md:text-3xl font-black text-zinc-900 mb-4 leading-tight">
-                {bike.name}
+                {bike.title}
               </h1>
 
               <div className="flex flex-wrap gap-3 mb-8">
                 <span className="px-3 py-1 bg-gray-100 text-zinc-600 rounded-md text-sm font-medium">
-                  Thương hiệu: <strong>{bike.brand}</strong>
+                  Thương hiệu: <strong>{bike.brandName}</strong>
                 </span>
                 <span className="px-3 py-1 bg-gray-100 text-zinc-600 rounded-md text-sm font-medium">
-                  Loại xe: <strong>{bike.type}</strong>
+                  Loại xe: <strong>{bike.categoryName}</strong>
                 </span>
                 <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-md text-sm font-medium flex items-center gap-1">
-                  <MdLocationOn /> {bike.location}
+                  <MdLocationOn /> VeloX Hub (Kiểm tra xe trực tiếp)
                 </span>
               </div>
 
-              {/* Specs Grid */}
               <div className="mb-8">
                 <h3 className="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
                   <MdInfoOutline className="text-orange-600" /> Thông số kỹ
@@ -105,7 +128,7 @@ const BikeDetailPage = () => {
                       <MdStraighten /> Size Khung
                     </span>
                     <span className="font-semibold text-zinc-800 block truncate">
-                      {bike.frame || "N/A"}
+                      {bike.frameSize || "N/A"}
                     </span>
                   </div>
 
@@ -114,7 +137,7 @@ const BikeDetailPage = () => {
                       <MdDonutLarge /> Size Bánh
                     </span>
                     <span className="font-semibold text-zinc-800 block truncate">
-                      {bike.wheel || "N/A"}
+                      {bike.wheelSize || "N/A"}
                     </span>
                   </div>
 
@@ -123,7 +146,9 @@ const BikeDetailPage = () => {
                       <MdCalendarToday /> Năm SX
                     </span>
                     <span className="font-semibold text-zinc-800 block truncate">
-                      {bike.year || "N/A"}
+                      {bike.yearManufacture
+                        ? new Date(bike.yearManufacture).getFullYear()
+                        : "N/A"}
                     </span>
                   </div>
 
@@ -132,7 +157,7 @@ const BikeDetailPage = () => {
                       <MdErrorOutline /> Phanh
                     </span>
                     <span className="font-semibold text-zinc-800 block truncate">
-                      {bike.brake || "N/A"}
+                      {bike.brakeType || "N/A"}
                     </span>
                   </div>
 
@@ -141,7 +166,34 @@ const BikeDetailPage = () => {
                       <MdSpeed /> Bộ đề
                     </span>
                     <span className="font-semibold text-zinc-800 block truncate">
-                      {bike.gears || "N/A"}
+                      {bike.drivetrain || bike.numberOfGears || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdColorLens /> Màu sắc
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.color || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdPrecisionManufacturing /> Chất liệu khung
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.frameMaterial || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdHardware /> Loại Phuộc
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.forkType || "N/A"}
                     </span>
                   </div>
 
@@ -156,7 +208,6 @@ const BikeDetailPage = () => {
                 </div>
               </div>
 
-              {/* Mô tả */}
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 mb-2">
                   Mô tả từ người bán
@@ -168,49 +219,46 @@ const BikeDetailPage = () => {
               </div>
             </div>
 
-            {/* 3. Thông tin Người bán */}
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <img
-                  src={
-                    bike.seller?.avatar ||
-                    "https://ui-avatars.com/api/?name=User"
-                  }
+                  src="https://ui-avatars.com/api/?name=Seller"
                   alt="Seller"
                   className="w-14 h-14 rounded-full border-2 border-orange-100"
                 />
                 <div>
                   <h4 className="font-bold text-zinc-900 text-lg">
-                    {bike.seller?.name || bike.posterName}
+                    {bike.sellerName || "Người dùng Ẩn danh"}
                   </h4>
                   <p className="text-sm text-gray-500 flex items-center gap-1">
-                    <MdVerified className="text-blue-500" /> Thành viên uy tín
+                    <MdVerified className="text-blue-500" /> Thành viên hệ thống
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xs text-gray-400 block">Tham gia từ</span>
-                <span className="text-sm font-medium text-zinc-700">2024</span>
+                <span className="text-xs text-gray-400 block">Đăng ngày</span>
+                <span className="text-sm font-medium text-zinc-700">
+                  {bike.createdAt
+                    ? new Date(bike.createdAt).toLocaleDateString("vi-VN")
+                    : "N/A"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* --- CỘT PHẢI: HÀNH ĐỘNG (Sticky) --- */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-              {/* Card Giá & Hành Động */}
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50">
                 <div className="mb-6 border-b border-gray-100 pb-4">
                   <p className="text-sm text-gray-500 mb-1">Giá niêm yết</p>
                   <div className="flex items-end gap-3">
                     <span className="text-3xl md:text-4xl font-black text-zinc-900 tracking-tight">
-                      {formatCurrency(bike.price)}
+                      {formatCurrency(bike.price || 0)}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  {/* 👇 ĐÃ CẬP NHẬT LOGIC NÚT DỰA VÀO ROLE 👇 */}
                   {isStaff ? (
                     <button
                       disabled
@@ -235,7 +283,6 @@ const BikeDetailPage = () => {
                 </div>
               </div>
 
-              {/* Card Lưu ý An toàn */}
               <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
                 <h4 className="font-bold text-blue-800 flex items-center gap-2 mb-3">
                   <MdSecurity /> An toàn tuyệt đối

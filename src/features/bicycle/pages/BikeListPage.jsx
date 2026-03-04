@@ -1,7 +1,8 @@
+// File: src/pages/BikeListPage.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import BikeCard from "../components/BikeCard";
 import BikeFilter from "../components/BikeFilter";
-import { bikeService } from "../../../services/bikeService"; // Đảm bảo đúng đường dẫn
+import { bikeService } from "../../../services/bikeService";
 import {
   MdSort,
   MdSearchOff,
@@ -13,15 +14,12 @@ import { useSearchParams } from "react-router-dom";
 const BikeListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // --- STATE LƯU DỮ LIỆU API ---
   const [bikes, setBikes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- 1. CONFIG PHÂN TRANG ---
   const ITEMS_PER_PAGE = 12;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // State lưu bộ lọc
   const [filters, setFilters] = useState({
     search: "",
     minPrice: "",
@@ -31,17 +29,16 @@ const BikeListPage = () => {
     location: "",
   });
 
-  // Gọi API Lấy dữ liệu xe
   useEffect(() => {
     const fetchBikes = async () => {
       try {
         setLoading(true);
         const response = await bikeService.getAllBikeListings();
-        // Backend trả về ApiResponse có bọc dữ liệu trong biến result
         if (response && response.result) {
-          // Lọc ra các xe đang ở trạng thái AVAILABLE
           const availableBikes = response.result.filter(
-            (b) => b.status === "AVAILABLE",
+            (b) =>
+              b.status?.toUpperCase() === "AVAILABLE" ||
+              b.status === "Available",
           );
           setBikes(availableBikes);
         }
@@ -61,14 +58,11 @@ const BikeListPage = () => {
     }
   }, [searchParams]);
 
-  // State sắp xếp
   const [sortOrder, setSortOrder] = useState("newest");
 
-  // --- 2. LOGIC LỌC & SẮP XẾP DỮ LIỆU ---
   const filteredBikes = useMemo(() => {
     return bikes
       .filter((bike) => {
-        // Map đúng tên trường từ DB: title thay vì name, category thay vì type
         if (
           filters.search &&
           !bike.title?.toLowerCase().includes(filters.search.toLowerCase())
@@ -78,8 +72,13 @@ const BikeListPage = () => {
           return false;
         if (filters.maxPrice && bike.price > Number(filters.maxPrice))
           return false;
-        if (filters.type && bike.category !== filters.type) return false;
-        if (filters.brand && bike.brand !== filters.brand) return false;
+        if (
+          filters.type &&
+          bike.categoryName !== filters.type &&
+          bike.bikeType !== filters.type
+        )
+          return false;
+        if (filters.brand && bike.brandName !== filters.brand) return false;
         return true;
       })
       .sort((a, b) => {
@@ -88,13 +87,12 @@ const BikeListPage = () => {
             return a.price - b.price;
           case "price_desc":
             return b.price - a.price;
-          default: // newest
+          default:
             return new Date(b.createdAt) - new Date(a.createdAt);
         }
       });
   }, [bikes, filters, sortOrder]);
 
-  // --- 3. LOGIC CẮT TRANG ---
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortOrder]);
@@ -125,7 +123,6 @@ const BikeListPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
       <div className="container mx-auto px-4">
-        {/* Header trang */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black text-zinc-900">Mua xe đạp cũ</h1>
@@ -150,7 +147,6 @@ const BikeListPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* CỘT TRÁI: BỘ LỌC */}
           <div className="hidden lg:block lg:col-span-1">
             <BikeFilter
               filters={filters}
@@ -159,7 +155,6 @@ const BikeListPage = () => {
             />
           </div>
 
-          {/* CỘT PHẢI: DANH SÁCH XE */}
           <div className="lg:col-span-3">
             {loading ? (
               <div className="flex justify-center items-center h-64">
@@ -170,15 +165,12 @@ const BikeListPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {currentBikes.map((bike, index) => (
                     <BikeCard
-                      key={
-                        bike.listingId || bike.listing_id || bike.id || index
-                      }
+                      key={bike.listingId || bike.id || index}
                       bike={bike}
                     />
                   ))}
                 </div>
 
-                {/* --- UI PHÂN TRANG --- */}
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center gap-2 mt-12">
                     <button
@@ -214,7 +206,6 @@ const BikeListPage = () => {
                 )}
               </>
             ) : (
-              // Empty State
               <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
                   <MdSearchOff size={32} />

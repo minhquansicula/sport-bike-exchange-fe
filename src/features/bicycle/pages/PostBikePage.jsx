@@ -18,6 +18,9 @@ import {
   MdFitnessCenter,
   MdCalendarToday,
   MdErrorOutline,
+  MdColorLens,
+  MdPrecisionManufacturing,
+  MdHardware,
 } from "react-icons/md";
 
 const PostBikePage = () => {
@@ -39,8 +42,13 @@ const PostBikePage = () => {
     condition: 90,
     price: "",
     description: "",
+    color: "",
+    frameMaterial: "",
+    forkType: "",
     images: [],
   });
+
+  const [errors, setErrors] = useState({});
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -48,6 +56,7 @@ const PostBikePage = () => {
       ...prev,
       images: [...prev.images, ...files],
     }));
+    if (errors.images) setErrors((prev) => ({ ...prev, images: null }));
   };
 
   const removeImage = (index) => {
@@ -57,11 +66,50 @@ const PostBikePage = () => {
     }));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    const currentYear = new Date().getFullYear();
+
+    if (!formData.title.trim()) {
+      newErrors.title = "Vui lòng nhập tiêu đề tin đăng.";
+    } else if (formData.title.length < 10) {
+      newErrors.title = "Tiêu đề quá ngắn (tối thiểu 10 ký tự).";
+    }
+
+    if (!formData.brand) newErrors.brand = "Vui lòng chọn thương hiệu.";
+    if (!formData.model.trim()) newErrors.model = "Vui lòng nhập dòng xe.";
+    if (!formData.category) newErrors.category = "Vui lòng chọn loại xe.";
+
+    if (formData.manufactureYear) {
+      const year = parseInt(formData.manufactureYear);
+      if (year < 1900 || year > currentYear + 1) {
+        newErrors.manufactureYear = `Năm sản xuất không hợp lệ (1900 - ${currentYear + 1}).`;
+      }
+    }
+
+    if (formData.weight && parseFloat(formData.weight) <= 0) {
+      newErrors.weight = "Trọng lượng phải lớn hơn 0.";
+    }
+
+    if (!formData.price) {
+      newErrors.price = "Vui lòng nhập giá bán.";
+    } else if (parseFloat(formData.price) <= 0) {
+      newErrors.price = "Giá bán phải lớn hơn 0.";
+    }
+
+    if (formData.images.length === 0) {
+      newErrors.images = "Vui lòng tải lên ít nhất 1 hình ảnh thực tế của xe.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.images.length === 0) {
-      alert("Vui lòng tải lên ít nhất 1 hình ảnh thực tế của xe!");
+    if (!validateForm()) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -69,34 +117,44 @@ const PostBikePage = () => {
 
     try {
       const uploadedImageUrls = [];
-      for (const file of formData.images) {
-        const response = await uploadService.uploadImage(file);
+
+      const uploadPromises = formData.images.map((file) =>
+        uploadService.uploadImage(file),
+      );
+      const uploadResponses = await Promise.all(uploadPromises);
+
+      uploadResponses.forEach((response) => {
         if (response && response.result) {
           uploadedImageUrls.push(response.result);
         }
+      });
+
+      if (uploadedImageUrls.length === 0) {
+        throw new Error("Không thể tải ảnh lên server.");
       }
 
       const imageUrlString = uploadedImageUrls.join(",");
 
       const payload = {
-        sellerId: user?.userId,
-        // eventId: 1, // ID sự kiện mặc định (Bắt buộc theo backend, cần đổi lại theo logic DB thực tế)
         title: formData.title,
-        brand: formData.brand,
-        model: formData.model,
-        category: formData.category,
-        frameSize: formData.frameSize,
-        wheelSize: formData.wheelSize,
-        manufactureYear: formData.manufactureYear
-          ? parseInt(formData.manufactureYear)
-          : null,
-        brakeType: formData.brakeType,
-        transmission: formData.transmission,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        price: formData.price ? parseFloat(formData.price) : null,
         description: `Độ mới: ${formData.condition}%. \n${formData.description}`,
-        imageUrl: imageUrlString,
-        status: "pending",
+        price: formData.price ? parseFloat(formData.price) : 0,
+        brandName: formData.brand,
+        categoryName: formData.category,
+        bikeType: formData.category,
+        wheelSize: formData.wheelSize,
+        brakeType: formData.brakeType,
+        drivetrain: formData.transmission,
+        numberOfGears: formData.transmission,
+        frameSize: formData.frameSize,
+        yearManufacture: formData.manufactureYear
+          ? parseInt(formData.manufactureYear)
+          : 0,
+        condition: parseInt(formData.condition),
+        color: formData.color || "Không rõ",
+        frameMaterial: formData.frameMaterial || "Không rõ",
+        forkType: formData.forkType || "Không rõ",
+        image_url: imageUrlString,
       };
 
       await bikeService.createBikeListing(payload);
@@ -105,7 +163,9 @@ const PostBikePage = () => {
       navigate("/bikes");
     } catch (error) {
       console.error("Lỗi khi đăng tin:", error);
-      alert("Đăng tin thất bại. Vui lòng kiểm tra lại kết nối hoặc thông tin.");
+      alert(
+        error.response?.data?.message || "Đăng tin thất bại. Vui lòng thử lại.",
+      );
     } finally {
       setLoading(false);
     }
@@ -177,14 +237,21 @@ const PostBikePage = () => {
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="Ví dụ: Cần bán Trek Marlin 7 Gen 2 còn rất mới..."
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all ${
+                    errors.title ? "border-red-500" : "border-gray-200"
+                  }`}
                   value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    if (errors.title) setErrors({ ...errors, title: null });
+                  }}
                 />
+                {errors.title && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.title}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -192,12 +259,14 @@ const PostBikePage = () => {
                   Thương hiệu <span className="text-red-500">*</span>
                 </label>
                 <select
-                  required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all cursor-pointer"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all cursor-pointer ${
+                    errors.brand ? "border-red-500" : "border-gray-200"
+                  }`}
                   value={formData.brand}
-                  onChange={(e) =>
-                    setFormData({ ...formData, brand: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, brand: e.target.value });
+                    if (errors.brand) setErrors({ ...errors, brand: null });
+                  }}
                 >
                   <option value="">Chọn hãng xe</option>
                   <option value="Trek">Trek</option>
@@ -208,6 +277,11 @@ const PostBikePage = () => {
                   <option value="Galaxy">Galaxy</option>
                   <option value="Khác">Khác</option>
                 </select>
+                {errors.brand && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.brand}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -216,14 +290,21 @@ const PostBikePage = () => {
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="VD: Marlin 7, XTC 800..."
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all ${
+                    errors.model ? "border-red-500" : "border-gray-200"
+                  }`}
                   value={formData.model}
-                  onChange={(e) =>
-                    setFormData({ ...formData, model: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, model: e.target.value });
+                    if (errors.model) setErrors({ ...errors, model: null });
+                  }}
                 />
+                {errors.model && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.model}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -231,12 +312,15 @@ const PostBikePage = () => {
                   Loại xe (Category) <span className="text-red-500">*</span>
                 </label>
                 <select
-                  required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all cursor-pointer"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all cursor-pointer ${
+                    errors.category ? "border-red-500" : "border-gray-200"
+                  }`}
                   value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, category: e.target.value });
+                    if (errors.category)
+                      setErrors({ ...errors, category: null });
+                  }}
                 >
                   <option value="">Chọn loại xe</option>
                   <option value="Road">Road (Đua)</option>
@@ -244,6 +328,11 @@ const PostBikePage = () => {
                   <option value="Touring">Touring (Đường phố)</option>
                   <option value="Fixed Gear">Fixed Gear</option>
                 </select>
+                {errors.category && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.category}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -255,16 +344,27 @@ const PostBikePage = () => {
                   <input
                     type="number"
                     placeholder="VD: 2022"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
+                      errors.manufactureYear
+                        ? "border-red-500"
+                        : "border-gray-200"
+                    }`}
                     value={formData.manufactureYear}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         manufactureYear: e.target.value,
-                      })
-                    }
+                      });
+                      if (errors.manufactureYear)
+                        setErrors({ ...errors, manufactureYear: null });
+                    }}
                   />
                 </div>
+                {errors.manufactureYear && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.manufactureYear}
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -386,12 +486,84 @@ const PostBikePage = () => {
                     type="number"
                     step="0.1"
                     placeholder="VD: 10.5"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    className={`w-full pl-9 pr-3 py-2.5 bg-gray-50 border rounded-lg focus:border-orange-500 outline-none text-sm font-medium ${
+                      errors.weight ? "border-red-500" : "border-gray-200"
+                    }`}
                     value={formData.weight}
+                    onChange={(e) => {
+                      setFormData({ ...formData, weight: e.target.value });
+                      if (errors.weight) setErrors({ ...errors, weight: null });
+                    }}
+                  />
+                </div>
+                {errors.weight && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.weight}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Màu sắc
+                </label>
+                <div className="relative">
+                  <MdColorLens className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: Đen nhám..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.color}
                     onChange={(e) =>
-                      setFormData({ ...formData, weight: e.target.value })
+                      setFormData({ ...formData, color: e.target.value })
                     }
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Chất liệu khung
+                </label>
+                <div className="relative">
+                  <MdPrecisionManufacturing className="absolute top-3 left-3 text-gray-400" />
+                  <select
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium cursor-pointer appearance-none"
+                    value={formData.frameMaterial}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        frameMaterial: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Chọn chất liệu</option>
+                    <option value="Nhôm (Aluminum)">Nhôm (Aluminum)</option>
+                    <option value="Carbon">Carbon</option>
+                    <option value="Thép (Steel)">Thép (Steel)</option>
+                    <option value="Titanium">Titanium</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Loại Phuộc
+                </label>
+                <div className="relative">
+                  <MdHardware className="absolute top-3 left-3 text-gray-400" />
+                  <select
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium cursor-pointer appearance-none"
+                    value={formData.forkType}
+                    onChange={(e) =>
+                      setFormData({ ...formData, forkType: e.target.value })
+                    }
+                  >
+                    <option value="">Chọn loại phuộc</option>
+                    <option value="Phuộc đơ (Rigid)">Phuộc đơ (Rigid)</option>
+                    <option value="Phuộc nhún lò xo">Phuộc nhún lò xo</option>
+                    <option value="Phuộc hơi">Phuộc hơi</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -402,10 +574,14 @@ const PostBikePage = () => {
               <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm">
                 3
               </span>
-              Hình ảnh thực tế
+              Hình ảnh thực tế <span className="text-red-500 ml-1">*</span>
             </h3>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:bg-gray-50 transition-colors relative">
+            <div
+              className={`border-2 border-dashed rounded-2xl p-8 text-center hover:bg-gray-50 transition-colors relative ${
+                errors.images ? "border-red-500 bg-red-50" : "border-gray-300"
+              }`}
+            >
               <input
                 type="file"
                 multiple
@@ -414,11 +590,23 @@ const PostBikePage = () => {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mb-3">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
+                    errors.images
+                      ? "bg-red-100 text-red-500"
+                      : "bg-purple-50 text-purple-500"
+                  }`}
+                >
                   <MdCloudUpload size={24} />
                 </div>
-                <p className="font-bold text-gray-700">
-                  Kéo thả hoặc bấm để tải ảnh lên
+                <p
+                  className={`font-bold ${
+                    errors.images ? "text-red-600" : "text-gray-700"
+                  }`}
+                >
+                  {errors.images
+                    ? errors.images
+                    : "Kéo thả hoặc bấm để tải ảnh lên"}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">Hỗ trợ JPG, PNG</p>
               </div>
@@ -472,15 +660,22 @@ const PostBikePage = () => {
                   </div>
                   <input
                     type="number"
-                    required
                     placeholder="Nhập giá bán..."
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all font-bold text-lg"
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all font-bold text-lg ${
+                      errors.price ? "border-red-500" : "border-gray-200"
+                    }`}
                     value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, price: e.target.value });
+                      if (errors.price) setErrors({ ...errors, price: null });
+                    }}
                   />
                 </div>
+                {errors.price && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.price}
+                  </p>
+                )}
               </div>
 
               <div>

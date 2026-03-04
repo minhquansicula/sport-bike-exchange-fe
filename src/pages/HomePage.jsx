@@ -1,7 +1,8 @@
+// File: src/pages/HomePage.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BikeCard from "../features/bicycle/components/BikeCard";
-import { bikeService } from "../services/bikeService"; // Đảm bảo đúng đường dẫn
+import { bikeService } from "../services/bikeService";
 import {
   MdArrowForward,
   MdVerifiedUser,
@@ -16,16 +17,19 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Gọi API lấy danh sách 8 xe mới nhất
   useEffect(() => {
     const fetchLatestBikes = async () => {
       try {
         const response = await bikeService.getAllBikeListings();
         if (response && response.result) {
           const sortedBikes = response.result
-            .filter((b) => b.status === "AVAILABLE")
-            .sort((a, b) => b.listingId - a.listingId) // Sắp xếp ID lớn (mới nhất) lên đầu
-            .slice(0, 8); // Chỉ lấy 8 chiếc
+            .filter(
+              (b) =>
+                b.status?.toUpperCase() === "AVAILABLE" ||
+                b.status === "Available",
+            )
+            .sort((a, b) => b.listingId - a.listingId)
+            .slice(0, 8);
 
           setLatestBikes(sortedBikes);
         }
@@ -47,7 +51,6 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* --- 1. HERO SECTION --- */}
       <div className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-orange-700 z-0"></div>
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] z-0 mix-blend-overlay"></div>
@@ -78,7 +81,6 @@ const HomePage = () => {
               để chốt đơn an toàn.
             </p>
 
-            {/* SEARCH BAR */}
             <form
               onSubmit={handleSearch}
               className="bg-white/10 backdrop-blur-md p-2 rounded-full max-w-2xl mx-auto border border-white/20 flex items-center shadow-2xl relative z-20"
@@ -107,7 +109,6 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* --- 2. LATEST BIKES --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
           <div>
@@ -134,16 +135,12 @@ const HomePage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {latestBikes.map((bike, index) => (
-              <BikeCard
-                key={bike.listingId || bike.listing_id || bike.id || index}
-                bike={bike}
-              />
+              <BikeCard key={bike.listingId || bike.id || index} bike={bike} />
             ))}
           </div>
         )}
       </div>
 
-      {/* --- 3. WHY US --- */}
       <div className="bg-zinc-50 py-24 border-t border-zinc-100">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -199,7 +196,6 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* --- 4. CTA BANNER --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="relative rounded-3xl p-12 md:p-20 text-center overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-black to-orange-800 z-0"></div>

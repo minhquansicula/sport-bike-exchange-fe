@@ -18,7 +18,9 @@ const BikeCard = ({ bike }) => {
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         <img
           src={
-            bike.imageUrl || "https://via.placeholder.com/400x300?text=No+Image"
+            bike.image_url ||
+            bike.imageUrl ||
+            "https://placehold.co/400x300/eeeeee/999999?text=Chua+co+anh"
           }
           alt={bike.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
