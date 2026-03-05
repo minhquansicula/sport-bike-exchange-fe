@@ -12,18 +12,4 @@ export const authService = {
     const response = await api.post("/users", userData);
     return response.data;
   },
-
-  requestMagicLink: async (email) => {
-    const response = await api.post(
-      `/auth/request-magic-link?email=${encodeURIComponent(email)}`,
-    );
-    return response.data; // Đã thêm .data
-  },
-
-  verifyMagicLink: async (token) => {
-    const response = await api.post(
-      `/auth/verify-magic-link?token=${encodeURIComponent(token)}`,
-    );
-    return response.data; // Đã thêm .data
-  },
 };
