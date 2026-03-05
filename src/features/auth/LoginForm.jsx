@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { authService } from "../../services/authService"; // Import thêm authService
 import {
   MdLock,
   MdVisibility,
@@ -8,20 +9,27 @@ import {
   MdArrowBack,
   MdLogin,
   MdPerson,
+  MdEmail,
+  MdAutoAwesome,
 } from "react-icons/md";
 
 const LoginForm = () => {
-  const [usernameOrEmail, setUsernameOrEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  // State chung
   const [isLoading, setIsLoading] = useState(false);
-
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Logic chuyển trang theo role
+  // State cho Đăng nhập Mật khẩu
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  // State cho Đăng nhập Magic Link
+  const [isMagicLinkMode, setIsMagicLinkMode] = useState(false);
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicMessage, setMagicMessage] = useState({ type: "", text: "" });
+
   const getRedirectPath = (role) => {
     const roleLower = role ? role.toLowerCase() : "";
     if (roleLower.includes("admin")) return "/admin";
@@ -29,21 +37,18 @@ const LoginForm = () => {
     return "/";
   };
 
-  const handleSubmit = async (e) => {
+  // Xử lý đăng nhập Mật khẩu
+  const handlePasswordLogin = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      // Gọi hàm login đã sửa ở Context
       const user = await login(usernameOrEmail, password);
-
-      // Điều hướng
       const redirectPath = getRedirectPath(user.role);
       navigate(redirectPath);
     } catch (err) {
       console.error("Login Error:", err);
-      // Hiển thị thông báo lỗi từ backend trả về (nếu có)
       setError(
         err.response?.data?.message ||
           "Tên đăng nhập hoặc mật khẩu không đúng.",
@@ -53,8 +58,31 @@ const LoginForm = () => {
     }
   };
 
+  // Xử lý gửi Magic Link
+  const handleMagicLinkSubmit = async (e) => {
+    e.preventDefault();
+    setMagicMessage({ type: "", text: "" });
+    setIsLoading(true);
+
+    try {
+      await authService.requestMagicLink(magicEmail);
+      setMagicMessage({
+        type: "success",
+        text: "Link đăng nhập đã được gửi! Vui lòng kiểm tra hộp thư (cả thư rác).",
+      });
+    } catch (err) {
+      setMagicMessage({
+        type: "error",
+        text:
+          err.response?.data?.message ||
+          "Không tìm thấy tài khoản với email này.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleLogin = () => {
-    // Logic đăng nhập Google sẽ được thêm vào đây
     console.log("Đăng nhập bằng Google");
   };
 
@@ -65,7 +93,7 @@ const LoginForm = () => {
       <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-50px] left-[20%] w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
-      <div className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white relative z-10">
+      <div className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white relative z-10 transition-all duration-500">
         <Link
           to="/"
           className="absolute top-6 left-6 text-gray-400 hover:text-orange-600 transition-colors"
@@ -75,121 +103,188 @@ const LoginForm = () => {
 
         <div className="text-center mb-8">
           <div className="inline-block p-3 rounded-full bg-orange-100 text-orange-600 mb-4 shadow-sm">
-            <MdLogin size={32} />
+            {isMagicLinkMode ? (
+              <MdAutoAwesome size={32} />
+            ) : (
+              <MdLogin size={32} />
+            )}
           </div>
-          <h2 className="text-3xl font-black text-gray-800 tracking-tight">
-            Chào mừng trở lại!
+          <h2 className="text-3xl font-black text-gray-800 tracking-tight transition-all">
+            {isMagicLinkMode ? "Đăng nhập nhanh" : "Chào mừng trở lại!"}
           </h2>
           <p className="text-gray-500 text-sm mt-2">
-            Đăng nhập để vào hệ thống
+            {isMagicLinkMode
+              ? "Không cần mật khẩu. Nhận link đăng nhập qua email."
+              : "Đăng nhập để vào hệ thống"}
           </p>
         </div>
 
-        {/* Thông báo lỗi */}
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 text-sm flex items-center gap-2 animate-pulse">
-            <span>⚠️</span> {error}
+        {/* ================= FORM MAGIC LINK ================= */}
+        {isMagicLinkMode ? (
+          <div className="animate-in slide-in-from-right-4 duration-300">
+            {magicMessage.text && (
+              <div
+                className={`p-4 rounded-xl text-sm font-medium mb-6 flex items-start gap-2 ${
+                  magicMessage.type === "success"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200 animate-pulse"
+                }`}
+              >
+                <span>{magicMessage.type === "success" ? "✨" : "⚠️"}</span>
+                {magicMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleMagicLinkSubmit} className="space-y-5">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
+                  <MdEmail size={20} />
+                </div>
+                <input
+                  type="email"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
+                  placeholder="Nhập địa chỉ Email của bạn"
+                  value={magicEmail}
+                  onChange={(e) => setMagicEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-slate-900/30 hover:bg-orange-500 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Đang gửi..." : "Nhận Link Đăng Nhập"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsMagicLinkMode(false)}
+                className="w-full text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors py-2"
+              >
+                Quay lại dùng mật khẩu
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* ================= FORM PASSWORD BÌNH THƯỜNG ================= */
+          <div className="animate-in slide-in-from-left-4 duration-300">
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 text-sm flex items-center gap-2 animate-pulse">
+                <span>⚠️</span> {error}
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordLogin} className="space-y-5">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
+                  <MdPerson size={20} />
+                </div>
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
+                  placeholder="Username hoặc Email"
+                  value={usernameOrEmail}
+                  onChange={(e) => setUsernameOrEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
+                  <MdLock size={20} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
+                  placeholder="Mật khẩu"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <MdVisibilityOff size={20} />
+                  ) : (
+                    <MdVisibility size={20} />
+                  )}
+                </button>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline bg-transparent border-none cursor-pointer"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Đang xử lý..." : "Đăng Nhập"}
+              </button>
+            </form>
+
+            <div className="relative mt-6 mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">
+                  Hoặc đăng nhập với
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Nút Magic Link */}
+              <button
+                onClick={() => setIsMagicLinkMode(true)}
+                type="button"
+                className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-all active:scale-[0.98] text-sm"
+              >
+                <MdAutoAwesome size={18} className="text-yellow-400" />
+                Link Email
+              </button>
+
+              {/* Nút Đăng nhập Google */}
+              <button
+                onClick={handleGoogleLogin}
+                type="button"
+                className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 hover:shadow-sm transition-all active:scale-[0.98] text-sm"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google
+              </button>
+            </div>
           </div>
         )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Username / Email */}
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
-              <MdPerson size={20} />
-            </div>
-            <input
-              type="text"
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
-              placeholder="Username hoặc Email"
-              value={usernameOrEmail}
-              onChange={(e) => setUsernameOrEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-orange-600 transition-colors">
-              <MdLock size={20} />
-            </div>
-            <input
-              type={showPassword ? "text" : "password"}
-              className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white focus:border-transparent outline-none transition-all"
-              placeholder="Mật khẩu"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button
-              type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <MdVisibilityOff size={20} />
-              ) : (
-                <MdVisibility size={20} />
-              )}
-            </button>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline bg-transparent border-none cursor-pointer"
-            >
-              Quên mật khẩu?
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Đang xử lý..." : "Đăng Nhập"}
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div className="relative mt-6 mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">
-              Hoặc đăng nhập với
-            </span>
-          </div>
-        </div>
-
-        {/* Nút Đăng nhập Google */}
-        <button
-          onClick={handleGoogleLogin}
-          type="button"
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 py-3.5 rounded-xl font-bold hover:bg-gray-50 hover:shadow-md transition-all active:scale-[0.98]"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              fill="#4285F4"
-            />
-            <path
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              fill="#EA4335"
-            />
-          </svg>
-          Google
-        </button>
 
         <p className="mt-8 text-center text-sm text-gray-600">
           Chưa có tài khoản?{" "}

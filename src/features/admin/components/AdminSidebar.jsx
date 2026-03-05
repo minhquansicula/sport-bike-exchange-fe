@@ -13,14 +13,13 @@ import {
   MdPedalBike,
   MdVerified,
   MdWarning,
-  MdEvent, // 👈 ĐÃ THÊM IMPORT NÀY
+  MdEvent,
 } from "react-icons/md";
 
 const AdminSidebar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  // Menu items cho Admin
   const menuSections = [
     {
       title: "Tổng quan",
@@ -32,7 +31,6 @@ const AdminSidebar = () => {
         },
       ],
     },
-    // 👇 Phần này bạn đã thêm nhưng thiếu import icon nên bị lỗi
     {
       title: "Quản lý sự kiện",
       items: [
@@ -50,7 +48,6 @@ const AdminSidebar = () => {
           label: "Duyệt tin đăng",
           path: "/admin/posts",
           icon: <MdArticle size={22} />,
-          badge: "12",
         },
       ],
     },
@@ -61,7 +58,6 @@ const AdminSidebar = () => {
           label: "Giao dịch chờ xử lý",
           path: "/admin/transactions",
           icon: <MdSwapHoriz size={22} />,
-          badge: "5",
         },
       ],
     },
@@ -97,7 +93,6 @@ const AdminSidebar = () => {
           label: "Xử lý vi phạm",
           path: "/admin/violations",
           icon: <MdWarning size={22} />,
-          badge: "3",
         },
       ],
     },
@@ -107,7 +102,6 @@ const AdminSidebar = () => {
 
   return (
     <aside className="fixed top-0 left-0 bottom-0 w-[260px] bg-zinc-900 text-white flex flex-col z-50 shadow-xl">
-      {/* Logo Section */}
       <div className="h-16 flex items-center px-6 border-b border-zinc-800">
         <Link to="/" className="flex items-center gap-2 group">
           <MdPedalBike className="text-orange-500 text-3xl" />
@@ -122,7 +116,6 @@ const AdminSidebar = () => {
         </Link>
       </div>
 
-      {/* User Info */}
       {user && (
         <div className="p-4 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -146,7 +139,6 @@ const AdminSidebar = () => {
         </div>
       )}
 
-      {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         {menuSections.map((section, sectionIndex) => (
           <div key={sectionIndex} className="mb-6">
@@ -174,17 +166,6 @@ const AdminSidebar = () => {
                     <span className="text-sm font-medium flex-1">
                       {item.label}
                     </span>
-                    {item.badge && (
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                          isActive(item.path)
-                            ? "bg-white text-orange-600"
-                            : "bg-orange-600 text-white"
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
                   </Link>
                 </li>
               ))}
@@ -193,7 +174,6 @@ const AdminSidebar = () => {
         ))}
       </nav>
 
-      {/* Logout Button */}
       <div className="p-4 border-t border-zinc-800">
         <button
           onClick={logout}

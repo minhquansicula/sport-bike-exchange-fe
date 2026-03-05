@@ -13,7 +13,8 @@ import {
   MdClose,
   MdSave,
 } from "react-icons/md";
-import { eventService } from "../../../services/eventService"; // Nhớ import đúng đường dẫn
+import { eventService } from "../../../services/eventService";
+import LocationPicker from "../../../components/common/LocationPicker"; // Import bản đồ
 
 const AdminEventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -25,11 +26,14 @@ const AdminEventsPage = () => {
   const [editEvent, setEditEvent] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Thêm latitude và longitude vào state mặc định
   const [newEvent, setNewEvent] = useState({
     name: "",
     bikeType: "",
     location: "",
     address: "",
+    latitude: null,
+    longitude: null,
     startDate: "",
     endDate: "",
     status: "draft",
@@ -40,7 +44,6 @@ const AdminEventsPage = () => {
     try {
       setLoading(true);
       const response = await eventService.getAllEvents();
-      // API Backend bọc data trong 'result'
       if (response && response.result) {
         setEvents(response.result);
       }
@@ -97,8 +100,6 @@ const AdminEventsPage = () => {
   // 2. Xử lý Tạo sự kiện mới qua API
   const handleCreateEvent = async () => {
     try {
-      // Gọi API POST /events
-      // Dùng authService hoặc api client đã cấu hình token nếu API yêu cầu ROLE_ADMIN
       await eventService.createEvent(newEvent);
 
       alert("Tạo sự kiện thành công!");
@@ -108,11 +109,12 @@ const AdminEventsPage = () => {
         bikeType: "",
         location: "",
         address: "",
+        latitude: null,
+        longitude: null,
         startDate: "",
         endDate: "",
         status: "draft",
       });
-      // Load lại danh sách
       fetchEvents();
     } catch (error) {
       console.error("Lỗi tạo sự kiện:", error);
@@ -123,23 +125,23 @@ const AdminEventsPage = () => {
   // 3. Xử lý Cập nhật qua API
   const handleSaveEdit = async (updatedEvent) => {
     try {
-      // Tạo body request (loại bỏ các trường dư thừa nếu cần, chỉ gửi trường trong EventUpdateRequest)
+      // Bổ sung thêm latitude và longitude vào request
       const requestBody = {
         name: updatedEvent.name,
         bikeType: updatedEvent.bikeType,
         location: updatedEvent.location,
         address: updatedEvent.address,
+        latitude: updatedEvent.latitude,
+        longitude: updatedEvent.longitude,
         startDate: updatedEvent.startDate,
         endDate: updatedEvent.endDate,
         status: updatedEvent.status,
       };
 
-      // Gọi API PUT /events/{eventId}
       await eventService.updateEvent(updatedEvent.eventId, requestBody);
 
       alert("Cập nhật thành công!");
       setEditEvent(null);
-      // Load lại danh sách
       fetchEvents();
     } catch (error) {
       console.error("Lỗi cập nhật sự kiện:", error);
@@ -152,7 +154,6 @@ const AdminEventsPage = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
       try {
         await eventService.deleteEvent(id);
-        // Load lại danh sách sau khi xóa
         fetchEvents();
       } catch (error) {
         console.error("Lỗi xóa sự kiện:", error);
@@ -446,7 +447,7 @@ const AdminEventsPage = () => {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
               <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                     {isEdit ? "Chỉnh sửa sự kiện" : "Tạo sự kiện mới"}
                   </h3>
@@ -460,7 +461,7 @@ const AdminEventsPage = () => {
                   </button>
                 </div>
 
-                <div className="p-8 overflow-y-auto space-y-6">
+                <div className="p-8 overflow-y-auto space-y-6 flex-1">
                   {/* Tên & Loại */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
@@ -528,9 +529,9 @@ const AdminEventsPage = () => {
 
                   {/* Địa điểm */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Khu vực (Tên Tòa nhà/Công viên)
+                        Khu vực (Tên Tòa nhà / Công viên)
                       </label>
                       <input
                         type="text"
@@ -542,18 +543,22 @@ const AdminEventsPage = () => {
                         }
                       />
                     </div>
-                    <div>
+
+                    {/* KHUNG BẢN ĐỒ LEAFLET */}
+                    <div className="md:col-span-2 relative z-10">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Địa chỉ chi tiết (Đường, Quận)
+                        Địa chỉ chi tiết (Tìm kiếm hoặc Click trên bản đồ)
                       </label>
-                      <input
-                        type="text"
-                        placeholder="VD: Hoàng Mai, Hà Nội"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
-                        value={formData.address}
-                        onChange={(e) =>
-                          setFormData({ ...formData, address: e.target.value })
-                        }
+                      <LocationPicker
+                        initialAddress={formData.address}
+                        onLocationSelect={(locationData) => {
+                          setFormData({
+                            ...formData,
+                            address: locationData.address,
+                            latitude: locationData.lat,
+                            longitude: locationData.lng,
+                          });
+                        }}
                       />
                     </div>
                   </div>
@@ -578,7 +583,7 @@ const AdminEventsPage = () => {
                   </div>
                 </div>
 
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 rounded-b-3xl">
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
                   <button
                     onClick={() =>
                       isEdit ? setEditEvent(null) : setShowCreateModal(false)

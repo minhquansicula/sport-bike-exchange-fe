@@ -1,33 +1,58 @@
-import api from "../config/api"; // Đảm bảo đường dẫn tới file config api của bạn là đúng
+import api from "../config/api";
+
+let eventsCache = null;
+let fetchEventsPromise = null;
 
 export const eventService = {
-  // Lấy tất cả sự kiện
-  getAllEvents: async () => {
-    const response = await api.get("/events");
-    return response.data;
+  getAllEvents: async (forceRefresh = false) => {
+    if (eventsCache && !forceRefresh) {
+      return eventsCache;
+    }
+
+    if (fetchEventsPromise && !forceRefresh) {
+      return fetchEventsPromise;
+    }
+
+    fetchEventsPromise = api
+      .get("/events")
+      .then((response) => {
+        eventsCache = response.data;
+        fetchEventsPromise = null;
+        return eventsCache;
+      })
+      .catch((error) => {
+        fetchEventsPromise = null;
+        throw error;
+      });
+
+    return fetchEventsPromise;
   },
 
-  // Lấy chi tiết 1 sự kiện theo ID
   getEventById: async (eventId) => {
     const response = await api.get(`/events/${eventId}`);
     return response.data;
   },
 
-  // Tạo sự kiện mới
   createEvent: async (eventData) => {
     const response = await api.post("/events", eventData);
+    eventService.clearCache();
     return response.data;
   },
 
-  // Cập nhật sự kiện
   updateEvent: async (eventId, eventData) => {
     const response = await api.put(`/events/${eventId}`, eventData);
+    eventService.clearCache();
     return response.data;
   },
 
-  // Xóa sự kiện
   deleteEvent: async (eventId) => {
     const response = await api.delete(`/events/${eventId}`);
+    eventService.clearCache();
     return response.data;
+  },
+
+  clearCache: () => {
+    eventsCache = null;
+    fetchEventsPromise = null;
   },
 };
