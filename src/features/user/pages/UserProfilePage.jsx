@@ -2,16 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTransaction } from "../../../context/TransactionContext";
 import { Link, useSearchParams } from "react-router-dom";
-import { MOCK_BIKES } from "../../../mockData/bikes";
 import { MdCameraAlt, MdVerified, MdLock } from "react-icons/md";
 import { userService } from "../../../services/userService";
 import { uploadService } from "../../../services/uploadService";
+import { bikeService } from "../../../services/bikeService";
 import ProfileSidebar from "../components/ProfileSidebar";
 import UserInfoTab from "../components/UserInfoTab";
 import MyBikesTab from "../components/MyBikesTab";
 import TransactionManagementTab from "../components/TransactionManagementTab";
 import TransactionHistoryTab from "../components/TransactionHistoryTab";
 import SecurityTab from "../components/SecurityTab";
+import { Toaster, toast } from "react-hot-toast";
 
 const UserProfilePage = () => {
   const { user, logout, updateUser } = useAuth();
@@ -24,6 +25,9 @@ const UserProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  const [myBikes, setMyBikes] = useState([]);
+  const [isBikesLoading, setIsBikesLoading] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -67,6 +71,38 @@ const UserProfilePage = () => {
     if (user) fetchUserInfo();
   }, [user]);
 
+  useEffect(() => {
+    const fetchMyBikes = async () => {
+      if (activeTab === "my-bikes") {
+        setIsBikesLoading(true);
+        try {
+          const response = await bikeService.getMyBikeListings();
+          setMyBikes(response.result || []);
+        } catch (error) {
+          console.error("Lỗi tải danh sách xe cá nhân:", error);
+        } finally {
+          setIsBikesLoading(false);
+        }
+      }
+    };
+    if (user) fetchMyBikes();
+  }, [activeTab, user]);
+
+  const handleDeleteBike = async (listingId) => {
+    if (window.confirm("Bạn có chắc chắn muốn gỡ bài đăng này không?")) {
+      try {
+        await bikeService.deleteBikeListing(listingId);
+        setMyBikes((prevBikes) =>
+          prevBikes.filter((bike) => bike.listingId !== listingId),
+        );
+        toast.success("Đã gỡ bài đăng thành công!");
+      } catch (error) {
+        console.error("Lỗi khi xóa bài đăng:", error);
+        toast.error("Gỡ bài thất bại, vui lòng thử lại.");
+      }
+    }
+  };
+
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
@@ -76,7 +112,7 @@ const UserProfilePage = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file ảnh!");
+      toast.error("Vui lòng chọn file ảnh!");
       return;
     }
 
@@ -96,11 +132,11 @@ const UserProfilePage = () => {
       await userService.updateUser(formData.id, updatePayload);
       setFormData((prev) => ({ ...prev, avatar: imageUrl }));
 
-      // ĐỒNG BỘ LÊN HEADER NGAY LẬP TỨC
       if (updateUser) updateUser({ avatar: imageUrl });
+      toast.success("Cập nhật ảnh đại diện thành công!");
     } catch (error) {
       console.error("Upload avatar lỗi:", error);
-      alert("Cập nhật avatar thất bại. Vui lòng thử lại.");
+      toast.error("Cập nhật avatar thất bại.");
     } finally {
       setIsUploading(false);
     }
@@ -128,20 +164,17 @@ const UserProfilePage = () => {
 
       await userService.updateUser(formData.id, updateData);
 
-      // ĐỒNG BỘ LÊN HEADER NGAY LẬP TỨC
       if (updateUser)
         updateUser({ fullName: formData.name, avatar: formData.avatar });
 
-      alert("Cập nhật hồ sơ thành công!");
+      toast.success("Cập nhật hồ sơ thành công!");
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
-      alert("Cập nhật thất bại.");
+      toast.error("Cập nhật thất bại.");
     } finally {
       setIsSaving(false);
     }
   };
-
-  const myBikes = MOCK_BIKES.slice(0, 3);
 
   if (isLoadingData && !formData.name && !user) {
     return (
@@ -168,7 +201,7 @@ const UserProfilePage = () => {
             Yêu cầu đăng nhập
           </h2>
           <p className="text-gray-500 mb-8">
-            Vui lòng đăng nhập để quản lý hồ sơ tại OldBike.
+            Vui lòng đăng nhập để quản lý hồ sơ tại VeloX.
           </p>
           <div className="space-y-3">
             <Link
@@ -191,6 +224,7 @@ const UserProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="relative mb-32">
           <div className="h-48 w-full bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-3xl shadow-lg relative overflow-hidden">
@@ -209,14 +243,12 @@ const UserProfilePage = () => {
                   src={
                     formData.avatar ||
                     user.avatar ||
-                    `https://ui-avatars.com/api/?name=${formData.name || user.name}&background=random&color=fff&background=ea580c`
+                    `https://ui-avatars.com/api/?name=${formData.name || user.name}&background=ea580c&color=fff`
                   }
                   alt="Avatar"
                   className={`w-full h-full object-cover rounded-full transition-opacity duration-300 ${isLoadingData ? "opacity-0" : "opacity-100"}`}
-                  onLoad={(e) => e.target.classList.remove("opacity-0")}
                 />
               </div>
-
               <input
                 type="file"
                 ref={fileInputRef}
@@ -227,7 +259,7 @@ const UserProfilePage = () => {
               <button
                 type="button"
                 onClick={triggerFileInput}
-                className="absolute bottom-0 right-0 p-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-md cursor-pointer transition-transform hover:scale-110"
+                className="absolute bottom-0 right-0 p-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-md transition-transform hover:scale-110"
                 disabled={isUploading}
               >
                 <MdCameraAlt />
@@ -239,7 +271,9 @@ const UserProfilePage = () => {
                 {formData.name || user.name}{" "}
                 <MdVerified className="text-blue-500 text-xl" />
               </h1>
-              <p className="text-gray-500 font-medium">Thành viên VeloX</p>
+              <p className="text-gray-500 font-medium uppercase text-xs tracking-wider">
+                Thành viên VeloX
+              </p>
             </div>
           </div>
         </div>
@@ -250,12 +284,13 @@ const UserProfilePage = () => {
               activeTab={activeTab}
               setActiveTab={handleSwitchTab}
               logout={logout}
+              transactions={transactions}
             />
           </div>
 
           <div className="lg:col-span-9">
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-8 min-h-[500px] transition-opacity duration-300 ${isLoadingData ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+              className={`bg-white rounded-[32px] shadow-sm border border-gray-100 p-8 min-h-[500px] transition-opacity duration-300 ${isLoadingData ? "opacity-60 pointer-events-none" : "opacity-100"}`}
             >
               {activeTab === "info" && (
                 <UserInfoTab
@@ -265,7 +300,15 @@ const UserProfilePage = () => {
                   loading={isSaving}
                 />
               )}
-              {activeTab === "my-bikes" && <MyBikesTab myBikes={myBikes} />}
+
+              {activeTab === "my-bikes" && (
+                <MyBikesTab
+                  myBikes={myBikes}
+                  isLoading={isBikesLoading}
+                  onDelete={handleDeleteBike}
+                />
+              )}
+
               {activeTab === "transaction-manage" && (
                 <TransactionManagementTab
                   transactions={transactions}
@@ -273,16 +316,17 @@ const UserProfilePage = () => {
                   sellerRejectTransaction={sellerRejectTransaction}
                 />
               )}
+
               {activeTab === "transactions-history" && (
                 <TransactionHistoryTab transactions={transactions} />
               )}
+
               {activeTab === "security" && <SecurityTab />}
+
               {activeTab === "notification" && (
-                <div className="animate-in fade-in duration-300">
-                  <h2 className="text-2xl font-bold text-zinc-900 mb-6 pb-4 border-b border-gray-100">
-                    Thông báo
-                  </h2>
-                  <p className="text-gray-500">Chưa có thông báo mới.</p>
+                <div className="animate-in fade-in duration-300 text-center py-20 text-gray-400">
+                  <MdVerified size={48} className="mx-auto opacity-20 mb-4" />
+                  <p className="font-medium">Chưa có thông báo mới.</p>
                 </div>
               )}
             </div>

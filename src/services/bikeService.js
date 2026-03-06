@@ -7,6 +7,8 @@ let bikesCache = null;
 // 2. Khởi tạo biến lưu trữ Promise để tránh gọi API trùng lặp cùng một thời điểm
 let fetchBikesPromise = null;
 
+let myBikesCache = null;
+
 export const bikeService = {
   createBikeListing: async (data) => {
     const response = await api.post("/post/create", data);
@@ -67,9 +69,19 @@ export const bikeService = {
     return response.data;
   },
 
-  // Hàm tiện ích để chủ động dọn dẹp cache từ bên ngoài Component nếu cần
+  getMyBikeListings: async (forceRefresh = false) => {
+    if (myBikesCache && !forceRefresh) {
+      return myBikesCache;
+    }
+
+    const response = await api.get("/post/my-posts");
+    myBikesCache = response.data;
+    return myBikesCache;
+  },
+
   clearCache: () => {
     bikesCache = null;
+    myBikesCache = null; // Xóa cả cache cá nhân
     fetchBikesPromise = null;
   },
 };

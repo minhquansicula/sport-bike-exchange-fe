@@ -29,7 +29,6 @@ import EventDetailPage from "./features/event-meeting/pages/EventDetailPage";
 // Các trang Auth
 import LoginForm from "./features/auth/LoginForm";
 import RegisterForm from "./features/auth/RegisterForm";
-import VerifyMagicLinkPage from "./features/auth/pages/VerifyMagicLinkPage";
 import UserProfilePage from "./features/user/pages/UserProfilePage";
 
 // Các trang Admin
@@ -77,10 +76,6 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: <RegisterForm />,
-      },
-      {
-        path: "/verify-magic-link",
-        element: <VerifyMagicLinkPage />,
       },
       {
         path: "/unauthorized",
