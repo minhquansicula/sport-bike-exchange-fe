@@ -6,12 +6,14 @@ import {
   MdSentimentDissatisfied,
 } from "react-icons/md";
 import { wishlistService } from "../../../services/wishlistService";
+import { useWishlist } from "../../../context/WishlistContext";
 import BikeCard from "../../bicycle/components/BikeCard";
 import api from "../../../config/api";
 
 const WishlistPage = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { wishlistIds, fetchWishlist: refreshContext } = useWishlist();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -22,7 +24,7 @@ const WishlistPage = () => {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [wishlistIds]); // Re-fetch khi wishlistIds thay đổi (do toggle từ nơi khác)
 
   const fetchWishlist = async () => {
     try {
