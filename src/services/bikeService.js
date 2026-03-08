@@ -58,14 +58,7 @@ export const bikeService = {
     return response.data;
   },
 
-  updatePostingStatus: async (listingId, statusData) => {
-    const response = await api.put(
-      `/post/updateStatus/${listingId}`,
-      statusData,
-    );
-    bikeService.clearCache(); // Tự động xóa cache khi đổi trạng thái xe
-    return response.data;
-  },
+  
 
   // Hàm tiện ích để chủ động dọn dẹp cache từ bên ngoài Component nếu cần
   clearCache: () => {
