@@ -9,7 +9,7 @@ import { wishlistService } from "../services/wishlistService";
 
 const WishlistContext = createContext();
 
-export const WishlistProvider = ({ children }) => {
+export const WishlistProvider = ({ children, onUnauthorized }) => {
   // Set chứa các listingId đã yêu thích
   const [wishlistIds, setWishlistIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
@@ -50,8 +50,11 @@ export const WishlistProvider = ({ children }) => {
     async (listingId) => {
       const token = localStorage.getItem("token");
       if (!token) {
-        // Chưa đăng nhập → thông báo hoặc redirect
-        alert("Vui lòng đăng nhập để sử dụng danh sách yêu thích!");
+        if (typeof onUnauthorized === "function") {
+          onUnauthorized();
+        } else {
+          alert("Vui lòng đăng nhập để sử dụng danh sách yêu thích!");
+        }
         return;
       }
 
