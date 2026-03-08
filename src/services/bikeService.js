@@ -72,24 +72,4 @@ export const bikeService = {
     bikesCache = null;
     fetchBikesPromise = null;
   },
-
-  // Tìm kiếm xe theo từ khóa, danh mục, khoảng giá
-  searchBikeListings: async ({ keyword, category, minPrice, maxPrice, page = 1, pageSize = 12 } = {}) => {
-    const params = new URLSearchParams();
-    if (keyword) params.append("keyword", keyword);
-    if (category) params.append("category", category);
-    if (minPrice != null) params.append("minPrice", minPrice);
-    if (maxPrice != null) params.append("maxPrice", maxPrice);
-    params.append("page", page);
-    params.append("pageSize", pageSize);
-
-    const response = await api.get(`/post/search?${params.toString()}`);
-    return response.data;
-  },
-
-  // Lấy danh sách xe của user hiện tại
-  getMyBikeListings: async () => {
-    const response = await api.get("/post/my");
-    return response.data;
-  },
 };
