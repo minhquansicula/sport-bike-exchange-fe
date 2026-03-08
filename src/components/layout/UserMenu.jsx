@@ -1,3 +1,4 @@
+// File: src/components/layout/UserMenu.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -10,6 +11,7 @@ import {
   MdManageAccounts,
   MdAdminPanelSettings,
   MdFactCheck,
+  MdAccountBalanceWallet,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -139,6 +141,14 @@ const UserMenu = () => {
                   className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
                 >
                   <MdPerson size={20} className="text-gray-400" /> Hồ sơ cá nhân
+                </Link>
+                <Link
+                  to="/profile?tab=wallet"
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
+                >
+                  <MdAccountBalanceWallet size={20} className="text-gray-400" />{" "}
+                  Ví của tôi
                 </Link>
                 <Link
                   to="/profile?tab=transaction-manage"

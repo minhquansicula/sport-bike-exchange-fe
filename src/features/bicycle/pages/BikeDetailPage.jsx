@@ -21,6 +21,13 @@ import {
   MdColorLens,
   MdPrecisionManufacturing,
   MdHardware,
+  MdEdit,
+  MdEventSeat,
+  MdSettings,
+  MdLink,
+  MdLinearScale,
+  MdRadioButtonUnchecked,
+  MdCompress,
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
@@ -29,6 +36,9 @@ const BikeDetailPage = () => {
 
   const [bike, setBike] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Tạo một timestamp để chống cache hình ảnh từ trình duyệt
+  const [timestamp] = useState(new Date().getTime());
 
   useEffect(() => {
     const fetchBikeDetail = async () => {
@@ -43,11 +53,16 @@ const BikeDetailPage = () => {
         setLoading(false);
       }
     };
-    fetchBikeDetail();
+    if (id) fetchBikeDetail();
   }, [id]);
 
   const userRole = String(user?.role || "").toUpperCase();
   const isStaff = userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
+
+  const isOwner =
+    user &&
+    bike &&
+    (user.username === bike.sellerName || user.userId === bike.sellerId);
 
   if (loading) {
     return (
@@ -57,12 +72,18 @@ const BikeDetailPage = () => {
     );
   }
 
-  if (!bike)
+  if (!bike) {
     return (
       <div className="min-h-screen flex items-center justify-center text-zinc-500">
         Không tìm thấy xe
       </div>
     );
+  }
+
+  // Xử lý link ảnh để không bao giờ bị trình duyệt lưu cache ảnh cũ
+  const displayImageUrl = bike.image_url
+    ? `${bike.image_url}${bike.image_url.includes("?") ? "&" : "?"}t=${timestamp}`
+    : "https://placehold.co/800x600/f4f4f5/a1a1aa?text=No+Image";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 font-sans">
@@ -86,10 +107,7 @@ const BikeDetailPage = () => {
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm relative group">
               <div className="aspect-[16/10] overflow-hidden bg-gray-100">
                 <img
-                  src={
-                    bike.image_url ||
-                    "https://via.placeholder.com/800x600?text=No+Image"
-                  }
+                  src={displayImageUrl} // Sử dụng link ảnh đã kèm cache-buster
                   alt={bike.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
@@ -107,10 +125,12 @@ const BikeDetailPage = () => {
 
               <div className="flex flex-wrap gap-3 mb-8">
                 <span className="px-3 py-1 bg-gray-100 text-zinc-600 rounded-md text-sm font-medium">
-                  Thương hiệu: <strong>{bike.brandName}</strong>
+                  Thương hiệu:{" "}
+                  <strong>{bike.brandName || "Đang cập nhật"}</strong>
                 </span>
                 <span className="px-3 py-1 bg-gray-100 text-zinc-600 rounded-md text-sm font-medium">
-                  Loại xe: <strong>{bike.categoryName}</strong>
+                  Loại xe:{" "}
+                  <strong>{bike.categoryName || "Đang cập nhật"}</strong>
                 </span>
                 <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-md text-sm font-medium flex items-center gap-1">
                   <MdLocationOn /> VeloX Hub (Kiểm tra xe trực tiếp)
@@ -131,7 +151,6 @@ const BikeDetailPage = () => {
                       {bike.frameSize || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdDonutLarge /> Size Bánh
@@ -140,7 +159,6 @@ const BikeDetailPage = () => {
                       {bike.wheelSize || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdCalendarToday /> Năm SX
@@ -151,7 +169,6 @@ const BikeDetailPage = () => {
                         : "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdErrorOutline /> Phanh
@@ -160,7 +177,6 @@ const BikeDetailPage = () => {
                       {bike.brakeType || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdSpeed /> Bộ đề
@@ -169,7 +185,6 @@ const BikeDetailPage = () => {
                       {bike.drivetrain || bike.numberOfGears || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdColorLens /> Màu sắc
@@ -178,7 +193,6 @@ const BikeDetailPage = () => {
                       {bike.color || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdPrecisionManufacturing /> Chất liệu khung
@@ -187,7 +201,6 @@ const BikeDetailPage = () => {
                       {bike.frameMaterial || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdHardware /> Loại Phuộc
@@ -196,13 +209,60 @@ const BikeDetailPage = () => {
                       {bike.forkType || "N/A"}
                     </span>
                   </div>
-
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdFitnessCenter /> Trọng lượng
                     </span>
                     <span className="font-semibold text-zinc-800 block truncate">
                       {bike.weight ? `${bike.weight} kg` : "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdEventSeat /> Yên xe
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.saddle || "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdSettings /> Đĩa
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.chainring || "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdLink /> Xích xe
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.chain || "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdLinearScale /> Ghi đông
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.handlebar || "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdRadioButtonUnchecked /> Vành xe
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.rim || "N/A"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
+                      <MdCompress /> Giảm xốc
+                    </span>
+                    <span className="font-semibold text-zinc-800 block truncate">
+                      {bike.shockAbsorber || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -222,8 +282,8 @@ const BikeDetailPage = () => {
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <img
-                  src="https://ui-avatars.com/api/?name=Seller"
-                  alt="Seller"
+                  src={`https://ui-avatars.com/api/?name=${bike.sellerName || "Seller"}&background=ea580c&color=fff`}
+                  alt="Seller Avatar"
                   className="w-14 h-14 rounded-full border-2 border-orange-100"
                 />
                 <div>
@@ -267,13 +327,20 @@ const BikeDetailPage = () => {
                       <MdBlock size={20} />
                       Tài khoản nội bộ không thể mua xe
                     </button>
+                  ) : isOwner ? (
+                    <Link
+                      to={`/edit-bike/${bike.listingId || id}`}
+                      className="w-full bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold py-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 group"
+                    >
+                      <MdEdit size={20} />
+                      Chỉnh sửa tin của bạn
+                    </Link>
                   ) : (
                     <>
                       <button className="w-full bg-zinc-900 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-gray-200 hover:shadow-orange-200 flex items-center justify-center gap-2 group animate-in fade-in">
                         Gửi Yêu Cầu Giao Dịch
                         <MdArrowForward className="group-hover:translate-x-1 transition-transform" />
                       </button>
-
                       <p className="text-xs text-gray-500 text-center px-2 leading-relaxed">
                         *Bạn cần gửi yêu cầu trước. Sau khi người bán xác nhận,
                         chức năng <strong>Đặt Cọc</strong> sẽ được mở khóa.

@@ -20,6 +20,12 @@ import {
   MdColorLens,
   MdPrecisionManufacturing,
   MdHardware,
+  MdEventSeat,
+  MdSettings,
+  MdLink,
+  MdLinearScale,
+  MdRadioButtonUnchecked,
+  MdCompress,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 import { bikeService } from "../../../services/bikeService";
@@ -77,6 +83,12 @@ const AdminPostsPage = () => {
             frameMaterial: bike.frameMaterial || "N/A",
             forkType: bike.forkType || "N/A",
             bikeType: bike.bikeType || "N/A",
+            saddle: bike.saddle || "N/A",
+            chainring: bike.chainring || "N/A",
+            chain: bike.chain || "N/A",
+            handlebar: bike.handlebar || "N/A",
+            rim: bike.rim || "N/A",
+            shockAbsorber: bike.shockAbsorber || "N/A",
           }));
           mappedData.sort((a, b) => b.id - a.id);
           setPosts(mappedData);
@@ -712,6 +724,72 @@ const AdminPostsPage = () => {
                           title={selectedPost.color}
                         >
                           {selectedPost.color}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                        <p className="text-xs text-zinc-500 font-bold mb-1 flex items-center gap-1">
+                          <MdEventSeat /> Yên xe
+                        </p>
+                        <p
+                          className="font-bold text-zinc-900 truncate"
+                          title={selectedPost.saddle}
+                        >
+                          {selectedPost.saddle}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                        <p className="text-xs text-zinc-500 font-bold mb-1 flex items-center gap-1">
+                          <MdSettings /> Đĩa
+                        </p>
+                        <p
+                          className="font-bold text-zinc-900 truncate"
+                          title={selectedPost.chainring}
+                        >
+                          {selectedPost.chainring}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                        <p className="text-xs text-zinc-500 font-bold mb-1 flex items-center gap-1">
+                          <MdLink /> Xích xe
+                        </p>
+                        <p
+                          className="font-bold text-zinc-900 truncate"
+                          title={selectedPost.chain}
+                        >
+                          {selectedPost.chain}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                        <p className="text-xs text-zinc-500 font-bold mb-1 flex items-center gap-1">
+                          <MdLinearScale /> Ghi đông
+                        </p>
+                        <p
+                          className="font-bold text-zinc-900 truncate"
+                          title={selectedPost.handlebar}
+                        >
+                          {selectedPost.handlebar}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                        <p className="text-xs text-zinc-500 font-bold mb-1 flex items-center gap-1">
+                          <MdRadioButtonUnchecked /> Vành xe
+                        </p>
+                        <p
+                          className="font-bold text-zinc-900 truncate"
+                          title={selectedPost.rim}
+                        >
+                          {selectedPost.rim}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                        <p className="text-xs text-zinc-500 font-bold mb-1 flex items-center gap-1">
+                          <MdCompress /> Giảm xốc
+                        </p>
+                        <p
+                          className="font-bold text-zinc-900 truncate"
+                          title={selectedPost.shockAbsorber}
+                        >
+                          {selectedPost.shockAbsorber}
                         </p>
                       </div>
                     </div>

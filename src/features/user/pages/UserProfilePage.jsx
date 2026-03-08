@@ -1,7 +1,8 @@
+// File: src/pages/user/UserProfilePage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTransaction } from "../../../context/TransactionContext";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useLocation } from "react-router-dom";
 import { MdCameraAlt, MdVerified, MdLock } from "react-icons/md";
 import { userService } from "../../../services/userService";
 import { uploadService } from "../../../services/uploadService";
@@ -11,6 +12,8 @@ import UserInfoTab from "../components/UserInfoTab";
 import MyBikesTab from "../components/MyBikesTab";
 import TransactionManagementTab from "../components/TransactionManagementTab";
 import TransactionHistoryTab from "../components/TransactionHistoryTab";
+import WalletTab from "../components/WalletTab";
+
 import SecurityTab from "../components/SecurityTab";
 import { Toaster, toast } from "react-hot-toast";
 
@@ -19,6 +22,7 @@ const UserProfilePage = () => {
   const { transactions, sellerAcceptTransaction, sellerRejectTransaction } =
     useTransaction();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const initialTab = searchParams.get("tab") || "info";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -86,7 +90,7 @@ const UserProfilePage = () => {
       }
     };
     if (user) fetchMyBikes();
-  }, [activeTab, user]);
+  }, [activeTab, user, location.key]);
 
   const handleDeleteBike = async (listingId) => {
     if (window.confirm("Bạn có chắc chắn muốn gỡ bài đăng này không?")) {
@@ -280,6 +284,7 @@ const UserProfilePage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-3 space-y-6">
+            {/* LƯU Ý: Bạn cần thêm nút tab 'wallet' vào file ProfileSidebar.jsx của bạn */}
             <ProfileSidebar
               activeTab={activeTab}
               setActiveTab={handleSwitchTab}
@@ -300,6 +305,9 @@ const UserProfilePage = () => {
                   loading={isSaving}
                 />
               )}
+
+              {/* Tab Ví */}
+              {activeTab === "wallet" && <WalletTab />}
 
               {activeTab === "my-bikes" && (
                 <MyBikesTab

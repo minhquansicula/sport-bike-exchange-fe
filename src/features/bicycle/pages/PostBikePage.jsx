@@ -1,3 +1,4 @@
+// PostBikePage.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
@@ -21,6 +22,12 @@ import {
   MdColorLens,
   MdPrecisionManufacturing,
   MdHardware,
+  MdEventSeat,
+  MdSettings,
+  MdLink,
+  MdLinearScale,
+  MdRadioButtonUnchecked,
+  MdCompress,
 } from "react-icons/md";
 
 const PostBikePage = () => {
@@ -45,6 +52,12 @@ const PostBikePage = () => {
     color: "",
     frameMaterial: "",
     forkType: "",
+    saddle: "",
+    chainring: "",
+    chain: "",
+    handlebar: "",
+    rim: "",
+    shockAbsorber: "",
     images: [],
   });
 
@@ -154,6 +167,12 @@ const PostBikePage = () => {
         color: formData.color || "Không rõ",
         frameMaterial: formData.frameMaterial || "Không rõ",
         forkType: formData.forkType || "Không rõ",
+        saddle: formData.saddle || "Không rõ",
+        chainring: formData.chainring || "Không rõ",
+        chain: formData.chain || "Không rõ",
+        handlebar: formData.handlebar || "Không rõ",
+        rim: formData.rim || "Không rõ",
+        shockAbsorber: formData.shockAbsorber || "Không rõ",
         image_url: imageUrlString,
       };
 
@@ -564,6 +583,117 @@ const PostBikePage = () => {
                     <option value="Phuộc nhún lò xo">Phuộc nhún lò xo</option>
                     <option value="Phuộc hơi">Phuộc hơi</option>
                   </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Yên xe
+                </label>
+                <div className="relative">
+                  <MdEventSeat className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: Yên thể thao..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.saddle}
+                    onChange={(e) =>
+                      setFormData({ ...formData, saddle: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Đĩa (Chainring)
+                </label>
+                <div className="relative">
+                  <MdSettings className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: 34T..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.chainring}
+                    onChange={(e) =>
+                      setFormData({ ...formData, chainring: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Xích xe (Chain)
+                </label>
+                <div className="relative">
+                  <MdLink className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: KMC X11..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.chain}
+                    onChange={(e) =>
+                      setFormData({ ...formData, chain: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Ghi đông (Handlebar)
+                </label>
+                <div className="relative">
+                  <MdLinearScale className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: Hợp kim nhôm..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.handlebar}
+                    onChange={(e) =>
+                      setFormData({ ...formData, handlebar: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Vành xe (Rim)
+                </label>
+                <div className="relative">
+                  <MdRadioButtonUnchecked className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: Vành đúc..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.rim}
+                    onChange={(e) =>
+                      setFormData({ ...formData, rim: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                  Giảm xốc
+                </label>
+                <div className="relative">
+                  <MdCompress className="absolute top-3 left-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="VD: Lò xo kép..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-orange-500 outline-none text-sm font-medium"
+                    value={formData.shockAbsorber}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        shockAbsorber: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               </div>
             </div>

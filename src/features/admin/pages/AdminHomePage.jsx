@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import BikeCard from "../../bicycle/components/BikeCard";
-import { MOCK_BIKES } from "../../../mockData/bikes";
+import { bikeService } from "../../../services/bikeService";
 import {
   MdArrowForward,
   MdArticle,
@@ -10,18 +10,47 @@ import {
   MdWarning,
   MdTrendingUp,
   MdAttachMoney,
-  MdVerifiedUser,
   MdLocationOn,
 } from "react-icons/md";
 
 const AdminHomePage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
+  const [bikes, setBikes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock thống kê tổng quan
+  // Gọi API lấy dữ liệu thật từ database
+  useEffect(() => {
+    const fetchBikes = async () => {
+      try {
+        setLoading(true);
+        const response = await bikeService.getAllBikeListings();
+        if (response && response.result) {
+          // Sắp xếp xe mới nhất lên đầu
+          const sortedBikes = response.result.sort(
+            (a, b) => b.listingId - a.listingId,
+          );
+          setBikes(sortedBikes);
+        }
+      } catch (error) {
+        console.error("Lỗi tải danh sách xe:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBikes();
+  }, []);
+
+  // Tính toán số lượng tin chờ duyệt thực tế
+  const pendingCount = bikes.filter(
+    (bike) => bike.status?.toLowerCase() === "pending",
+  ).length;
+
+  // Mock thống kê tổng quan (Cập nhật giá trị "Tin chờ duyệt" bằng data thật)
   const stats = [
     {
       label: "Tin chờ duyệt",
-      value: 12,
+      value: pendingCount, // Sử dụng data thật
       icon: <MdArticle size={24} />,
       color: "bg-blue-500",
       link: "/admin/posts",
@@ -77,15 +106,18 @@ const AdminHomePage = () => {
     },
   ];
 
-  // Lọc xe theo trạng thái
+  // Lọc xe theo trạng thái từ data API
   const getFilteredBikes = () => {
     switch (filterStatus) {
       case "pending":
-        return MOCK_BIKES.filter((bike) => !bike.inspectorChecked);
+        return bikes.filter((bike) => bike.status?.toLowerCase() === "pending");
       case "approved":
-        return MOCK_BIKES.filter((bike) => bike.inspectorChecked);
+        // Giả sử xe đã duyệt có status là 'available'
+        return bikes.filter(
+          (bike) => bike.status?.toLowerCase() === "available",
+        );
       default:
-        return MOCK_BIKES;
+        return bikes;
     }
   };
 
@@ -95,9 +127,7 @@ const AdminHomePage = () => {
       <div className="bg-gradient-to-r from-zinc-900 to-orange-700 rounded-2xl p-6 text-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold mb-1">
-              Xin chào, Admin! 👋
-            </h1>
+            <h1 className="text-2xl font-bold mb-1">Xin chào, Admin! 👋</h1>
             <p className="text-orange-100 text-sm">
               Đây là tổng quan hoạt động hệ thống OldBike hôm nay.
             </p>
@@ -168,9 +198,7 @@ const AdminHomePage = () => {
                     item.trendUp ? "text-green-600" : "text-red-500"
                   }`}
                 >
-                  <MdTrendingUp
-                    className={!item.trendUp ? "rotate-180" : ""}
-                  />
+                  <MdTrendingUp className={!item.trendUp ? "rotate-180" : ""} />
                   {item.trend}
                 </span>
               </div>
@@ -179,7 +207,7 @@ const AdminHomePage = () => {
         </div>
       </div>
 
-      {/* --- 4. PRODUCT LISTING (Giống như trang member) --- */}
+      {/* --- 4. PRODUCT LISTING --- */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
@@ -235,22 +263,30 @@ const AdminHomePage = () => {
         </div>
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {getFilteredBikes()
-            .slice(0, 8)
-            .map((bike) => (
-              <BikeCard key={bike.id} bike={bike} />
-            ))}
-        </div>
-
-        {/* Thông báo nếu không có sản phẩm */}
-        {getFilteredBikes().length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MdArticle className="text-gray-400" size={32} />
-            </div>
-            <p className="text-gray-500">Không có sản phẩm nào phù hợp</p>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-orange-500"></div>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {getFilteredBikes()
+                .slice(0, 8)
+                .map((bike) => (
+                  <BikeCard key={bike.listingId || bike.id} bike={bike} />
+                ))}
+            </div>
+
+            {/* Thông báo nếu không có sản phẩm */}
+            {getFilteredBikes().length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MdArticle className="text-gray-400" size={32} />
+                </div>
+                <p className="text-gray-500">Không có sản phẩm nào phù hợp</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 

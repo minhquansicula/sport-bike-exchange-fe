@@ -1,3 +1,4 @@
+// File: src/pages/user/components/ProfileSidebar.jsx
 import React from "react";
 import {
   MdPerson,
@@ -7,6 +8,7 @@ import {
   MdHistory,
   MdLogout,
   MdManageAccounts,
+  MdAccountBalanceWallet,
 } from "react-icons/md";
 
 const ProfileSidebar = ({
@@ -31,6 +33,11 @@ const ProfileSidebar = ({
   ];
 
   const manageItems = [
+    {
+      id: "wallet",
+      icon: <MdAccountBalanceWallet size={20} />,
+      label: "Ví của tôi",
+    },
     {
       id: "transaction-manage",
       icon: <MdManageAccounts size={20} />,

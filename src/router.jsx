@@ -23,6 +23,7 @@ import HomePage from "./pages/HomePage";
 import BikeListPage from "./features/bicycle/pages/BikeListPage";
 import BikeDetailPage from "./features/bicycle/pages/BikeDetailPage";
 import PostBikePage from "./features/bicycle/pages/PostBikePage";
+import EditBikePage from "./features/bicycle/pages/EditBikePage"; // <-- Đã thêm import EditBikePage
 import EventListPage from "./features/event-meeting/pages/EventListPage";
 import EventDetailPage from "./features/event-meeting/pages/EventDetailPage";
 
@@ -64,6 +65,7 @@ const router = createBrowserRouter([
           { path: "bikes", element: <BikeListPage /> },
           { path: "bikes/:id", element: <BikeDetailPage /> },
           { path: "post-bike", element: <PostBikePage /> },
+          { path: "edit-bike/:id", element: <EditBikePage /> }, // <-- Đã thêm route cho EditBikePage
           { path: "profile", element: <UserProfilePage /> },
           { path: "events", element: <EventListPage /> },
           { path: "events/:id", element: <EventDetailPage /> },
