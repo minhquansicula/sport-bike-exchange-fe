@@ -37,12 +37,13 @@ const WishlistPage = () => {
       /**
        * 2️⃣ Fetch chi tiết bike theo listingId
        */
-      const bikeRequests = wishlistItems.map((item) =>
-        api.get(`/bikes/${item.listingId}`),
+      const bikeResponses = await Promise.allSettled(
+        wishlistItems.map((item) => api.get(`/post/${item.listingId}`)),
       );
 
-      const bikeResponses = await Promise.all(bikeRequests);
-      const bikes = bikeResponses.map((res) => res.data.result);
+      const bikes = bikeResponses
+        .filter((res) => res.status === "fulfilled")
+        .map((res) => res.value.data.result);
 
       setWishlist(bikes);
     } catch (error) {
