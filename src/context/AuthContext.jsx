@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../services/authService";
+import { bikeService } from "../services/bikeService";
 
 export const AuthContext = createContext();
 
@@ -69,6 +70,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    bikeService.clearCache();
+    setUser(null);
   };
 
   const updateUser = (updatedData) => {

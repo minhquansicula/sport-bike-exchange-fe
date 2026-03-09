@@ -81,8 +81,7 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {myBikes.map((bike) => {
-          const isApproved = bike.status?.toLowerCase() === "approved";
-
+          const isApproved = bike.status?.toLowerCase() === "available";
           return (
             <div
               key={bike.listingId}

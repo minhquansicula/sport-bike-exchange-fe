@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { walletService } from "../../../services/walletService";
 import formatCurrency from "../../../utils/formatCurrency";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../hooks/useAuth"; // Lấy useAuth để hiển thị tên
 import {
   MdAccountBalanceWallet,
   MdAddCircleOutline,
@@ -12,12 +13,12 @@ import {
 } from "react-icons/md";
 
 const WalletTab = () => {
+  const { user } = useAuth();
   const [wallet, setWallet] = useState({});
   const [loading, setLoading] = useState(true);
-  const [amountToAdd, setAmountToAdd] = useState("");
+  const [amountToAdd, setAmountToAdd] = useState(""); // Lưu giá trị gốc dạng chuỗi số: "100000"
   const [isAdding, setIsAdding] = useState(false);
 
-  // Dùng để lấy các tham số (vnp_ResponseCode,...) từ URL sau khi VNPay redirect về
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -41,27 +42,23 @@ const WalletTab = () => {
     }
   };
 
-  // Kiểm tra URL xem có phải vừa từ VNPay trở về không
   const handleVNPayReturn = async () => {
     const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
 
     if (vnp_ResponseCode) {
       if (vnp_ResponseCode === "00") {
         try {
-          // Gửi toàn bộ query string về backend để verify chữ ký và cộng tiền
           const queryString = window.location.search;
           await walletService.verifyVNPayReturn(queryString);
 
           toast.success("Giao dịch VNPay thành công! Đã nạp tiền vào ví.");
-          fetchWallet(); // Cập nhật lại số dư mới
+          fetchWallet();
         } catch (error) {
           toast.error("Xác thực giao dịch thất bại.");
         }
       } else {
         toast.error("Bạn đã hủy giao dịch hoặc giao dịch thất bại.");
       }
-
-      // Xóa params trên thanh địa chỉ để không bị gọi lại khi reload trang
       setSearchParams({});
     }
   };
@@ -77,12 +74,10 @@ const WalletTab = () => {
 
     try {
       setIsAdding(true);
-      // Gọi BE để lấy URL thanh toán VNPay
       const response = await walletService.createVNPayUrl(amount);
 
-      // Backend cần trả về URL dưới dạng chuỗi trong response.result
       if (response && response.result) {
-        window.location.href = response.result; // Chuyển hướng người dùng sang VNPay
+        window.location.href = response.result;
       } else {
         toast.error("Lỗi lấy thông tin thanh toán từ hệ thống.");
       }
@@ -92,6 +87,23 @@ const WalletTab = () => {
     } finally {
       setIsAdding(false);
     }
+  };
+
+  // Hàm xử lý khi người dùng nhập tiền (chỉ cho phép số và xóa số 0 ở đầu)
+  const handleAmountChange = (e) => {
+    // Xóa tất cả các ký tự không phải là số
+    let rawValue = e.target.value.replace(/\D/g, "");
+    // Loại bỏ số 0 ở đầu nếu có (VD: 0123 -> 123)
+    if (rawValue.startsWith("0")) {
+      rawValue = rawValue.replace(/^0+/, "");
+    }
+    setAmountToAdd(rawValue);
+  };
+
+  // Hàm format số để hiển thị ra ô input (VD: 100000 -> 100.000)
+  const formatDisplayAmount = (val) => {
+    if (!val) return "";
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   if (loading) {
@@ -164,7 +176,10 @@ const WalletTab = () => {
                     Chủ tài khoản
                   </p>
                   <p className="font-bold text-lg tracking-wide">
-                    {wallet?.username || "Thành viên VeloX"}
+                    {user?.fullName ||
+                      user?.name ||
+                      wallet?.username ||
+                      "Thành viên VeloX"}
                   </p>
                 </div>
                 <div className="w-12 h-8 rounded bg-gradient-to-r from-zinc-300 to-zinc-400 opacity-80 rounded-md"></div>
@@ -209,11 +224,9 @@ const WalletTab = () => {
                     đ
                   </span>
                   <input
-                    type="number"
-                    min="10000"
-                    step="10000"
-                    value={amountToAdd}
-                    onChange={(e) => setAmountToAdd(e.target.value)}
+                    type="text"
+                    value={formatDisplayAmount(amountToAdd)}
+                    onChange={handleAmountChange}
                     placeholder="Nhập số tiền..."
                     className="w-full pl-10 pr-4 py-4 bg-zinc-50 border border-zinc-200 rounded-2xl focus:ring-2 focus:ring-zinc-900 focus:border-transparent outline-none transition-all font-bold text-xl text-zinc-900"
                   />

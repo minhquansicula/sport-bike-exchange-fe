@@ -1,4 +1,4 @@
-// PostBikePage.jsx
+// File: src/pages/user/PostBikePage.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
@@ -47,7 +47,7 @@ const PostBikePage = () => {
     transmission: "",
     weight: "",
     condition: 90,
-    price: "",
+    price: "", // price sẽ lưu dạng chuỗi gốc VD: "1000000"
     description: "",
     color: "",
     frameMaterial: "",
@@ -188,6 +188,12 @@ const PostBikePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Format số có dấu chấm (VD: 1000000 -> 1.000.000)
+  const formatDisplayAmount = (val) => {
+    if (!val) return "";
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   if (!user) {
@@ -788,15 +794,20 @@ const PostBikePage = () => {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                     <MdAttachMoney size={20} />
                   </div>
+                  {/* SỬA TYPE THÀNH TEXT ĐỂ FORMAT DẤU CHẤM */}
                   <input
-                    type="number"
+                    type="text"
                     placeholder="Nhập giá bán..."
                     className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all font-bold text-lg ${
                       errors.price ? "border-red-500" : "border-gray-200"
                     }`}
-                    value={formData.price}
+                    value={formatDisplayAmount(formData.price)}
                     onChange={(e) => {
-                      setFormData({ ...formData, price: e.target.value });
+                      let rawValue = e.target.value.replace(/\D/g, "");
+                      if (rawValue.startsWith("0")) {
+                        rawValue = rawValue.replace(/^0+/, "");
+                      }
+                      setFormData({ ...formData, price: rawValue });
                       if (errors.price) setErrors({ ...errors, price: null });
                     }}
                   />
