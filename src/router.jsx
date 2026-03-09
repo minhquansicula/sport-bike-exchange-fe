@@ -1,5 +1,6 @@
 import { createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { WishlistProvider } from "./context/WishlistContext";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
@@ -8,12 +9,14 @@ import AdminLayout from "./features/admin/layouts/AdminLayout";
 import InspectorLayout from "./features/inspection/layouts/InspectorLayout";
 import ScrollToTop from "./components/common/ScrollToTop";
 
-// Root Layout để wrap AuthProvider cho tất cả routes
+// Root Layout để wrap AuthProvider + WishlistProvider cho tất cả routes
 const RootLayout = () => {
   return (
     <AuthProvider>
-      <ScrollToTop />
-      <Outlet />
+      <WishlistProvider>
+        <ScrollToTop />
+        <Outlet />
+      </WishlistProvider>
     </AuthProvider>
   );
 };
@@ -31,6 +34,9 @@ import EventDetailPage from "./features/event-meeting/pages/EventDetailPage";
 import LoginForm from "./features/auth/LoginForm";
 import RegisterForm from "./features/auth/RegisterForm";
 import UserProfilePage from "./features/user/pages/UserProfilePage";
+
+// Trang Wishlist
+import WishlistPage from "./features/wishlist/pages/WishlistPage";
 
 // Các trang Admin
 import AdminHomePage from "./features/admin/pages/AdminHomePage";
@@ -67,6 +73,7 @@ const router = createBrowserRouter([
           { path: "post-bike", element: <PostBikePage /> },
           { path: "edit-bike/:id", element: <EditBikePage /> }, // <-- Đã thêm route cho EditBikePage
           { path: "profile", element: <UserProfilePage /> },
+          { path: "wishlist", element: <WishlistPage /> },
           { path: "events", element: <EventListPage /> },
           { path: "events/:id", element: <EventDetailPage /> },
         ],

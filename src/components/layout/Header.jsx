@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useWishlist } from "../../context/WishlistContext";
 import UserMenu from "./UserMenu";
 import {
   MdMenu,
@@ -9,10 +10,34 @@ import {
   MdStorefront,
   MdAdd,
   MdFavoriteBorder,
+  MdFavorite,
   MdNotifications,
   MdEvent,
   MdFactCheck, // Import thêm icon cho lối tắt Inspector
 } from "react-icons/md";
+
+// Component hiển thị icon wishlist với badge đếm số lượng
+const WishlistHeaderIcon = () => {
+  const { wishlistCount } = useWishlist();
+  return (
+    <Link
+      to="/wishlist"
+      className="relative p-2 text-gray-400 hover:text-red-500 hover:bg-gray-50 rounded-full transition-colors"
+      title="Danh sách yêu thích"
+    >
+      {wishlistCount > 0 ? (
+        <MdFavorite size={24} className="text-red-500" />
+      ) : (
+        <MdFavoriteBorder size={24} />
+      )}
+      {wishlistCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+          {wishlistCount > 99 ? "99+" : wishlistCount}
+        </span>
+      )}
+    </Link>
+  );
+};
 
 const Header = ({ onOpenSidebar }) => {
   const { user } = useAuth();
@@ -112,13 +137,7 @@ const Header = ({ onOpenSidebar }) => {
                   <MdAdd size={24} />
                 </Link>
 
-                <Link
-                  to="/wishlist"
-                  className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors"
-                  title="Danh sách yêu thích"
-                >
-                  <MdFavoriteBorder size={24} />
-                </Link>
+                <WishlistHeaderIcon />
               </>
             )}
 

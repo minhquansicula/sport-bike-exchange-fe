@@ -1,14 +1,18 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import formatCurrency from "../../../utils/formatCurrency";
+import { useWishlist } from "../../../context/WishlistContext";
 import {
   MdLocationOn,
   MdHandshake,
   MdFavoriteBorder,
+  MdFavorite,
   MdAccessTime,
 } from "react-icons/md";
 
 const BikeCard = ({ bike }) => {
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const liked = isInWishlist(bike.listingId);
   return (
     <Link
       to={`/bikes/${bike.listingId}`}
@@ -28,13 +32,19 @@ const BikeCard = ({ bike }) => {
 
         {/* Nút Tim */}
         <button
-          className="absolute bottom-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:scale-110 transition-all shadow-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 duration-300"
+          className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md ${
+            liked
+              ? "bg-red-500 text-white scale-110"
+              : "bg-white text-gray-400 hover:text-red-500 hover:scale-110 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0"
+          } duration-300`}
           onClick={(e) => {
             e.preventDefault();
-            // Thêm logic yêu thích ở đây
+            e.stopPropagation();
+            toggleWishlist(bike.listingId);
           }}
+          title={liked ? "Bỏ yêu thích" : "Thêm yêu thích"}
         >
-          <MdFavoriteBorder />
+          {liked ? <MdFavorite /> : <MdFavoriteBorder />}
         </button>
       </div>
 

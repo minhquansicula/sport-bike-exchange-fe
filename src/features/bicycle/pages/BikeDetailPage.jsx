@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { bikeService } from "../../../services/bikeService";
 import formatCurrency from "../../../utils/formatCurrency";
 import { useAuth } from "../../../hooks/useAuth";
+import { useWishlist } from "../../../context/WishlistContext";
 
 import {
   MdLocationOn,
@@ -28,11 +29,14 @@ import {
   MdLinearScale,
   MdRadioButtonUnchecked,
   MdCompress,
+  MdFavoriteBorder,
+  MdFavorite,
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [bike, setBike] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -341,6 +345,29 @@ const BikeDetailPage = () => {
                         Gửi Yêu Cầu Giao Dịch
                         <MdArrowForward className="group-hover:translate-x-1 transition-transform" />
                       </button>
+
+                      {/* Nút Yêu thích */}
+                      <button
+                        onClick={() => bike && toggleWishlist(bike.listingId)}
+                        className={`w-full font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 border ${
+                          bike && isInWishlist(bike.listingId)
+                            ? "bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                            : "bg-white text-zinc-600 border-gray-200 hover:border-red-300 hover:text-red-500"
+                        }`}
+                      >
+                        {bike && isInWishlist(bike.listingId) ? (
+                          <>
+                            <MdFavorite size={20} />
+                            Đã yêu thích
+                          </>
+                        ) : (
+                          <>
+                            <MdFavoriteBorder size={20} />
+                            Thêm vào yêu thích
+                          </>
+                        )}
+                      </button>
+
                       <p className="text-xs text-gray-500 text-center px-2 leading-relaxed">
                         *Bạn cần gửi yêu cầu trước. Sau khi người bán xác nhận,
                         chức năng <strong>Đặt Cọc</strong> sẽ được mở khóa.
