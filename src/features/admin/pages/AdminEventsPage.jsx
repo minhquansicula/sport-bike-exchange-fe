@@ -14,7 +14,7 @@ import {
   MdSave,
 } from "react-icons/md";
 import { eventService } from "../../../services/eventService";
-import LocationPicker from "../../../components/common/LocationPicker"; // Import bản đồ
+import LocationPicker from "../../../components/common/LocationPicker";
 
 const AdminEventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -26,7 +26,9 @@ const AdminEventsPage = () => {
   const [editEvent, setEditEvent] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Thêm latitude và longitude vào state mặc định
+  // Thêm state lưu lỗi validation
+  const [formErrors, setFormErrors] = useState({});
+
   const [newEvent, setNewEvent] = useState({
     name: "",
     bikeType: "",
@@ -39,7 +41,6 @@ const AdminEventsPage = () => {
     status: "draft",
   });
 
-  // 1. Lấy danh sách sự kiện từ API
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -59,7 +60,6 @@ const AdminEventsPage = () => {
     fetchEvents();
   }, []);
 
-  // Lọc dữ liệu trên Frontend
   const filteredEvents = events.filter((evt) => {
     const matchSearch =
       evt.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,11 +97,42 @@ const AdminEventsPage = () => {
     );
   };
 
-  // 2. Xử lý Tạo sự kiện mới qua API
+  // Hàm validate form
+  const validateEventForm = (formData) => {
+    const errors = {};
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+    if (!formData.name.trim()) errors.name = "Tên sự kiện không được để trống.";
+    if (!formData.bikeType.trim())
+      errors.bikeType = "Vui lòng nhập loại xe tham gia.";
+
+    if (!formData.startDate) {
+      errors.startDate = "Vui lòng chọn ngày bắt đầu.";
+    } else if (formData.startDate < today) {
+      errors.startDate = "Ngày bắt đầu không được trong quá khứ.";
+    }
+
+    if (!formData.endDate) {
+      errors.endDate = "Vui lòng chọn ngày kết thúc.";
+    } else if (formData.startDate && formData.endDate < formData.startDate) {
+      errors.endDate = "Ngày kết thúc phải sau ngày bắt đầu.";
+    }
+
+    if (!formData.location.trim())
+      errors.location = "Vui lòng nhập khu vực sự kiện.";
+    if (!formData.address || !formData.address.trim()) {
+      errors.address = "Vui lòng chọn hoặc nhập địa chỉ chi tiết trên bản đồ.";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0; // Trả về true nếu không có lỗi
+  };
+
   const handleCreateEvent = async () => {
+    if (!validateEventForm(newEvent)) return;
+
     try {
       await eventService.createEvent(newEvent);
-
       alert("Tạo sự kiện thành công!");
       setShowCreateModal(false);
       setNewEvent({
@@ -115,6 +146,7 @@ const AdminEventsPage = () => {
         endDate: "",
         status: "draft",
       });
+      setFormErrors({});
       fetchEvents();
     } catch (error) {
       console.error("Lỗi tạo sự kiện:", error);
@@ -122,10 +154,10 @@ const AdminEventsPage = () => {
     }
   };
 
-  // 3. Xử lý Cập nhật qua API
   const handleSaveEdit = async (updatedEvent) => {
+    if (!validateEventForm(updatedEvent)) return;
+
     try {
-      // Bổ sung thêm latitude và longitude vào request
       const requestBody = {
         name: updatedEvent.name,
         bikeType: updatedEvent.bikeType,
@@ -139,9 +171,9 @@ const AdminEventsPage = () => {
       };
 
       await eventService.updateEvent(updatedEvent.eventId, requestBody);
-
       alert("Cập nhật thành công!");
       setEditEvent(null);
+      setFormErrors({});
       fetchEvents();
     } catch (error) {
       console.error("Lỗi cập nhật sự kiện:", error);
@@ -149,7 +181,6 @@ const AdminEventsPage = () => {
     }
   };
 
-  // 4. Xử lý Xóa qua API
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
       try {
@@ -162,9 +193,18 @@ const AdminEventsPage = () => {
     }
   };
 
+  // Hàm hỗ trợ xóa lỗi khi người dùng đóng modal
+  const closeModal = (isEdit) => {
+    setFormErrors({});
+    if (isEdit) {
+      setEditEvent(null);
+    } else {
+      setShowCreateModal(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -175,14 +215,17 @@ const AdminEventsPage = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => {
+            setFormErrors({});
+            setShowCreateModal(true);
+          }}
           className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-500/30 active:scale-95"
         >
           <MdAdd size={20} /> Tạo sự kiện mới
         </button>
       </div>
 
-      {/* Stats Section */}
+      {/* Stats Section (Giữ nguyên) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           {
@@ -228,7 +271,7 @@ const AdminEventsPage = () => {
         ))}
       </div>
 
-      {/* Filters Section */}
+      {/* Filters Section (Giữ nguyên) */}
       <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex-1 relative">
           <MdSearch
@@ -262,7 +305,7 @@ const AdminEventsPage = () => {
         </div>
       </div>
 
-      {/* Events Grid */}
+      {/* Events Grid (Giữ nguyên) */}
       {loading ? (
         <div className="text-center py-10 text-slate-500">
           Đang tải dữ liệu...
@@ -275,7 +318,6 @@ const AdminEventsPage = () => {
                 key={evt.eventId}
                 className="group bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
               >
-                {/* Card Header */}
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     <span className="text-sm font-bold text-slate-400">
@@ -285,7 +327,10 @@ const AdminEventsPage = () => {
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => setEditEvent(evt)}
+                      onClick={() => {
+                        setFormErrors({});
+                        setEditEvent(evt);
+                      }}
                       className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                     >
                       <MdEdit size={20} />
@@ -303,7 +348,6 @@ const AdminEventsPage = () => {
                   {evt.name}
                 </h3>
 
-                {/* Card Info */}
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3 text-sm text-slate-600">
                     <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
@@ -328,7 +372,6 @@ const AdminEventsPage = () => {
                   </div>
                 </div>
 
-                {/* Metrics Pills */}
                 <div className="flex flex-wrap gap-3 mt-auto mb-6">
                   <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
                     <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
@@ -340,7 +383,6 @@ const AdminEventsPage = () => {
                   </div>
                 </div>
 
-                {/* Card Footer */}
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
                   <button
                     onClick={() => setViewEvent(evt)}
@@ -367,9 +409,10 @@ const AdminEventsPage = () => {
         </>
       )}
 
-      {/* POPUP XEM CHI TIẾT */}
+      {/* POPUP XEM CHI TIẾT (Giữ nguyên) */}
       {viewEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
+          {/* ... code cũ của viewEvent modal ... */}
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-lg font-bold text-slate-900">
@@ -382,7 +425,6 @@ const AdminEventsPage = () => {
                 <MdClose size={24} />
               </button>
             </div>
-
             <div className="p-8 space-y-6">
               <div>
                 <div className="mb-3">{getStatusBadge(viewEvent.status)}</div>
@@ -390,28 +432,27 @@ const AdminEventsPage = () => {
                   {viewEvent.name}
                 </h2>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-slate-50 p-6 rounded-2xl border border-slate-100">
                 <div>
-                  <span className="block text-slate-500 mb-1">Loại xe</span>{" "}
+                  <span className="block text-slate-500 mb-1">Loại xe</span>
                   <strong className="text-slate-900">
                     {viewEvent.bikeType}
                   </strong>
                 </div>
                 <div>
-                  <span className="block text-slate-500 mb-1">ID Hệ thống</span>{" "}
+                  <span className="block text-slate-500 mb-1">ID Hệ thống</span>
                   <strong className="text-slate-900">
                     #{viewEvent.eventId}
                   </strong>
                 </div>
                 <div>
-                  <span className="block text-slate-500 mb-1">Bắt đầu</span>{" "}
+                  <span className="block text-slate-500 mb-1">Bắt đầu</span>
                   <strong className="text-slate-900">
                     {viewEvent.startDate}
                   </strong>
                 </div>
                 <div>
-                  <span className="block text-slate-500 mb-1">Kết thúc</span>{" "}
+                  <span className="block text-slate-500 mb-1">Kết thúc</span>
                   <strong className="text-slate-900">
                     {viewEvent.endDate}
                   </strong>
@@ -424,7 +465,6 @@ const AdminEventsPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end">
               <button
                 onClick={() => setViewEvent(null)}
@@ -437,7 +477,7 @@ const AdminEventsPage = () => {
         </div>
       )}
 
-      {/* POPUP TẠO/CHỈNH SỬA DÙNG CHUNG FORM */}
+      {/* POPUP TẠO/CHỈNH SỬA */}
       {(showCreateModal || editEvent) &&
         (() => {
           const isEdit = !!editEvent;
@@ -452,9 +492,7 @@ const AdminEventsPage = () => {
                     {isEdit ? "Chỉnh sửa sự kiện" : "Tạo sự kiện mới"}
                   </h3>
                   <button
-                    onClick={() =>
-                      isEdit ? setEditEvent(null) : setShowCreateModal(false)
-                    }
+                    onClick={() => closeModal(isEdit)}
                     className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
                   >
                     <MdClose size={24} />
@@ -466,31 +504,48 @@ const AdminEventsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Tên sự kiện
+                        Tên sự kiện <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         placeholder="VD: VeloX Fest 2026..."
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${formErrors.name ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
                         value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, name: e.target.value });
+                          if (formErrors.name)
+                            setFormErrors({ ...formErrors, name: null });
+                        }}
                       />
+                      {formErrors.name && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.name}
+                        </p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Loại xe tham gia
+                        Loại xe tham gia <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         placeholder="VD: MTB, Road, Touring..."
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${formErrors.bikeType ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
                         value={formData.bikeType}
-                        onChange={(e) =>
-                          setFormData({ ...formData, bikeType: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            bikeType: e.target.value,
+                          });
+                          if (formErrors.bikeType)
+                            setFormErrors({ ...formErrors, bikeType: null });
+                        }}
                       />
+                      {formErrors.bikeType && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.bikeType}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -498,32 +553,46 @@ const AdminEventsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Ngày bắt đầu
+                        Ngày bắt đầu <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="date"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all text-slate-700"
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${formErrors.startDate ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
                         value={formData.startDate}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             startDate: e.target.value,
-                          })
-                        }
+                          });
+                          if (formErrors.startDate)
+                            setFormErrors({ ...formErrors, startDate: null });
+                        }}
                       />
+                      {formErrors.startDate && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.startDate}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Ngày kết thúc
+                        Ngày kết thúc <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="date"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all text-slate-700"
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${formErrors.endDate ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
                         value={formData.endDate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, endDate: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, endDate: e.target.value });
+                          if (formErrors.endDate)
+                            setFormErrors({ ...formErrors, endDate: null });
+                        }}
                       />
+                      {formErrors.endDate && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.endDate}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -531,35 +600,58 @@ const AdminEventsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Khu vực (Tên Tòa nhà / Công viên)
+                        Khu vực (Tên Tòa nhà / Công viên){" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         placeholder="VD: Công viên Yên Sở"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${formErrors.location ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
                         value={formData.location}
-                        onChange={(e) =>
-                          setFormData({ ...formData, location: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            location: e.target.value,
+                          });
+                          if (formErrors.location)
+                            setFormErrors({ ...formErrors, location: null });
+                        }}
                       />
+                      {formErrors.location && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.location}
+                        </p>
+                      )}
                     </div>
 
                     {/* KHUNG BẢN ĐỒ LEAFLET */}
                     <div className="md:col-span-2 relative z-10">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
-                        Địa chỉ chi tiết (Tìm kiếm hoặc Click trên bản đồ)
+                        Địa chỉ chi tiết (Tìm kiếm hoặc Click trên bản đồ){" "}
+                        <span className="text-red-500">*</span>
                       </label>
-                      <LocationPicker
-                        initialAddress={formData.address}
-                        onLocationSelect={(locationData) => {
-                          setFormData({
-                            ...formData,
-                            address: locationData.address,
-                            latitude: locationData.lat,
-                            longitude: locationData.lng,
-                          });
-                        }}
-                      />
+                      <div
+                        className={`${formErrors.address ? "ring-2 ring-red-500 rounded-lg" : ""}`}
+                      >
+                        <LocationPicker
+                          initialAddress={formData.address}
+                          onLocationSelect={(locationData) => {
+                            setFormData({
+                              ...formData,
+                              address: locationData.address,
+                              latitude: locationData.lat,
+                              longitude: locationData.lng,
+                            });
+                            if (formErrors.address)
+                              setFormErrors({ ...formErrors, address: null });
+                          }}
+                        />
+                      </div>
+                      {formErrors.address && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.address}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -585,9 +677,7 @@ const AdminEventsPage = () => {
 
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
                   <button
-                    onClick={() =>
-                      isEdit ? setEditEvent(null) : setShowCreateModal(false)
-                    }
+                    onClick={() => closeModal(isEdit)}
                     className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors"
                   >
                     Hủy

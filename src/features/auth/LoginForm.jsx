@@ -24,7 +24,8 @@ const LoginForm = () => {
   const [error, setError] = useState("");
 
   const getRedirectPath = (role) => {
-    const roleLower = role ? role.toLowerCase() : "";
+    const roleLower = String(role || "").toLowerCase();
+
     if (roleLower.includes("admin")) return "/admin";
     if (roleLower.includes("inspector")) return "/inspector";
     return "/";

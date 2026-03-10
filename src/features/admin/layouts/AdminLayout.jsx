@@ -24,7 +24,9 @@ const AdminLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role?.toUpperCase() !== "ADMIN") {
+  const userRole = String(user.role || "").toUpperCase();
+
+  if (!userRole.includes("ADMIN")) {
     return <Navigate to="/unauthorized" replace />;
   }
 

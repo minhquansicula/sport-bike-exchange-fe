@@ -86,14 +86,11 @@
 //   },
 // };
 
-// File: src/services/bikeService.js
 import api from "../config/api";
 
-// Chỉ giữ cache cho các xe Public (Tất cả mọi người đều xem chung 1 dữ liệu)
+// Chỉ giữ cache cho các xe Public
 let bikesCache = null;
 let fetchBikesPromise = null;
-
-// XÓA BỎ myBikesCache vì dữ liệu cá nhân không nên cache kiểu biến toàn cục
 
 export const bikeService = {
   createBikeListing: async (data) => {
@@ -147,9 +144,24 @@ export const bikeService = {
     return response.data;
   },
 
-  // SỬA LẠI: Luôn gọi API mới để đảm bảo lấy đúng xe của User đang đăng nhập bằng Token hiện tại
   getMyBikeListings: async () => {
     const response = await api.get("/post/my-posts");
+    return response.data;
+  },
+
+  // --- API LẤY THƯ VIỆN XE (BICYCLE LIBRARY) ---
+  getBicycleLibrary: async (brandName, year) => {
+    let url = "/bicycle-library";
+    const params = new URLSearchParams();
+
+    if (brandName) params.append("brandName", brandName);
+    if (year) params.append("year", year);
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    const response = await api.get(url);
     return response.data;
   },
 

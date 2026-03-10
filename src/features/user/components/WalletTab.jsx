@@ -1,5 +1,5 @@
 // File: src/pages/user/components/WalletTab.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { walletService } from "../../../services/walletService";
 import formatCurrency from "../../../utils/formatCurrency";
@@ -18,6 +18,7 @@ const WalletTab = () => {
   const [loading, setLoading] = useState(true);
   const [amountToAdd, setAmountToAdd] = useState(""); // Lưu giá trị gốc dạng chuỗi số: "100000"
   const [isAdding, setIsAdding] = useState(false);
+  const isProcessingVNPay = useRef(false); // biến cờ để chặn React StrictMode
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -47,9 +48,18 @@ const WalletTab = () => {
 
     if (vnp_ResponseCode) {
       if (vnp_ResponseCode === "00") {
+        // 3. Nếu cờ đã bật (API đang gọi rồi), thì RETURN NGAY LẬP TỨC, không gọi nữa
+        if (isProcessingVNPay.current) return;
+        isProcessingVNPay.current = true; // Bật cờ lên
+
         try {
-          const queryString = window.location.search;
-          await walletService.verifyVNPayReturn(queryString);
+          // Bỏ chữ tab=wallet để tránh lỗi 500 (như đã nói ở trước)
+          const rawQuery = window.location.search;
+          const cleanQuery = rawQuery
+            .replace("?tab=wallet&", "?")
+            .replace("&tab=wallet", "");
+
+          await walletService.verifyVNPayReturn(cleanQuery);
 
           toast.success("Giao dịch VNPay thành công! Đã nạp tiền vào ví.");
           fetchWallet();
@@ -59,7 +69,9 @@ const WalletTab = () => {
       } else {
         toast.error("Bạn đã hủy giao dịch hoặc giao dịch thất bại.");
       }
-      setSearchParams({});
+
+      // Xóa params khỏi URL để dọn dẹp
+      setSearchParams({ tab: "wallet" });
     }
   };
 
@@ -74,10 +86,12 @@ const WalletTab = () => {
 
     try {
       setIsAdding(true);
+      // Gọi BE để lấy URL thanh toán VNPay
       const response = await walletService.createVNPayUrl(amount);
 
-      if (response && response.result) {
-        window.location.href = response.result;
+      // Đã sửa lại thành response.redirectUrl cho khớp với DTO của bạn
+      if (response && response.redirectUrl) {
+        window.location.href = response.redirectUrl;
       } else {
         toast.error("Lỗi lấy thông tin thanh toán từ hệ thống.");
       }

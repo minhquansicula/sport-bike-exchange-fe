@@ -1,22 +1,3 @@
-// // File: src/services/walletService.js
-// import api from "../config/api";
-
-// export const walletService = {
-//   getWallet: async () => {
-//     const response = await api.get("/wallet");
-//     return response.data;
-//   },
-
-//   addFunds: async (amount) => {
-//     const response = await api.put("/wallet/add", { amount });
-//     return response.data;
-//   },
-
-//   getTransactions: async () => {
-//     const response = await api.get("/wallet/transactions");
-//     return response.data;
-//   },
-// };
 // File: src/services/walletService.js
 import api from "../config/api";
 
@@ -26,19 +7,20 @@ export const walletService = {
     return response.data;
   },
 
-  // (Đã thay thế) Hàm này chỉ dùng nếu bạn muốn cộng tiền trực tiếp không qua VNPay
-  // addFunds: async (amount) => { ... }
-
-  // 1. Gọi API Backend để lấy URL chuyển hướng sang VNPay Sandbox
   createVNPayUrl: async (amount) => {
-    // Giả sử backend của bạn có endpoint này, truyền amount lên
-    const response = await api.get(`/payment/create_vnpay?amount=${amount}`);
+    const currentOrigin = window.location.origin; // Sẽ tự động lấy 'http://localhost:5173' hoặc 'https://myweb.vercel.app'
+    const dynamicReturnUrl = `${currentOrigin}/profile?tab=wallet`;
+
+    const response = await api.post("/payments/submitOrder", {
+      amount: amount,
+      orderInfo: "Nap tien vao vi VeloX",
+      returnUrl: dynamicReturnUrl, // Gửi kèm đường link về cho Backend
+    });
     return response.data;
   },
 
-  // 2. Gửi chuỗi query string từ VNPay về Backend để xác thực và cộng tiền
   verifyVNPayReturn: async (queryString) => {
-    const response = await api.get(`/payment/vnpay_return${queryString}`);
+    const response = await api.get(`/payments/vnpay-payment${queryString}`);
     return response.data;
   },
 };

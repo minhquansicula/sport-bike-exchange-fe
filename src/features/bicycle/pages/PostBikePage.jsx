@@ -1,5 +1,5 @@
 // File: src/pages/user/PostBikePage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { uploadService } from "../../../services/uploadService";
@@ -28,12 +28,19 @@ import {
   MdLinearScale,
   MdRadioButtonUnchecked,
   MdCompress,
+  MdAutoAwesome,
 } from "react-icons/md";
 
 const PostBikePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  // --- QUẢN LÝ DỮ LIỆU THƯ VIỆN ĐỘNG ---
+  const [allLibraryData, setAllLibraryData] = useState([]);
+  const [availableBrands, setAvailableBrands] = useState([]);
+  const [availableCategories, setAvailableCategories] = useState([]); // Thêm state lưu danh sách loại xe
+  const [libraryBikes, setLibraryBikes] = useState([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -47,7 +54,7 @@ const PostBikePage = () => {
     transmission: "",
     weight: "",
     condition: 90,
-    price: "", // price sẽ lưu dạng chuỗi gốc VD: "1000000"
+    price: "",
     description: "",
     color: "",
     frameMaterial: "",
@@ -62,6 +69,93 @@ const PostBikePage = () => {
   });
 
   const [errors, setErrors] = useState({});
+
+  // 1. TẢI TOÀN BỘ DỮ LIỆU TỪ API THƯ VIỆN KHI VÀO TRANG
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const res = await bikeService.getBicycleLibrary();
+        if (res && res.result) {
+          setAllLibraryData(res.result);
+
+          // Lọc ra các Hãng xe không trùng lặp và sắp xếp ABC
+          const uniqueBrands = Array.from(
+            new Set(res.result.map((bike) => bike.brand?.name).filter(Boolean)),
+          ).sort();
+          setAvailableBrands(uniqueBrands);
+
+          // Lọc ra các Loại xe (Category) không trùng lặp
+          const uniqueCategories = Array.from(
+            new Set(
+              res.result
+                .map((bike) => bike.category?.name || bike.bikeType)
+                .filter(Boolean),
+            ),
+          ).sort();
+          setAvailableCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu library:", error);
+      }
+    };
+    if (user) {
+      fetchInitialData();
+    }
+  }, [user]);
+
+  // 2. LỌC MẪU XE KHI CHỌN HÃNG
+  useEffect(() => {
+    if (formData.brand && formData.brand !== "Khác") {
+      const filteredBikes = allLibraryData.filter(
+        (bike) => bike.brand?.name === formData.brand,
+      );
+      setLibraryBikes(filteredBikes);
+    } else {
+      setLibraryBikes([]);
+    }
+  }, [formData.brand, allLibraryData]);
+
+  // 3. XỬ LÝ ĐIỀN FORM TỰ ĐỘNG KHI CHỌN XE MẪU
+  const handleSelectLibraryBike = (e) => {
+    const selectedId = parseInt(e.target.value);
+    const selectedBike = libraryBikes.find((b) => b.id === selectedId);
+
+    if (selectedBike) {
+      setFormData((prev) => ({
+        ...prev,
+        model: selectedBike.model || prev.model,
+        category:
+          selectedBike.category?.name || selectedBike.bikeType || prev.category,
+        manufactureYear: selectedBike.yearManufacture || prev.manufactureYear,
+        frameSize: selectedBike.frameSize || prev.frameSize,
+        wheelSize: selectedBike.wheelSize || prev.wheelSize,
+        brakeType: selectedBike.brakeType || prev.brakeType,
+        transmission:
+          selectedBike.numberOfGears ||
+          selectedBike.drivetrain ||
+          prev.transmission,
+        weight: selectedBike.weight || prev.weight,
+        color: selectedBike.color || prev.color,
+        frameMaterial: selectedBike.frameMaterial || prev.frameMaterial,
+        forkType: selectedBike.forkType || prev.forkType,
+        saddle: selectedBike.saddle || prev.saddle,
+        chainring: selectedBike.chainring || prev.chainring,
+        chain: selectedBike.chain || prev.chain,
+        handlebar: selectedBike.handlebar || prev.handlebar,
+        rim: selectedBike.rim || prev.rim,
+        shockAbsorber: selectedBike.shockAbsorber || prev.shockAbsorber,
+      }));
+
+      // Tự động gợi ý tiêu đề nếu đang trống
+      if (!formData.title) {
+        setFormData((prev) => ({
+          ...prev,
+          title:
+            `Cần bán ${selectedBike.brand?.name || ""} ${selectedBike.model || ""} ${selectedBike.yearManufacture ? `đời ${selectedBike.yearManufacture}` : ""}`.trim(),
+        }));
+      }
+    }
+  };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -190,7 +284,6 @@ const PostBikePage = () => {
     }
   };
 
-  // Format số có dấu chấm (VD: 1000000 -> 1.000.000)
   const formatDisplayAmount = (val) => {
     if (!val) return "";
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -289,17 +382,21 @@ const PostBikePage = () => {
                   }`}
                   value={formData.brand}
                   onChange={(e) => {
-                    setFormData({ ...formData, brand: e.target.value });
+                    setFormData({
+                      ...formData,
+                      brand: e.target.value,
+                      model: "",
+                    });
                     if (errors.brand) setErrors({ ...errors, brand: null });
                   }}
                 >
                   <option value="">Chọn hãng xe</option>
-                  <option value="Trek">Trek</option>
-                  <option value="Giant">Giant</option>
-                  <option value="Specialized">Specialized</option>
-                  <option value="Cannondale">Cannondale</option>
-                  <option value="Trinx">Trinx</option>
-                  <option value="Galaxy">Galaxy</option>
+                  {/* Map dữ liệu Hãng xe động */}
+                  {availableBrands.map((brandName, index) => (
+                    <option key={index} value={brandName}>
+                      {brandName}
+                    </option>
+                  ))}
                   <option value="Khác">Khác</option>
                 </select>
                 {errors.brand && (
@@ -308,6 +405,31 @@ const PostBikePage = () => {
                   </p>
                 )}
               </div>
+
+              {/* Ô TỰ ĐỘNG ĐIỀN */}
+              {libraryBikes.length > 0 ? (
+                <div>
+                  <label className="block text-sm font-bold text-orange-600 mb-2 flex items-center gap-1">
+                    <MdAutoAwesome /> Điền nhanh thông số từ thư viện
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all cursor-pointer text-orange-800"
+                    onChange={handleSelectLibraryBike}
+                  >
+                    <option value="">-- Chọn mẫu xe để tự động điền --</option>
+                    {libraryBikes.map((bike) => (
+                      <option key={bike.id} value={bike.id}>
+                        {bike.model}{" "}
+                        {bike.yearManufacture
+                          ? `(${bike.yearManufacture})`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="hidden md:block"></div>
+              )}
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -348,10 +470,13 @@ const PostBikePage = () => {
                   }}
                 >
                   <option value="">Chọn loại xe</option>
-                  <option value="Road">Road (Đua)</option>
-                  <option value="MTB">MTB (Địa hình)</option>
-                  <option value="Touring">Touring (Đường phố)</option>
-                  <option value="Fixed Gear">Fixed Gear</option>
+                  {/* Map dữ liệu Category động từ thư viện */}
+                  {availableCategories.map((catName, index) => (
+                    <option key={index} value={catName}>
+                      {catName}
+                    </option>
+                  ))}
+                  <option value="Khác">Khác</option>
                 </select>
                 {errors.category && (
                   <p className="text-red-500 text-xs mt-1 font-medium">
@@ -794,7 +919,6 @@ const PostBikePage = () => {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                     <MdAttachMoney size={20} />
                   </div>
-                  {/* SỬA TYPE THÀNH TEXT ĐỂ FORMAT DẤU CHẤM */}
                   <input
                     type="text"
                     placeholder="Nhập giá bán..."

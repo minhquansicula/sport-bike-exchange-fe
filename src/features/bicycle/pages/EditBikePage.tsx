@@ -1,4 +1,4 @@
-// EditBikePage.tsx
+// File: src/pages/user/EditBikePage.tsx
 import React, {
   useState,
   useEffect,
@@ -26,7 +26,11 @@ const EditBikePage = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
-  // Cập nhật State khớp chuẩn 100% với Backend DTO + Các trường mới
+  // Lấy danh sách Brand và Category từ API để render Dropdown (Tránh việc phải gõ tay)
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
+  // State Form
   const [formData, setFormData] = useState({
     title: "",
     price: "",
@@ -43,7 +47,7 @@ const EditBikePage = () => {
     color: "",
     frameMaterial: "",
     forkType: "",
-    condition: "",
+    condition: "90", // Mặc định
     image_url: "",
     saddle: "",
     chainring: "",
@@ -53,6 +57,36 @@ const EditBikePage = () => {
     shockAbsorber: "",
   });
 
+  // 1. Tải danh sách Hãng và Loại xe để bỏ vào Dropdown
+  useEffect(() => {
+    const fetchLibraryData = async () => {
+      try {
+        const res = await bikeService.getBicycleLibrary();
+        if (res && res.result) {
+          const uniqueBrands = Array.from(
+            new Set(
+              res.result.map((bike: any) => bike.brand?.name).filter(Boolean),
+            ),
+          ).sort() as string[];
+          setAvailableBrands(uniqueBrands);
+
+          const uniqueCategories = Array.from(
+            new Set(
+              res.result
+                .map((bike: any) => bike.category?.name || bike.bikeType)
+                .filter(Boolean),
+            ),
+          ).sort() as string[];
+          setAvailableCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu library:", error);
+      }
+    };
+    fetchLibraryData();
+  }, []);
+
+  // 2. Tải dữ liệu của xe đang được Edit
   useEffect(() => {
     const fetchBikeDetail = async () => {
       if (!id) return;
@@ -79,7 +113,7 @@ const EditBikePage = () => {
             color: bike.color || "",
             frameMaterial: bike.frameMaterial || "",
             forkType: bike.forkType || "",
-            condition: bike.condition?.toString() || "",
+            condition: bike.condition?.toString() || "90",
             image_url: bike.image_url || "",
             saddle: bike.saddle || "",
             chainring: bike.chainring || "",
@@ -100,10 +134,24 @@ const EditBikePage = () => {
   }, [id]);
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Nâng cấp 1: Hàm hiển thị format giá tiền (10.000.000)
+  const formatDisplayAmount = (val: string) => {
+    if (!val) return "";
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
+    let rawValue = e.target.value.replace(/\D/g, "");
+    if (rawValue.startsWith("0")) {
+      rawValue = rawValue.replace(/^0+/, "");
+    }
+    setFormData((prev) => ({ ...prev, price: rawValue }));
   };
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +245,7 @@ const EditBikePage = () => {
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate(-1)}
+            type="button"
             className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-zinc-500 hover:text-orange-600 hover:bg-orange-50 shadow-sm transition-all"
           >
             <MdArrowBack size={20} />
@@ -213,6 +262,7 @@ const EditBikePage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* SECTION HÌNH ẢNH */}
           <div className="bg-white p-6 md:p-8 rounded-[24px] border border-gray-100 shadow-sm">
             <h2 className="text-lg font-bold text-zinc-900 mb-6 border-b border-gray-100 pb-4">
               Hình ảnh sản phẩm
@@ -256,6 +306,7 @@ const EditBikePage = () => {
             </div>
           </div>
 
+          {/* SECTION THÔNG TIN CƠ BẢN */}
           <div className="bg-white p-6 md:p-8 rounded-[24px] border border-gray-100 shadow-sm space-y-6">
             <h2 className="text-lg font-bold text-zinc-900 border-b border-gray-100 pb-4">
               Thông tin cơ bản
@@ -280,56 +331,87 @@ const EditBikePage = () => {
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Giá bán (VNĐ) *
                 </label>
+                {/* Đã sửa: Định dạng có dấu chấm */}
                 <input
-                  type="number"
-                  name="price"
+                  type="text"
                   required
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  value={formatDisplayAmount(formData.price)}
+                  onChange={handlePriceChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-bold"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Độ mới (%) *
+                  Độ mới ({formData.condition}%) *
                 </label>
-                <input
-                  type="number"
-                  name="condition"
-                  min="0"
-                  max="100"
-                  required
-                  value={formData.condition}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
+                {/* Đã sửa: Dùng thanh trượt giống PostBikePage */}
+                <div className="flex items-center h-[48px] bg-gray-50 px-4 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-orange-500">
+                  <input
+                    type="range"
+                    name="condition"
+                    min="50"
+                    max="100"
+                    required
+                    value={formData.condition}
+                    onChange={handleChange}
+                    className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Thương hiệu
                 </label>
-                <input
-                  type="text"
+                <select
                   name="brandName"
                   value={formData.brandName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Chọn hãng xe</option>
+                  {availableBrands.map((brand, i) => (
+                    <option key={i} value={brand}>
+                      {brand}
+                    </option>
+                  ))}
+                  {/* Option fallback nếu hãng cũ không nằm trong list API */}
+                  {!availableBrands.includes(formData.brandName) &&
+                    formData.brandName && (
+                      <option value={formData.brandName}>
+                        {formData.brandName}
+                      </option>
+                    )}
+                  <option value="Khác">Khác</option>
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Phân loại (Category)
                 </label>
-                <input
-                  type="text"
+                <select
                   name="categoryName"
                   value={formData.categoryName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Chọn loại xe</option>
+                  {availableCategories.map((cat, i) => (
+                    <option key={i} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                  {/* Option fallback nếu loại xe cũ không nằm trong list API */}
+                  {!availableCategories.includes(formData.categoryName) &&
+                    formData.categoryName && (
+                      <option value={formData.categoryName}>
+                        {formData.categoryName}
+                      </option>
+                    )}
+                  <option value="Khác">Khác</option>
+                </select>
               </div>
             </div>
 
@@ -347,48 +429,13 @@ const EditBikePage = () => {
             </div>
           </div>
 
+          {/* SECTION THÔNG SỐ KỸ THUẬT */}
           <div className="bg-white p-6 md:p-8 rounded-[24px] border border-gray-100 shadow-sm space-y-6">
             <h2 className="text-lg font-bold text-zinc-900 border-b border-gray-100 pb-4">
               Thông số kỹ thuật
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Loại xe (Bike Type)
-                </label>
-                <input
-                  type="text"
-                  name="bikeType"
-                  value={formData.bikeType}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Size Khung
-                </label>
-                <input
-                  type="text"
-                  name="frameSize"
-                  value={formData.frameSize}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Size Bánh
-                </label>
-                <input
-                  type="text"
-                  name="wheelSize"
-                  value={formData.wheelSize}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Năm sản xuất
@@ -401,18 +448,130 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Loại Phanh
+                  Size Khung
                 </label>
                 <input
                   type="text"
-                  name="brakeType"
-                  value={formData.brakeType}
+                  name="frameSize"
+                  value={formData.frameSize}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
+              {/* Đã nâng cấp các trường phổ biến thành Select Dropdown */}
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">
+                  Size Bánh
+                </label>
+                <select
+                  name="wheelSize"
+                  value={formData.wheelSize}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Chọn size</option>
+                  <option value="26 inch">26 inch</option>
+                  <option value="27.5 inch">27.5 inch</option>
+                  <option value="29 inch">29 inch</option>
+                  <option value="700c">700c</option>
+                  {!["26 inch", "27.5 inch", "29 inch", "700c", ""].includes(
+                    formData.wheelSize,
+                  ) && (
+                    <option value={formData.wheelSize}>
+                      {formData.wheelSize}
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">
+                  Loại Phanh
+                </label>
+                <select
+                  name="brakeType"
+                  value={formData.brakeType}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Chọn loại</option>
+                  <option value="Phanh vành (Rim)">Phanh vành (Rim)</option>
+                  <option value="Phanh đĩa cơ">Phanh đĩa cơ</option>
+                  <option value="Phanh đĩa dầu">Phanh đĩa dầu</option>
+                  {![
+                    "Phanh vành (Rim)",
+                    "Phanh đĩa cơ",
+                    "Phanh đĩa dầu",
+                    "",
+                  ].includes(formData.brakeType) && (
+                    <option value={formData.brakeType}>
+                      {formData.brakeType}
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">
+                  Chất liệu khung
+                </label>
+                <select
+                  name="frameMaterial"
+                  value={formData.frameMaterial}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Chọn chất liệu</option>
+                  <option value="Nhôm (Aluminum)">Nhôm (Aluminum)</option>
+                  <option value="Carbon">Carbon</option>
+                  <option value="Thép (Steel)">Thép (Steel)</option>
+                  <option value="Titanium">Titanium</option>
+                  {![
+                    "Nhôm (Aluminum)",
+                    "Carbon",
+                    "Thép (Steel)",
+                    "Titanium",
+                    "",
+                  ].includes(formData.frameMaterial) && (
+                    <option value={formData.frameMaterial}>
+                      {formData.frameMaterial}
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-zinc-700 mb-2">
+                  Loại phuộc
+                </label>
+                <select
+                  name="forkType"
+                  value={formData.forkType}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Chọn loại phuộc</option>
+                  <option value="Phuộc đơ (Rigid)">Phuộc đơ (Rigid)</option>
+                  <option value="Phuộc nhún lò xo">Phuộc nhún lò xo</option>
+                  <option value="Phuộc hơi">Phuộc hơi</option>
+                  {![
+                    "Phuộc đơ (Rigid)",
+                    "Phuộc nhún lò xo",
+                    "Phuộc hơi",
+                    "",
+                  ].includes(formData.forkType) && (
+                    <option value={formData.forkType}>
+                      {formData.forkType}
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              {/* Các trường còn lại giữ dạng Text Input */}
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Hệ dẫn động (Drivetrain)
@@ -425,9 +584,10 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Số líp/đĩa (Number of Gears)
+                  Số líp/đĩa (Gears)
                 </label>
                 <input
                   type="text"
@@ -437,6 +597,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Màu sắc
@@ -449,30 +610,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Chất liệu khung
-                </label>
-                <input
-                  type="text"
-                  name="frameMaterial"
-                  value={formData.frameMaterial}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 mb-2">
-                  Loại phuộc
-                </label>
-                <input
-                  type="text"
-                  name="forkType"
-                  value={formData.forkType}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                />
-              </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Yên xe
@@ -485,6 +623,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Đĩa (Chainring)
@@ -497,6 +636,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Xích xe (Chain)
@@ -509,6 +649,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Ghi đông (Handlebar)
@@ -521,6 +662,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Vành xe (Rim)
@@ -533,6 +675,7 @@ const EditBikePage = () => {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-zinc-700 mb-2">
                   Giảm xốc
@@ -549,12 +692,13 @@ const EditBikePage = () => {
           </div>
 
           <div className="flex justify-end gap-4 pt-4 sticky bottom-6 z-10">
-            <Link
-              to={`/bikes/${id}`}
+            <button
+              onClick={() => navigate(-1)}
+              type="button"
               className="px-6 py-3.5 bg-white text-zinc-700 border border-gray-200 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all"
             >
               Hủy bỏ
-            </Link>
+            </button>
             <button
               type="submit"
               disabled={isSaving || isUploading}
