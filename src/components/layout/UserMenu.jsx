@@ -12,6 +12,7 @@ import {
   MdAdminPanelSettings,
   MdFactCheck,
   MdAccountBalanceWallet,
+  MdEventAvailable, // Bổ sung import icon
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -164,6 +165,14 @@ const UserMenu = () => {
                   className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
                 >
                   <MdPedalBike size={20} className="text-gray-400" /> Xe của tôi
+                </Link>
+                <Link
+                  to="/profile?tab=my-event-bikes"
+                  onClick={handleLinkClick}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-colors"
+                >
+                  <MdEventAvailable size={20} className="text-gray-400" /> Xe sự
+                  kiện
                 </Link>
                 <Link
                   to="/profile?tab=transactions-history"

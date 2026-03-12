@@ -9,6 +9,7 @@ import {
   MdLogout,
   MdManageAccounts,
   MdAccountBalanceWallet,
+  MdEventAvailable, // <-- Thêm import icon
 } from "react-icons/md";
 
 const ProfileSidebar = ({
@@ -42,9 +43,14 @@ const ProfileSidebar = ({
       id: "transaction-manage",
       icon: <MdManageAccounts size={20} />,
       label: "Quản lý giao dịch",
-      badge: pendingCount > 0 ? pendingCount : null, // Thêm badge tại đây
+      badge: pendingCount > 0 ? pendingCount : null,
     },
     { id: "my-bikes", icon: <MdPedalBike size={20} />, label: "Xe của tôi" },
+    {
+      id: "my-event-bikes",
+      icon: <MdEventAvailable size={20} />,
+      label: "Xe sự kiện",
+    }, // <-- THÊM NÚT NÀY
     {
       id: "transactions-history",
       icon: <MdHistory size={20} />,
@@ -74,10 +80,6 @@ const ProfileSidebar = ({
 
   return (
     <div className="bg-white lg:rounded-[24px] shadow-sm border-b lg:border border-gray-100 overflow-hidden lg:sticky lg:top-24 -mx-4 lg:mx-0">
-      {/* SỬA ĐỔI QUAN TRỌNG: 
-        Dùng flex-row overflow-x-auto trên mobile, flex-col trên Desktop (lg:)
-        Tắt thanh cuộn (scrollbar-hide) để giao diện đẹp hơn
-      */}
       <nav className="flex lg:flex-col p-2 space-x-2 lg:space-x-0 lg:space-y-1 overflow-x-auto scrollbar-hide">
         <p className="hidden lg:block px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
           Tài khoản

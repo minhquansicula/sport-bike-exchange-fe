@@ -13,8 +13,8 @@ import MyBikesTab from "../components/MyBikesTab";
 import TransactionManagementTab from "../components/TransactionManagementTab";
 import TransactionHistoryTab from "../components/TransactionHistoryTab";
 import WalletTab from "../components/WalletTab";
-
 import SecurityTab from "../components/SecurityTab";
+import MyEventBikesTab from "../components/MyEventBikesTab"; // <-- THÊM DÒNG NÀY
 import { Toaster, toast } from "react-hot-toast";
 
 const UserProfilePage = () => {
@@ -284,7 +284,6 @@ const UserProfilePage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-3 space-y-6">
-            {/* LƯU Ý: Bạn cần thêm nút tab 'wallet' vào file ProfileSidebar.jsx của bạn */}
             <ProfileSidebar
               activeTab={activeTab}
               setActiveTab={handleSwitchTab}
@@ -306,7 +305,6 @@ const UserProfilePage = () => {
                 />
               )}
 
-              {/* Tab Ví */}
               {activeTab === "wallet" && <WalletTab />}
 
               {activeTab === "my-bikes" && (
@@ -315,6 +313,11 @@ const UserProfilePage = () => {
                   isLoading={isBikesLoading}
                   onDelete={handleDeleteBike}
                 />
+              )}
+
+              {/* THÊM RENDER CHO COMPONENT XE SỰ KIỆN TẠI ĐÂY */}
+              {activeTab === "my-event-bikes" && (
+                <MyEventBikesTab user={user} />
               )}
 
               {activeTab === "transaction-manage" && (
