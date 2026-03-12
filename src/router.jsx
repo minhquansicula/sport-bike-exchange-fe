@@ -9,7 +9,7 @@ import AdminLayout from "./features/admin/layouts/AdminLayout";
 import InspectorLayout from "./features/inspection/layouts/InspectorLayout";
 import ScrollToTop from "./components/common/ScrollToTop";
 
-// Root Layout để wrap AuthProvider + WishlistProvider cho tất cả routes
+// Root Layout
 const RootLayout = () => {
   return (
     <AuthProvider>
@@ -26,7 +26,7 @@ import HomePage from "./pages/HomePage";
 import BikeListPage from "./features/bicycle/pages/BikeListPage";
 import BikeDetailPage from "./features/bicycle/pages/BikeDetailPage";
 import PostBikePage from "./features/bicycle/pages/PostBikePage";
-import EditBikePage from "./features/bicycle/pages/EditBikePage"; // <-- Đã thêm import EditBikePage
+import EditBikePage from "./features/bicycle/pages/EditBikePage";
 import EventListPage from "./features/event-meeting/pages/EventListPage";
 import EventDetailPage from "./features/event-meeting/pages/EventDetailPage";
 
@@ -43,12 +43,13 @@ import AdminHomePage from "./features/admin/pages/AdminHomePage";
 import AdminUsersPage from "./features/admin/pages/AdminUsersPage";
 import AdminTransactionsPage from "./features/admin/pages/AdminTransactionsPage";
 import AdminEventsPage from "./features/admin/pages/AdminEventsPage";
-import AdminEventFormPage from "./features/admin/pages/AdminEventFormPage";
+import AdminEventBicyclesPage from "./features/admin/pages/AdminEventBicyclesPage";
 import AdminPostsPage from "./features/admin/pages/AdminPostsPage";
 import AdminPostDetailPage from "./features/admin/pages/AdminPostDetailPage";
 import AdminPricingPage from "./features/admin/pages/AdminPricingPage";
 import AdminLocationsPage from "./features/admin/pages/AdminLocationsPage";
 import AdminSettingsPage from "./features/admin/pages/AdminSettingsPage";
+// Đã xóa import AdminEventFormPage
 
 // Các trang Inspector
 import InspectorHomePage from "./features/inspection/pages/InspectorHomePage";
@@ -56,7 +57,6 @@ import InspectorTaskPage from "./features/inspection/pages/InspectorTaskPage";
 import CreateReportPage from "./features/inspection/pages/CreateReportPage";
 import InspectorProfilePage from "./features/inspection/pages/InspectorProfilePage";
 
-// Trang lỗi
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 
 const router = createBrowserRouter([
@@ -71,7 +71,7 @@ const router = createBrowserRouter([
           { path: "bikes", element: <BikeListPage /> },
           { path: "bikes/:id", element: <BikeDetailPage /> },
           { path: "post-bike", element: <PostBikePage /> },
-          { path: "edit-bike/:id", element: <EditBikePage /> }, // <-- Đã thêm route cho EditBikePage
+          { path: "edit-bike/:id", element: <EditBikePage /> },
           { path: "profile", element: <UserProfilePage /> },
           { path: "wishlist", element: <WishlistPage /> },
           { path: "events", element: <EventListPage /> },
@@ -103,8 +103,8 @@ const router = createBrowserRouter([
           { path: "users", element: <AdminUsersPage /> },
           { path: "transactions", element: <AdminTransactionsPage /> },
           { path: "events", element: <AdminEventsPage /> },
-          { path: "events/create", element: <AdminEventFormPage /> },
-          { path: "events/:id/edit", element: <AdminEventFormPage /> },
+          // Đã xóa routes "events/create" và "events/:id/edit"
+          { path: "event-bicycles", element: <AdminEventBicyclesPage /> },
           { path: "posts", element: <AdminPostsPage /> },
           { path: "posts/:id", element: <AdminPostDetailPage /> },
           { path: "pricing", element: <AdminPricingPage /> },
@@ -121,12 +121,12 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
-          { index: true, element: <InspectorHomePage /> }, // Trang chủ Inspector
-          { path: "tasks", element: <InspectorTaskPage /> }, // Danh sách nhiệm vụ
-          { path: "tasks/:id", element: <InspectorTaskPage /> }, // Chi tiết nhiệm vụ
-          { path: "create-report", element: <CreateReportPage /> }, // Tạo báo cáo
-          { path: "history", element: <InspectorTaskPage /> }, // Lịch sử (tạm dùng chung)
-          { path: "profile", element: <InspectorProfilePage /> }, // Hồ sơ cá nhân
+          { index: true, element: <InspectorHomePage /> },
+          { path: "tasks", element: <InspectorTaskPage /> },
+          { path: "tasks/:id", element: <InspectorTaskPage /> },
+          { path: "create-report", element: <CreateReportPage /> },
+          { path: "history", element: <InspectorTaskPage /> },
+          { path: "profile", element: <InspectorProfilePage /> },
         ],
       },
     ],

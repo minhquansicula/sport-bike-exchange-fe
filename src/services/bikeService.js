@@ -165,6 +165,12 @@ export const bikeService = {
     return response.data;
   },
 
+  //Lấy phí sàn
+  calculateListingFee: async (price) => {
+    const response = await api.get(`/post/calculate-fee?price=${price}`);
+    return response.data;
+  },
+
   clearCache: () => {
     bikesCache = null;
     fetchBikesPromise = null;

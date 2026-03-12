@@ -15,6 +15,7 @@ import {
   MdWarning,
   MdEvent,
   MdClose,
+  MdOutlineDirectionsBike,
 } from "react-icons/md";
 
 const AdminSidebar = ({ isOpen, setIsOpen }) => {
@@ -39,6 +40,11 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
           label: "Danh sách sự kiện",
           path: "/admin/events",
           icon: <MdEvent size={20} />,
+        },
+        {
+          label: "Duyệt xe sự kiện",
+          path: "/admin/event-bicycles",
+          icon: <MdOutlineDirectionsBike size={20} />,
         },
       ],
     },
@@ -101,6 +107,19 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
 
   const isActive = (path) => {
     if (path === "/admin") return location.pathname === "/admin";
+    // Check match chính xác đường dẫn dài hơn trước
+    if (
+      location.pathname.startsWith("/admin/event-bicycles") &&
+      path === "/admin/event-bicycles"
+    )
+      return true;
+    if (
+      location.pathname.startsWith("/admin/events") &&
+      path === "/admin/events" &&
+      !location.pathname.startsWith("/admin/event-bicycles")
+    )
+      return true;
+
     return location.pathname.startsWith(path);
   };
 

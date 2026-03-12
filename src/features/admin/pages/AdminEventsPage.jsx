@@ -26,7 +26,6 @@ const AdminEventsPage = () => {
   const [editEvent, setEditEvent] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Thêm state lưu lỗi validation
   const [formErrors, setFormErrors] = useState({});
 
   const [newEvent, setNewEvent] = useState({
@@ -97,21 +96,19 @@ const AdminEventsPage = () => {
     );
   };
 
-  // Hàm validate form (Đã tối ưu không chặn ngày quá khứ khi Edit)
   const validateEventForm = (formData, isEdit = false) => {
     const errors = {};
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0];
 
     if (!formData.name || !formData.name.trim())
       errors.name = "Tên sự kiện không được để trống.";
 
     if (!formData.bikeType || !formData.bikeType.trim())
-      errors.bikeType = "Vui lòng nhập loại xe tham gia.";
+      errors.bikeType = "Vui lòng chọn loại xe tham gia.";
 
     if (!formData.startDate) {
       errors.startDate = "Vui lòng chọn ngày bắt đầu.";
     } else if (!isEdit && formData.startDate < today) {
-      // Chỉ chặn ngày quá khứ khi TẠO MỚI. Khi Edit vẫn cho phép lưu.
       errors.startDate = "Ngày bắt đầu không được trong quá khứ.";
     }
 
@@ -129,11 +126,10 @@ const AdminEventsPage = () => {
     }
 
     setFormErrors(errors);
-    return Object.keys(errors).length === 0; // Trả về true nếu không có lỗi
+    return Object.keys(errors).length === 0;
   };
 
   const handleCreateEvent = async () => {
-    // Gọi hàm validate và truyền false vì đây là tạo mới
     if (!validateEventForm(newEvent, false)) return;
 
     try {
@@ -160,7 +156,6 @@ const AdminEventsPage = () => {
   };
 
   const handleSaveEdit = async (updatedEvent) => {
-    // Gọi hàm validate và truyền true vì đây là chế độ Edit
     if (!validateEventForm(updatedEvent, true)) return;
 
     try {
@@ -210,7 +205,6 @@ const AdminEventsPage = () => {
     }
   };
 
-  // Hàm hỗ trợ xóa lỗi khi người dùng đóng modal
   const closeModal = (isEdit) => {
     setFormErrors({});
     if (isEdit) {
@@ -242,7 +236,6 @@ const AdminEventsPage = () => {
         </button>
       </div>
 
-      {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           {
@@ -288,7 +281,6 @@ const AdminEventsPage = () => {
         ))}
       </div>
 
-      {/* Filters Section */}
       <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex-1 relative">
           <MdSearch
@@ -322,7 +314,6 @@ const AdminEventsPage = () => {
         </div>
       </div>
 
-      {/* Events Grid */}
       {loading ? (
         <div className="text-center py-10 text-slate-500">
           Đang tải dữ liệu...
@@ -395,7 +386,7 @@ const AdminEventsPage = () => {
                       Loại
                     </span>
                     <span className="text-sm font-bold text-slate-800">
-                      {evt.bikeType}
+                      {evt.bikeType === "ALL" ? "Tất cả" : evt.bikeType}
                     </span>
                   </div>
                 </div>
@@ -426,7 +417,6 @@ const AdminEventsPage = () => {
         </>
       )}
 
-      {/* POPUP XEM CHI TIẾT */}
       {viewEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
@@ -452,7 +442,9 @@ const AdminEventsPage = () => {
                 <div>
                   <span className="block text-slate-500 mb-1">Loại xe</span>
                   <strong className="text-slate-900">
-                    {viewEvent.bikeType}
+                    {viewEvent.bikeType === "ALL"
+                      ? "Tất cả loại xe"
+                      : viewEvent.bikeType}
                   </strong>
                 </div>
                 <div>
@@ -493,7 +485,6 @@ const AdminEventsPage = () => {
         </div>
       )}
 
-      {/* POPUP TẠO/CHỈNH SỬA */}
       {(showCreateModal || editEvent) &&
         (() => {
           const isEdit = !!editEvent;
@@ -516,7 +507,6 @@ const AdminEventsPage = () => {
                 </div>
 
                 <div className="p-8 overflow-y-auto space-y-6 flex-1">
-                  {/* Tên & Loại */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -547,10 +537,8 @@ const AdminEventsPage = () => {
                       <label className="block text-sm font-bold text-slate-700 mb-2">
                         Loại xe tham gia <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        placeholder="VD: MTB, Road, Touring..."
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${
+                      <select
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all cursor-pointer ${
                           formErrors.bikeType
                             ? "border-red-500 focus:ring-red-500/10"
                             : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"
@@ -564,7 +552,18 @@ const AdminEventsPage = () => {
                           if (formErrors.bikeType)
                             setFormErrors({ ...formErrors, bikeType: null });
                         }}
-                      />
+                      >
+                        <option value="">-- Chọn loại xe --</option>
+                        <option value="ALL">Tất cả loại xe (ALL)</option>
+                        <option value="MTB">Xe đạp địa hình (MTB)</option>
+                        <option value="Road">Xe đạp đua (Road)</option>
+                        <option value="Touring">
+                          Xe đạp đường phố (Touring)
+                        </option>
+                        <option value="BMX">Xe đạp BMX</option>
+                        <option value="Gravel">Xe đạp Gravel</option>
+                        <option value="Khác">Khác</option>
+                      </select>
                       {formErrors.bikeType && (
                         <p className="text-red-500 text-xs mt-1">
                           {formErrors.bikeType}
@@ -573,7 +572,6 @@ const AdminEventsPage = () => {
                     </div>
                   </div>
 
-                  {/* Thời gian */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -628,7 +626,6 @@ const AdminEventsPage = () => {
                     </div>
                   </div>
 
-                  {/* Địa điểm */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -660,7 +657,6 @@ const AdminEventsPage = () => {
                       )}
                     </div>
 
-                    {/* KHUNG BẢN ĐỒ LEAFLET */}
                     <div className="md:col-span-2 relative z-10">
                       <label className="block text-sm font-bold text-slate-700 mb-2">
                         Địa chỉ chi tiết (Tìm kiếm hoặc Click trên bản đồ){" "}

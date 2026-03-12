@@ -29,6 +29,8 @@ import {
   MdRadioButtonUnchecked,
   MdCompress,
   MdAutoAwesome,
+  MdWarning,
+  MdClose,
 } from "react-icons/md";
 
 const PostBikePage = () => {
@@ -42,6 +44,11 @@ const PostBikePage = () => {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [libraryBikes, setLibraryBikes] = useState([]);
 
+  // --- STATE THANH TOÁN ---
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [listingFee, setListingFee] = useState(0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     brand: "",
@@ -53,7 +60,7 @@ const PostBikePage = () => {
     brakeType: "",
     transmission: "",
     weight: "",
-    condition: "", // <-- Đã sửa thành string rỗng mặc định
+    condition: "",
     price: "",
     description: "",
     color: "",
@@ -183,8 +190,6 @@ const PostBikePage = () => {
     if (!formData.brand) newErrors.brand = "Vui lòng chọn thương hiệu.";
     if (!formData.model.trim()) newErrors.model = "Vui lòng nhập dòng xe.";
     if (!formData.category) newErrors.category = "Vui lòng chọn loại xe.";
-
-    // <-- Thêm validate cho Condition -->
     if (!formData.condition)
       newErrors.condition = "Vui lòng chọn tình trạng xe.";
 
@@ -213,7 +218,8 @@ const PostBikePage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  // --- BƯỚC 1: XỬ LÝ KHI BẤM NÚT "ĐĂNG TIN NGAY" ---
+  const handlePreSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -222,10 +228,33 @@ const PostBikePage = () => {
     }
 
     setLoading(true);
+    try {
+      // Gọi API tính phí
+      const feeResponse = await bikeService.calculateListingFee(
+        parseFloat(formData.price),
+      );
+
+      if (feeResponse && feeResponse.result !== undefined) {
+        setListingFee(feeResponse.result);
+        setShowFeeModal(true); // Mở Popup xác nhận thanh toán
+      } else {
+        throw new Error("Không lấy được thông tin phí sàn");
+      }
+    } catch (error) {
+      console.error("Lỗi khi tính phí:", error);
+      alert("Có lỗi xảy ra khi tính phí sàn. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- BƯỚC 2: XỬ LÝ KHI BẤM "ĐỒNG Ý THANH TOÁN" TRONG POPUP ---
+  const handleConfirmSubmit = async () => {
+    setIsProcessingPayment(true);
 
     try {
+      // 1. Upload ảnh
       const uploadedImageUrls = [];
-
       const uploadPromises = formData.images.map((file) =>
         uploadService.uploadImage(file),
       );
@@ -243,10 +272,11 @@ const PostBikePage = () => {
 
       const imageUrlString = uploadedImageUrls.join(",");
 
+      // 2. Chuẩn bị payload
       const payload = {
         title: formData.title,
         description: `Tình trạng: ${formData.condition}. \n${formData.description}`,
-        price: formData.price ? parseFloat(formData.price) : 0,
+        price: parseFloat(formData.price),
         brandName: formData.brand,
         categoryName: formData.category,
         bikeType: formData.category,
@@ -258,7 +288,7 @@ const PostBikePage = () => {
         yearManufacture: formData.manufactureYear
           ? parseInt(formData.manufactureYear)
           : 0,
-        condition: formData.condition, // <-- Truyền trực tiếp string xuống BE
+        condition: formData.condition,
         color: formData.color || "Không rõ",
         frameMaterial: formData.frameMaterial || "Không rõ",
         forkType: formData.forkType || "Không rõ",
@@ -271,17 +301,32 @@ const PostBikePage = () => {
         image_url: imageUrlString,
       };
 
-      await bikeService.createBikeListing(payload);
+      // 3. Gọi API Create
+      const createResponse = await bikeService.createBikeListing(payload);
 
-      alert("Đăng tin thành công! Xe của bạn đang chờ kiểm duyệt.");
-      navigate("/bikes");
+      // 4. Xử lý phản hồi từ Backend
+      if (createResponse && createResponse.result) {
+        const { paymentUrl, message } = createResponse.result;
+
+        if (paymentUrl) {
+          // Ví không đủ tiền -> Chuyển hướng sang VNPay
+          window.location.href = paymentUrl;
+        } else {
+          // Ví đủ tiền -> Đăng bài thành công, trừ ví nội bộ
+          alert(
+            message || "Đăng tin thành công! Xe của bạn đang chờ kiểm duyệt.",
+          );
+          navigate("/bikes");
+        }
+      }
     } catch (error) {
       console.error("Lỗi khi đăng tin:", error);
       alert(
         error.response?.data?.message || "Đăng tin thất bại. Vui lòng thử lại.",
       );
     } finally {
-      setLoading(false);
+      setIsProcessingPayment(false);
+      setShowFeeModal(false);
     }
   };
 
@@ -340,7 +385,8 @@ const PostBikePage = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* --- ĐỔI HÀM SUBMIT FORM --- */}
+        <form onSubmit={handlePreSubmit} className="space-y-6">
           <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
@@ -515,7 +561,6 @@ const PostBikePage = () => {
                 )}
               </div>
 
-              {/* --- ĐÃ SỬA: Thay thế Slider bằng Select Dropdown --- */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Tình trạng xe <span className="text-red-500">*</span>
@@ -873,9 +918,7 @@ const PostBikePage = () => {
                   <MdCloudUpload size={24} />
                 </div>
                 <p
-                  className={`font-bold ${
-                    errors.images ? "text-red-600" : "text-gray-700"
-                  }`}
+                  className={`font-bold ${errors.images ? "text-red-600" : "text-gray-700"}`}
                 >
                   {errors.images
                     ? errors.images
@@ -940,9 +983,8 @@ const PostBikePage = () => {
                     value={formatDisplayAmount(formData.price)}
                     onChange={(e) => {
                       let rawValue = e.target.value.replace(/\D/g, "");
-                      if (rawValue.startsWith("0")) {
+                      if (rawValue.startsWith("0"))
                         rawValue = rawValue.replace(/^0+/, "");
-                      }
                       setFormData({ ...formData, price: rawValue });
                       if (errors.price) setErrors({ ...errors, price: null });
                     }}
@@ -995,11 +1037,81 @@ const PostBikePage = () => {
               ) : (
                 <MdCheckCircle />
               )}
-              {loading ? "Đang tải ảnh & đăng tin..." : "Đăng Tin Ngay"}
+              {loading ? "Đang xử lý..." : "Đăng Tin Ngay"}
             </button>
           </div>
         </form>
       </div>
+
+      {/* --- MODAL XÁC NHẬN THANH TOÁN PHÍ SÀN --- */}
+      {showFeeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 md:p-8 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-4">
+                <MdWarning size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">
+                Thanh toán phí đăng bài
+              </h3>
+              <p className="text-gray-500 text-sm mb-6">
+                Để đăng bài viết này, bạn cần thanh toán một khoản phí sàn. Số
+                tiền này sẽ được trừ vào ví của bạn.
+              </p>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl w-full p-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-600 font-medium">
+                    Giá xe đăng bán:
+                  </span>
+                  <span className="font-bold text-gray-900">
+                    {formatDisplayAmount(formData.price)} đ
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-gray-800 font-bold">
+                    Phí sàn phải trả:
+                  </span>
+                  <span className="font-black text-xl text-orange-600">
+                    {formatDisplayAmount(listingFee)} đ
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowFeeModal(false)}
+                  disabled={isProcessingPayment}
+                  className="flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={handleConfirmSubmit}
+                  disabled={isProcessingPayment}
+                  className="flex-1 px-4 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 shadow-lg shadow-orange-200 transition-all disabled:opacity-70 flex justify-center items-center gap-2"
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>{" "}
+                      Đang xử lý
+                    </>
+                  ) : (
+                    "Đồng ý & Đăng bài"
+                  )}
+                </button>
+              </div>
+
+              {isProcessingPayment && (
+                <p className="text-xs text-orange-500 font-medium mt-4 animate-pulse">
+                  Vui lòng không đóng trình duyệt. Sẽ tự động chuyển hướng nếu
+                  ví không đủ tiền...
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
