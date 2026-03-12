@@ -97,29 +97,33 @@ const AdminEventsPage = () => {
     );
   };
 
-  // Hàm validate form
-  const validateEventForm = (formData) => {
+  // Hàm validate form (Đã tối ưu không chặn ngày quá khứ khi Edit)
+  const validateEventForm = (formData, isEdit = false) => {
     const errors = {};
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-    if (!formData.name.trim()) errors.name = "Tên sự kiện không được để trống.";
-    if (!formData.bikeType.trim())
+    if (!formData.name || !formData.name.trim())
+      errors.name = "Tên sự kiện không được để trống.";
+
+    if (!formData.bikeType || !formData.bikeType.trim())
       errors.bikeType = "Vui lòng nhập loại xe tham gia.";
 
     if (!formData.startDate) {
       errors.startDate = "Vui lòng chọn ngày bắt đầu.";
-    } else if (formData.startDate < today) {
+    } else if (!isEdit && formData.startDate < today) {
+      // Chỉ chặn ngày quá khứ khi TẠO MỚI. Khi Edit vẫn cho phép lưu.
       errors.startDate = "Ngày bắt đầu không được trong quá khứ.";
     }
 
     if (!formData.endDate) {
       errors.endDate = "Vui lòng chọn ngày kết thúc.";
     } else if (formData.startDate && formData.endDate < formData.startDate) {
-      errors.endDate = "Ngày kết thúc phải sau ngày bắt đầu.";
+      errors.endDate = "Ngày kết thúc phải từ ngày bắt đầu trở đi.";
     }
 
-    if (!formData.location.trim())
+    if (!formData.location || !formData.location.trim())
       errors.location = "Vui lòng nhập khu vực sự kiện.";
+
     if (!formData.address || !formData.address.trim()) {
       errors.address = "Vui lòng chọn hoặc nhập địa chỉ chi tiết trên bản đồ.";
     }
@@ -129,7 +133,8 @@ const AdminEventsPage = () => {
   };
 
   const handleCreateEvent = async () => {
-    if (!validateEventForm(newEvent)) return;
+    // Gọi hàm validate và truyền false vì đây là tạo mới
+    if (!validateEventForm(newEvent, false)) return;
 
     try {
       await eventService.createEvent(newEvent);
@@ -155,7 +160,8 @@ const AdminEventsPage = () => {
   };
 
   const handleSaveEdit = async (updatedEvent) => {
-    if (!validateEventForm(updatedEvent)) return;
+    // Gọi hàm validate và truyền true vì đây là chế độ Edit
+    if (!validateEventForm(updatedEvent, true)) return;
 
     try {
       const requestBody = {
@@ -182,13 +188,24 @@ const AdminEventsPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
+    if (
+      window.confirm(
+        "Bạn có chắc chắn muốn xóa sự kiện này? Thao tác này có thể xóa luôn các dữ liệu Check-in liên quan.",
+      )
+    ) {
       try {
         await eventService.deleteEvent(id);
+        alert("Đã xóa sự kiện thành công!");
         fetchEvents();
       } catch (error) {
         console.error("Lỗi xóa sự kiện:", error);
-        alert("Lỗi khi xóa sự kiện!");
+        if (error.response?.status === 500) {
+          alert(
+            "Không thể xóa: Sự kiện này đã có người đăng ký tham gia hoặc check-in. Vui lòng xóa dữ liệu check-in trước.",
+          );
+        } else {
+          alert("Lỗi khi xóa sự kiện!");
+        }
       }
     }
   };
@@ -225,7 +242,7 @@ const AdminEventsPage = () => {
         </button>
       </div>
 
-      {/* Stats Section (Giữ nguyên) */}
+      {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           {
@@ -271,7 +288,7 @@ const AdminEventsPage = () => {
         ))}
       </div>
 
-      {/* Filters Section (Giữ nguyên) */}
+      {/* Filters Section */}
       <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex-1 relative">
           <MdSearch
@@ -305,7 +322,7 @@ const AdminEventsPage = () => {
         </div>
       </div>
 
-      {/* Events Grid (Giữ nguyên) */}
+      {/* Events Grid */}
       {loading ? (
         <div className="text-center py-10 text-slate-500">
           Đang tải dữ liệu...
@@ -409,10 +426,9 @@ const AdminEventsPage = () => {
         </>
       )}
 
-      {/* POPUP XEM CHI TIẾT (Giữ nguyên) */}
+      {/* POPUP XEM CHI TIẾT */}
       {viewEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all">
-          {/* ... code cũ của viewEvent modal ... */}
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-lg font-bold text-slate-900">
@@ -509,7 +525,11 @@ const AdminEventsPage = () => {
                       <input
                         type="text"
                         placeholder="VD: VeloX Fest 2026..."
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${formErrors.name ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${
+                          formErrors.name
+                            ? "border-red-500 focus:ring-red-500/10"
+                            : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"
+                        }`}
                         value={formData.name}
                         onChange={(e) => {
                           setFormData({ ...formData, name: e.target.value });
@@ -530,7 +550,11 @@ const AdminEventsPage = () => {
                       <input
                         type="text"
                         placeholder="VD: MTB, Road, Touring..."
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${formErrors.bikeType ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${
+                          formErrors.bikeType
+                            ? "border-red-500 focus:ring-red-500/10"
+                            : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"
+                        }`}
                         value={formData.bikeType}
                         onChange={(e) => {
                           setFormData({
@@ -557,7 +581,11 @@ const AdminEventsPage = () => {
                       </label>
                       <input
                         type="date"
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${formErrors.startDate ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${
+                          formErrors.startDate
+                            ? "border-red-500 focus:ring-red-500/10"
+                            : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"
+                        }`}
                         value={formData.startDate}
                         onChange={(e) => {
                           setFormData({
@@ -580,7 +608,11 @@ const AdminEventsPage = () => {
                       </label>
                       <input
                         type="date"
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${formErrors.endDate ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${
+                          formErrors.endDate
+                            ? "border-red-500 focus:ring-red-500/10"
+                            : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"
+                        }`}
                         value={formData.endDate}
                         onChange={(e) => {
                           setFormData({ ...formData, endDate: e.target.value });
@@ -606,7 +638,11 @@ const AdminEventsPage = () => {
                       <input
                         type="text"
                         placeholder="VD: Công viên Yên Sở"
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${formErrors.location ? "border-red-500 focus:ring-red-500/10" : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"}`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all ${
+                          formErrors.location
+                            ? "border-red-500 focus:ring-red-500/10"
+                            : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/10"
+                        }`}
                         value={formData.location}
                         onChange={(e) => {
                           setFormData({
@@ -631,7 +667,11 @@ const AdminEventsPage = () => {
                         <span className="text-red-500">*</span>
                       </label>
                       <div
-                        className={`${formErrors.address ? "ring-2 ring-red-500 rounded-lg" : ""}`}
+                        className={`${
+                          formErrors.address
+                            ? "ring-2 ring-red-500 rounded-lg"
+                            : ""
+                        }`}
                       >
                         <LocationPicker
                           initialAddress={formData.address}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MdArrowBack,
@@ -11,7 +11,6 @@ import {
   MdAddAPhoto,
   MdImage,
   MdPeople,
-  MdPerson,
 } from "react-icons/md";
 
 const CreateReportPage = () => {
@@ -35,6 +34,8 @@ const CreateReportPage = () => {
     sellerPresent: false,
   });
 
+  const [newIssue, setNewIssue] = useState("");
+
   const handleAttendanceChange = (role) => {
     setAttendance((prev) => ({
       ...prev,
@@ -42,9 +43,16 @@ const CreateReportPage = () => {
     }));
   };
 
-  const isAttendanceComplete = attendance.buyerPresent && attendance.sellerPresent;
+  const isAttendanceComplete =
+    attendance.buyerPresent && attendance.sellerPresent;
 
-  const [newIssue, setNewIssue] = useState("");
+  // --- FIX MEMORY LEAK TẠI ĐÂY ---
+  useEffect(() => {
+    return () => {
+      // Dọn dẹp URL Object khi component unmount (người dùng rời trang) để tránh tràn RAM
+      formData.images.forEach((img) => URL.revokeObjectURL(img.preview));
+    };
+  }, [formData.images]);
 
   // Handle image upload
   const handleImageUpload = (e) => {
@@ -52,7 +60,7 @@ const CreateReportPage = () => {
     const newImages = files.map((file) => ({
       id: Date.now() + Math.random(),
       file,
-      preview: URL.createObjectURL(file),
+      preview: URL.createObjectURL(file), // Tạo URL tạm để preview
       name: file.name,
     }));
     setFormData((prev) => ({
@@ -62,6 +70,12 @@ const CreateReportPage = () => {
   };
 
   const removeImage = (imageId) => {
+    // Dọn dẹp URL của ảnh bị xóa
+    const imageToRemove = formData.images.find((img) => img.id === imageId);
+    if (imageToRemove) {
+      URL.revokeObjectURL(imageToRemove.preview);
+    }
+
     setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((img) => img.id !== imageId),
@@ -95,6 +109,12 @@ const CreateReportPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!isAttendanceComplete) {
+      alert("Vui lòng xác nhận điểm danh 2 bên trước khi lưu báo cáo!");
+      return;
+    }
+
     console.log("Report data:", formData);
     alert("Đã tạo báo cáo kiểm định thành công!");
     navigate("/inspector/tasks");
@@ -108,19 +128,21 @@ const CreateReportPage = () => {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-10">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-8">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 bg-white rounded-full shadow-sm hover:bg-emerald-50 transition-colors"
         >
-          <MdArrowBack size={24} className="text-gray-600" />
+          <MdArrowBack size={24} className="text-gray-700" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tạo báo cáo kiểm định</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
+            Tạo báo cáo kiểm định
+          </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Điền thông tin kiểm tra xe đạp
+            Đánh giá và cấp chứng nhận chất lượng xe
           </p>
         </div>
       </div>
@@ -128,34 +150,42 @@ const CreateReportPage = () => {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Bike Info (Mock) */}
-        <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6">
-          <h2 className="text-lg font-semibold text-emerald-900 mb-4 flex items-center gap-2">
-            <MdPedalBike className="text-emerald-600" />
-            Thông tin xe kiểm định
+        <div className="bg-emerald-50 rounded-2xl border border-emerald-100/50 p-6">
+          <h2 className="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2">
+            <MdPedalBike className="text-emerald-600" /> Thông tin xe kiểm định
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
             <img
               src="https://fxbike.vn/wp-content/uploads/2022/02/Trek-Marlin-7-2022-1-600x450.jpeg"
               alt="Bike"
-              className="w-24 h-24 rounded-lg object-cover border border-emerald-200"
+              className="w-full sm:w-32 h-32 rounded-xl object-cover border-2 border-white shadow-sm"
             />
-            <div>
-              <h3 className="font-bold text-gray-900">Trek Marlin 7 Gen 2</h3>
-              <p className="text-sm text-gray-500">Người bán: Trần Thị B</p>
-              <p className="text-sm text-gray-500">Người mua: Nguyễn Văn A</p>
-              <p className="text-sm text-emerald-600 font-medium">Giá: 12,500,000đ</p>
+            <div className="w-full">
+              <h3 className="font-black text-xl text-gray-900 mb-2">
+                Trek Marlin 7 Gen 2
+              </h3>
+              <div className="grid grid-cols-2 gap-y-1 text-sm">
+                <span className="text-gray-500">Mã GD:</span>{" "}
+                <span className="font-semibold">#TRK-9921</span>
+                <span className="text-gray-500">Người bán:</span>{" "}
+                <span className="font-medium">Trần Thị B</span>
+                <span className="text-gray-500">Người mua:</span>{" "}
+                <span className="font-medium">Nguyễn Văn A</span>
+                <span className="text-gray-500">Giá trị:</span>{" "}
+                <span className="text-emerald-600 font-bold">12.500.000 đ</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Điểm danh */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <MdPeople className="text-emerald-500" />
-            Điểm danh
+            Xác nhận mặt đối mặt
             {isAttendanceComplete && (
-              <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
-                Đã đủ
+              <span className="ml-2 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-wider">
+                Đã đủ mặt
               </span>
             )}
           </h2>
@@ -165,8 +195,8 @@ const CreateReportPage = () => {
             <label
               className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 attendance.buyerPresent
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                  ? "border-emerald-500 bg-emerald-50/50"
+                  : "border-gray-100 bg-gray-50 hover:border-gray-200"
               }`}
             >
               <input
@@ -178,11 +208,13 @@ const CreateReportPage = () => {
               <img
                 src="https://i.pravatar.cc/150?u=1"
                 alt="Buyer"
-                className="w-12 h-12 rounded-full border-2 border-white shadow"
+                className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
-                <p className="text-xs text-gray-500 uppercase font-medium">Người mua</p>
-                <p className="font-semibold text-gray-900">Nguyễn Văn A</p>
+                <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">
+                  Người mua
+                </p>
+                <p className="font-bold text-gray-900">Nguyễn Văn A</p>
               </div>
               {attendance.buyerPresent && (
                 <MdCheckCircle className="text-emerald-500" size={24} />
@@ -193,8 +225,8 @@ const CreateReportPage = () => {
             <label
               className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 attendance.sellerPresent
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                  ? "border-emerald-500 bg-emerald-50/50"
+                  : "border-gray-100 bg-gray-50 hover:border-gray-200"
               }`}
             >
               <input
@@ -206,11 +238,13 @@ const CreateReportPage = () => {
               <img
                 src="https://i.pravatar.cc/150?u=2"
                 alt="Seller"
-                className="w-12 h-12 rounded-full border-2 border-white shadow"
+                className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
-                <p className="text-xs text-gray-500 uppercase font-medium">Người bán</p>
-                <p className="font-semibold text-gray-900">Trần Thị B</p>
+                <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">
+                  Người bán
+                </p>
+                <p className="font-bold text-gray-900">Trần Thị B</p>
               </div>
               {attendance.sellerPresent && (
                 <MdCheckCircle className="text-emerald-500" size={24} />
@@ -219,16 +253,17 @@ const CreateReportPage = () => {
           </div>
 
           {!isAttendanceComplete && (
-            <p className="mt-4 text-sm text-yellow-600 flex items-center gap-2">
-              <MdWarning size={16} />
-              Vui lòng điểm danh đủ cả hai bên trước khi tiến hành kiểm định
+            <p className="mt-4 text-sm text-yellow-600 flex items-center gap-2 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+              <MdWarning size={18} />
+              Vui lòng điểm danh đủ cả hai bên trước khi ban hành báo cáo kiểm
+              định!
             </p>
           )}
         </div>
 
         {/* Checklist */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <MdCheckCircle className="text-emerald-500" />
             Checklist kiểm tra
           </h2>
@@ -237,7 +272,7 @@ const CreateReportPage = () => {
             {checklistItems.map((item) => (
               <label
                 key={item.name}
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer border border-transparent hover:border-gray-200"
               >
                 <input
                   type="checkbox"
@@ -246,11 +281,14 @@ const CreateReportPage = () => {
                   onChange={handleChange}
                   className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
                 />
-                <span className="text-gray-700">{item.label}</span>
+                <span className="text-gray-700 font-medium">{item.label}</span>
                 {formData[item.name] ? (
-                  <MdCheckCircle className="ml-auto text-emerald-500" size={20} />
+                  <MdCheckCircle
+                    className="ml-auto text-emerald-500"
+                    size={22}
+                  />
                 ) : (
-                  <MdWarning className="ml-auto text-yellow-500" size={20} />
+                  <MdWarning className="ml-auto text-gray-300" size={22} />
                 )}
               </label>
             ))}
@@ -258,43 +296,50 @@ const CreateReportPage = () => {
         </div>
 
         {/* Overall Score */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
             Đánh giá tổng thể
           </h2>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 mb-2">
                 Tình trạng xe
               </label>
               <select
                 name="bikeCondition"
                 value={formData.bikeCondition}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-50 bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 bg-white font-medium"
               >
                 <option value="excellent">Xuất sắc - Như mới</option>
                 <option value="good">Tốt - Ít dấu hiệu sử dụng</option>
-                <option value="fair">Khá - Có dấu hiệu sử dụng bình thường</option>
-                <option value="poor">Kém - Cần sửa chữa</option>
+                <option value="fair">
+                  Khá - Có dấu hiệu sử dụng bình thường
+                </option>
+                <option value="poor">Kém - Cần sửa chữa nhiều</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Điểm đánh giá: <strong className="text-emerald-600">{formData.overallScore}%</strong>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Điểm đánh giá:{" "}
+                <strong className="text-emerald-600 text-lg">
+                  {formData.overallScore}%
+                </strong>
               </label>
-              <input
-                type="range"
-                name="overallScore"
-                min="0"
-                max="100"
-                value={formData.overallScore}
-                onChange={handleChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-              />
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <div className="flex items-center h-[46px] bg-gray-50 px-4 border border-gray-200 rounded-xl">
+                <input
+                  type="range"
+                  name="overallScore"
+                  min="0"
+                  max="100"
+                  value={formData.overallScore}
+                  onChange={handleChange}
+                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-400 mt-1.5 font-medium px-1">
                 <span>0%</span>
                 <span>50%</span>
                 <span>100%</span>
@@ -304,42 +349,46 @@ const CreateReportPage = () => {
         </div>
 
         {/* Issues */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <MdWarning className="text-yellow-500" />
             Vấn đề phát hiện (nếu có)
           </h2>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <input
               type="text"
-              placeholder="Nhập vấn đề phát hiện..."
+              placeholder="VD: Xước nhẹ ở khung sườn trái..."
               value={newIssue}
               onChange={(e) => setNewIssue(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addIssue())}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-300"
+              onKeyPress={(e) =>
+                e.key === "Enter" && (e.preventDefault(), addIssue())
+              }
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-50"
             />
             <button
               type="button"
               onClick={addIssue}
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 font-medium transition-colors"
+              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 font-bold transition-colors"
             >
-              Thêm
+              Thêm lỗi
             </button>
           </div>
 
           {formData.issues.length > 0 && (
-            <ul className="space-y-2">
+            <ul className="space-y-2 mt-4">
               {formData.issues.map((issue, index) => (
                 <li
                   key={index}
-                  className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-100 rounded-lg"
+                  className="flex items-center justify-between p-3.5 bg-yellow-50 border border-yellow-100 rounded-xl"
                 >
-                  <span className="text-sm text-yellow-800">• {issue}</span>
+                  <span className="text-sm text-yellow-800 font-medium">
+                    • {issue}
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeIssue(index)}
-                    className="p-1 text-yellow-600 hover:text-red-500 transition-colors"
+                    className="p-1.5 bg-white text-yellow-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shadow-sm"
                   >
                     <MdClose size={18} />
                   </button>
@@ -350,20 +399,27 @@ const CreateReportPage = () => {
         </div>
 
         {/* Image Upload */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <MdAddAPhoto className="text-emerald-500" />
-            Thêm hình ảnh
+            Thêm hình ảnh thực tế
           </h2>
 
           {/* Upload Area */}
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors mb-4">
+          <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer bg-gray-50 hover:bg-emerald-50 hover:border-emerald-300 transition-colors mb-6 group">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <MdCameraAlt className="w-10 h-10 mb-3 text-gray-400" />
-              <p className="mb-2 text-sm text-gray-500">
-                <span className="font-semibold">Click để tải ảnh</span> hoặc kéo thả vào đây
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                <MdCameraAlt className="w-6 h-6 text-emerald-500" />
+              </div>
+              <p className="mb-1 text-sm text-gray-600">
+                <span className="font-bold text-emerald-600">
+                  Click để tải ảnh
+                </span>{" "}
+                hoặc kéo thả vào đây
               </p>
-              <p className="text-xs text-gray-400">PNG, JPG (tối đa 10MB)</p>
+              <p className="text-xs text-gray-400 font-medium">
+                Hỗ trợ PNG, JPG (Tối đa 10MB)
+              </p>
             </div>
             <input
               type="file"
@@ -376,28 +432,30 @@ const CreateReportPage = () => {
 
           {/* Image Preview Grid */}
           {formData.images.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in">
               {formData.images.map((image) => (
                 <div
                   key={image.id}
-                  className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200"
+                  className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm"
                 >
                   <img
                     src={image.preview}
                     alt={image.name}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <button
                       type="button"
                       onClick={() => removeImage(image.id)}
-                      className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-transform hover:scale-110 shadow-lg"
                     >
-                      <MdClose size={18} />
+                      <MdClose size={20} />
                     </button>
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
-                    <p className="text-white text-xs truncate">{image.name}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                    <p className="text-white text-xs truncate font-medium">
+                      {image.name}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -405,43 +463,46 @@ const CreateReportPage = () => {
           )}
 
           {formData.images.length === 0 && (
-            <div className="text-center py-4 text-gray-400 text-sm flex items-center justify-center gap-2">
-              <MdImage size={18} />
+            <div className="text-center py-6 text-gray-400 text-sm flex flex-col items-center justify-center gap-2 border border-gray-100 rounded-xl bg-gray-50">
+              <MdImage size={24} className="text-gray-300" />
               Chưa có hình ảnh nào được thêm
             </div>
           )}
         </div>
 
         {/* Notes */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Ghi chú thêm
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            Ghi chú riêng của Inspector
           </h2>
           <textarea
             name="notes"
             value={formData.notes}
             onChange={handleChange}
             rows={4}
-            placeholder="Nhập ghi chú, nhận xét thêm về xe..."
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-50 resize-none"
+            placeholder="Nhập ghi chú ẩn rủi ro, nhận xét chuyên môn về xe (Người dùng sẽ không thấy phần này)..."
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 resize-none bg-gray-50"
           />
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
+        {/* Sticky Actions Footer */}
+        <div className="flex items-center justify-end gap-3 pt-4 sticky bottom-0 bg-gray-50 py-4 border-t border-gray-200 z-10 -mx-4 px-4 md:mx-0 md:px-0">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-100 transition-colors shadow-sm"
           >
             Hủy bỏ
           </button>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-200"
+            className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${
+              isAttendanceComplete
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-emerald-300 active:scale-95"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
-            <MdSave size={18} />
-            Lưu báo cáo
+            <MdSave size={20} /> Ban hành chứng nhận
           </button>
         </div>
       </form>

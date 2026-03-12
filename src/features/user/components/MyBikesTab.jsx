@@ -57,6 +57,23 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
     );
   }
 
+  // --- HÀM XỬ LÝ TRẠNG THÁI ---
+  const getStatusConfig = (status) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "available":
+        return {
+          label: "Đang hiển thị",
+          colorClass: "text-green-500 animate-pulse",
+        };
+      case "rejected":
+        return { label: "Từ chối duyệt", colorClass: "text-red-500" };
+      case "pending":
+      default:
+        return { label: "Chờ duyệt", colorClass: "text-amber-500" };
+    }
+  };
+
   // 3. MAIN CONTENT: Thiết kế thẻ xe (Card) tinh gọn
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -81,7 +98,8 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {myBikes.map((bike) => {
-          const isApproved = bike.status?.toLowerCase() === "available";
+          const statusConfig = getStatusConfig(bike.status);
+
           return (
             <div
               key={bike.listingId}
@@ -101,16 +119,9 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
 
                   {/* Status Badge (Hiệu ứng kính mờ - Glassmorphism) */}
                   <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
-                    <MdCircle
-                      size={8}
-                      className={
-                        isApproved
-                          ? "text-green-500 animate-pulse"
-                          : "text-amber-500"
-                      }
-                    />
+                    <MdCircle size={8} className={statusConfig.colorClass} />
                     <span className="text-[10px] font-black uppercase tracking-wider text-zinc-800">
-                      {isApproved ? "Đang hiển thị" : "Chờ duyệt"}
+                      {statusConfig.label}
                     </span>
                   </div>
                 </div>

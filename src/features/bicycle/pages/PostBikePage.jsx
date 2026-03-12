@@ -39,7 +39,7 @@ const PostBikePage = () => {
   // --- QUẢN LÝ DỮ LIỆU THƯ VIỆN ĐỘNG ---
   const [allLibraryData, setAllLibraryData] = useState([]);
   const [availableBrands, setAvailableBrands] = useState([]);
-  const [availableCategories, setAvailableCategories] = useState([]); // Thêm state lưu danh sách loại xe
+  const [availableCategories, setAvailableCategories] = useState([]);
   const [libraryBikes, setLibraryBikes] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -53,7 +53,7 @@ const PostBikePage = () => {
     brakeType: "",
     transmission: "",
     weight: "",
-    condition: 90,
+    condition: "", // <-- Đã sửa thành string rỗng mặc định
     price: "",
     description: "",
     color: "",
@@ -78,13 +78,11 @@ const PostBikePage = () => {
         if (res && res.result) {
           setAllLibraryData(res.result);
 
-          // Lọc ra các Hãng xe không trùng lặp và sắp xếp ABC
           const uniqueBrands = Array.from(
             new Set(res.result.map((bike) => bike.brand?.name).filter(Boolean)),
           ).sort();
           setAvailableBrands(uniqueBrands);
 
-          // Lọc ra các Loại xe (Category) không trùng lặp
           const uniqueCategories = Array.from(
             new Set(
               res.result
@@ -146,7 +144,6 @@ const PostBikePage = () => {
         shockAbsorber: selectedBike.shockAbsorber || prev.shockAbsorber,
       }));
 
-      // Tự động gợi ý tiêu đề nếu đang trống
       if (!formData.title) {
         setFormData((prev) => ({
           ...prev,
@@ -186,6 +183,10 @@ const PostBikePage = () => {
     if (!formData.brand) newErrors.brand = "Vui lòng chọn thương hiệu.";
     if (!formData.model.trim()) newErrors.model = "Vui lòng nhập dòng xe.";
     if (!formData.category) newErrors.category = "Vui lòng chọn loại xe.";
+
+    // <-- Thêm validate cho Condition -->
+    if (!formData.condition)
+      newErrors.condition = "Vui lòng chọn tình trạng xe.";
 
     if (formData.manufactureYear) {
       const year = parseInt(formData.manufactureYear);
@@ -244,7 +245,7 @@ const PostBikePage = () => {
 
       const payload = {
         title: formData.title,
-        description: `Độ mới: ${formData.condition}%. \n${formData.description}`,
+        description: `Tình trạng: ${formData.condition}. \n${formData.description}`,
         price: formData.price ? parseFloat(formData.price) : 0,
         brandName: formData.brand,
         categoryName: formData.category,
@@ -257,7 +258,7 @@ const PostBikePage = () => {
         yearManufacture: formData.manufactureYear
           ? parseInt(formData.manufactureYear)
           : 0,
-        condition: parseInt(formData.condition),
+        condition: formData.condition, // <-- Truyền trực tiếp string xuống BE
         color: formData.color || "Không rõ",
         frameMaterial: formData.frameMaterial || "Không rõ",
         forkType: formData.forkType || "Không rõ",
@@ -391,7 +392,6 @@ const PostBikePage = () => {
                   }}
                 >
                   <option value="">Chọn hãng xe</option>
-                  {/* Map dữ liệu Hãng xe động */}
                   {availableBrands.map((brandName, index) => (
                     <option key={index} value={brandName}>
                       {brandName}
@@ -406,7 +406,6 @@ const PostBikePage = () => {
                 )}
               </div>
 
-              {/* Ô TỰ ĐỘNG ĐIỀN */}
               {libraryBikes.length > 0 ? (
                 <div>
                   <label className="block text-sm font-bold text-orange-600 mb-2 flex items-center gap-1">
@@ -470,7 +469,6 @@ const PostBikePage = () => {
                   }}
                 >
                   <option value="">Chọn loại xe</option>
-                  {/* Map dữ liệu Category động từ thư viện */}
                   {availableCategories.map((catName, index) => (
                     <option key={index} value={catName}>
                       {catName}
@@ -517,23 +515,37 @@ const PostBikePage = () => {
                 )}
               </div>
 
-              <div className="md:col-span-2">
+              {/* --- ĐÃ SỬA: Thay thế Slider bằng Select Dropdown --- */}
+              <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Độ mới ({formData.condition}%)
+                  Tình trạng xe <span className="text-red-500">*</span>
                 </label>
-                <div className="flex items-center h-[30px]">
-                  <input
-                    type="range"
-                    min="50"
-                    max="100"
-                    step="1"
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-                    value={formData.condition}
-                    onChange={(e) =>
-                      setFormData({ ...formData, condition: e.target.value })
-                    }
-                  />
-                </div>
+                <select
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all cursor-pointer ${
+                    errors.condition ? "border-red-500" : "border-gray-200"
+                  }`}
+                  value={formData.condition}
+                  onChange={(e) => {
+                    setFormData({ ...formData, condition: e.target.value });
+                    if (errors.condition)
+                      setErrors({ ...errors, condition: null });
+                  }}
+                >
+                  <option value="">Chọn tình trạng</option>
+                  <option value="Như mới">Như mới (Hoạt động hoàn hảo)</option>
+                  <option value="Cũ">Cũ (Có trầy xước, hoạt động tốt)</option>
+                  <option value="Cần sửa chữa">
+                    Cần sửa chữa (Hư hỏng nhẹ)
+                  </option>
+                  <option value="Xác xe">
+                    Xác xe (Hư hỏng nặng/Lấy phụ tùng)
+                  </option>
+                </select>
+                {errors.condition && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.condition}
+                  </p>
+                )}
               </div>
             </div>
           </div>
