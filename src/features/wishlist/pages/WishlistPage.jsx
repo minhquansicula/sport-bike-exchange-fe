@@ -8,41 +8,37 @@ import {
 import { wishlistService } from "../../../services/wishlistService";
 import { useWishlist } from "../../../context/WishlistContext";
 import BikeCard from "../../bicycle/components/BikeCard";
-import api from "../../../config/api";
 
 const WishlistPage = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { wishlistIds, fetchWishlist: refreshContext } = useWishlist();
+  const { wishlistIds } = useWishlist();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
-    // ✅ CHỈ FETCH KHI ĐÃ LOGIN
     if (token) {
       fetchWishlist();
     } else {
       setLoading(false);
     }
-  }, [wishlistIds]); // Re-fetch khi wishlistIds thay đổi (do toggle từ nơi khác)
+  }, [wishlistIds]);
+  // }, []); // Chỉ fetch 1 lần khi mount
 
   const fetchWishlist = async () => {
     try {
-      /**
-       * 1️⃣ Lấy danh sách wishlist (listingId)
-       */
       const wishlistRes = await wishlistService.getMyWishlist();
       const wishlistItems = wishlistRes?.result || [];
 
-      /**
-       * 2️⃣ Fetch chi tiết bike theo listingId
-       */
-      const bikeRequests = wishlistItems.map((item) =>
-        api.get(`/bikes/${item.listingId}`),
-      );
-
-      const bikeResponses = await Promise.all(bikeRequests);
-      const bikes = bikeResponses.map((res) => res.data.result);
+      // Map trực tiếp từ data API trả về, không cần gọi thêm API
+      const bikes = wishlistItems.map((item) => ({
+        listingId: item.listingId,
+        title: item.listingTitle,
+        imageUrl: item.listingImageUrl,
+        price: item.listingPrice,
+        status: item.listingStatus,
+        condition: item.listingCondition,
+        sellerName: item.sellerName,
+      }));
 
       setWishlist(bikes);
     } catch (error) {
@@ -89,7 +85,7 @@ const WishlistPage = () => {
         {wishlist.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {wishlist.map((bike) => (
-              <div key={bike.id} className="relative group-item">
+              <div key={bike.listingId} className="relative group-item">
                 <BikeCard bike={bike} />
               </div>
             ))}
