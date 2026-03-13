@@ -4,7 +4,7 @@ import api from "../config/api";
 export const wishlistService = {
   // Lấy danh sách wishlist của user đang đăng nhập
   getMyWishlist: async () => {
-    const response = await api.get("/wishlists/my");
+    const response = await api.get("/wishlists/my-wishlist");
     return response.data;
   },
 
@@ -29,6 +29,18 @@ export const wishlistService = {
   // Kiểm tra xe có trong wishlist không
   isInWishlist: async (listingId) => {
     const response = await api.get(`/wishlists/check/${listingId}`);
+    return response.data;
+  },
+
+  // Lấy chi tiết 1 wishlist item
+  getWishlistById: async (wishlistId) => {
+    const response = await api.get(`/wishlists/${wishlistId}`);
+    return response.data;
+  },
+
+  // Đếm số người đã wishlist bài đăng
+  getWishlistCount: async (listingId) => {
+    const response = await api.get(`/wishlists/count/${listingId}`);
     return response.data;
   },
 };
