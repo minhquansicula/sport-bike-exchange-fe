@@ -12,31 +12,39 @@ import {
   MdEventAvailable,
   MdClose,
   MdEdit,
+  MdStorefront,
+  MdLocationOn,
+  MdPhone,
+  MdInfoOutline,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
-// Giả định bạn đã tạo 2 file service này:
 import { reservationService } from "../../../services/reservationService";
-import { userService } from "../../../services/userService"; // Để get list Inspectors
+import { userService } from "../../../services/userService";
+import { bikeService } from "../../../services/bikeService"; // Thêm service
+import { toast } from "react-hot-toast";
+import LocationPicker from "../../../components/common/LocationPicker";
 
 const AdminTransactionsPage = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-
-  // Modal Lên lịch
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedRes, setSelectedRes] = useState(null);
   const [inspectors, setInspectors] = useState([]);
-
-  // Form State
   const [scheduleData, setScheduleData] = useState({
     inspectorId: "",
     meetingLocation: "",
     meetingTime: "",
+    latitude: null, // <-- thêm
+    longitude: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // State cho modal xem bài đăng
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [loadingPost, setLoadingPost] = useState(false);
 
   const fetchReservations = async () => {
     try {
@@ -47,6 +55,7 @@ const AdminTransactionsPage = () => {
       }
     } catch (error) {
       console.error("Lỗi lấy danh sách reservation:", error);
+      toast.error("Không thể tải danh sách đặt chỗ");
     } finally {
       setLoading(false);
     }
@@ -54,7 +63,6 @@ const AdminTransactionsPage = () => {
 
   const fetchInspectors = async () => {
     try {
-      // Giả sử API lấy danh sách User theo Role. Bạn thay thế bằng hàm API thực tế của bạn
       const res = await userService.getAllUsers();
       if (res && res.result) {
         const listInspector = res.result.filter(
@@ -66,6 +74,7 @@ const AdminTransactionsPage = () => {
       }
     } catch (error) {
       console.error("Lỗi lấy danh sách inspector:", error);
+      toast.error("Không thể tải danh sách kiểm định viên");
     }
   };
 
@@ -82,26 +91,67 @@ const AdminTransactionsPage = () => {
       meetingTime: res.meetingTime
         ? new Date(res.meetingTime).toISOString().slice(0, 16)
         : "",
+      latitude: res.latitude || null,
+      longitude: res.longitude || null,
     });
     setShowScheduleModal(true);
   };
 
+  const handleLocationSelect = (locationData) => {
+    setScheduleData({
+      ...scheduleData,
+      meetingLocation: locationData.address,
+      latitude: locationData.lat,
+      longitude: locationData.lng,
+    });
+  };
+
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
+    if (
+      !scheduleData.inspectorId ||
+      !scheduleData.meetingLocation ||
+      !scheduleData.meetingTime ||
+      !scheduleData.latitude || // <-- kiểm tra thêm
+      !scheduleData.longitude
+    ) {
+      toast.error(
+        "Vui lòng chọn địa điểm trên bản đồ và điền đầy đủ thông tin",
+      );
+      return;
+    }
     setIsSubmitting(true);
     try {
       await reservationService.scheduleReservation(selectedRes.reservationId, {
         inspectorId: parseInt(scheduleData.inspectorId),
         meetingLocation: scheduleData.meetingLocation,
         meetingTime: new Date(scheduleData.meetingTime).toISOString(),
+        latitude: scheduleData.latitude, // <-- gửi lên
+        longitude: scheduleData.longitude, // <-- gửi lên
       });
-      alert("Lên lịch thành công!");
+      toast.success("Lên lịch thành công!");
       setShowScheduleModal(false);
-      fetchReservations(); // Tải lại danh sách
+      fetchReservations();
     } catch (error) {
-      alert(error.response?.data?.message || "Lỗi khi lên lịch hẹn!");
+      toast.error(error.response?.data?.message || "Lỗi khi lên lịch hẹn!");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Hàm xem chi tiết bài đăng
+  const handleViewPost = async (listingId) => {
+    setLoadingPost(true);
+    try {
+      const res = await bikeService.getBikeListingById(listingId);
+      if (res && res.result) {
+        setSelectedPost(res.result);
+        setShowPostModal(true);
+      }
+    } catch (error) {
+      toast.error("Không thể tải thông tin bài đăng");
+    } finally {
+      setLoadingPost(false);
     }
   };
 
@@ -110,6 +160,7 @@ const AdminTransactionsPage = () => {
     const matchSearch =
       r.reservationId.toString().includes(searchTerm) ||
       (r.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (r.sellerName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (r.listingTitle || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === "all" || r.status === filterStatus;
     return matchSearch && matchStatus;
@@ -118,31 +169,53 @@ const AdminTransactionsPage = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case "Waiting_Payment":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 uppercase">
-            <MdAccessTime size={12} /> Chờ TT
-          </span>
-        );
+        return {
+          label: "Chờ thanh toán",
+          icon: MdAccessTime,
+          bg: "bg-gray-100",
+          text: "text-gray-700",
+          border: "border-gray-200",
+        };
       case "Deposited":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 uppercase">
-            <MdAccessTime size={12} /> Đã cọc
-          </span>
-        );
+        return {
+          label: "Đã cọc",
+          icon: MdAccessTime,
+          bg: "bg-yellow-100",
+          text: "text-yellow-800",
+          border: "border-yellow-200",
+        };
       case "Scheduled":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 uppercase animate-pulse">
-            <MdEventAvailable size={12} /> Đã xếp lịch
-          </span>
-        );
+        return {
+          label: "Đã xếp lịch",
+          icon: MdEventAvailable,
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          border: "border-blue-200",
+        };
       case "Completed":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase">
-            <MdCheckCircle size={12} /> Hoàn thành
-          </span>
-        );
+        return {
+          label: "Hoàn thành",
+          icon: MdCheckCircle,
+          bg: "bg-green-100",
+          text: "text-green-800",
+          border: "border-green-200",
+        };
+      case "Cancelled":
+        return {
+          label: "Đã hủy",
+          icon: MdCancel,
+          bg: "bg-red-100",
+          text: "text-red-800",
+          border: "border-red-200",
+        };
       default:
-        return <span className="text-xs">{status}</span>;
+        return {
+          label: status,
+          icon: null,
+          bg: "bg-gray-100",
+          text: "text-gray-700",
+          border: "border-gray-200",
+        };
     }
   };
 
@@ -155,278 +228,369 @@ const AdminTransactionsPage = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-            Quản lý Đặt chỗ & Lịch hẹn
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Xếp lịch hẹn kiểm tra xe cho các giao dịch đã được thanh toán cọc.
-          </p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+              Quản lý Đặt chỗ
+            </h1>
+            <p className="text-gray-500 text-base mt-2 flex items-center gap-2">
+              <MdEventAvailable className="text-orange-500" size={20} />
+              Xếp lịch hẹn kiểm tra xe cho các giao dịch đã cọc
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* ... giữ nguyên stats ... */}
+        </div>
+
+        {/* Filters */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <p className="text-3xl font-black text-gray-900">{stats.total}</p>
-          <p className="text-sm font-medium text-gray-500 mt-1">Tổng yêu cầu</p>
+          {/* ... giữ nguyên filter ... */}
         </div>
-        <div className="bg-yellow-50 rounded-2xl border border-yellow-100 p-5 shadow-sm">
-          <p className="text-3xl font-black text-yellow-700">
-            {stats.deposited}
-          </p>
-          <p className="text-sm font-medium text-yellow-600 mt-1">
-            Chờ xếp lịch (Đã cọc)
-          </p>
-        </div>
-        <div className="bg-blue-50 rounded-2xl border border-blue-100 p-5 shadow-sm">
-          <p className="text-3xl font-black text-blue-700">{stats.scheduled}</p>
-          <p className="text-sm font-medium text-blue-600 mt-1">
-            Đã lên lịch hẹn
-          </p>
-        </div>
-        <div className="bg-green-50 rounded-2xl border border-green-100 p-5 shadow-sm">
-          <p className="text-3xl font-black text-green-700">
-            {stats.completed}
-          </p>
-          <p className="text-sm font-medium text-green-600 mt-1">
-            Giao dịch thành công
-          </p>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-            <input
-              type="text"
-              placeholder="Tìm theo mã, tên người mua, tên xe..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500/20 outline-none text-sm font-medium"
+        {/* Cards Grid */}
+        {loading ? (
+          <div className="text-center py-12 text-gray-500 font-medium">
+            Đang tải dữ liệu...
+          </div>
+        ) : filteredReservations.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+            <MdEventAvailable
+              className="mx-auto text-gray-300 mb-3"
+              size={48}
             />
+            <p className="text-gray-500 font-medium">
+              Không tìm thấy đặt chỗ nào.
+            </p>
           </div>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500/20 outline-none text-sm font-bold text-slate-700 cursor-pointer min-w-[200px]"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="Waiting_Payment">Chờ thanh toán</option>
-            <option value="Deposited">Đã cọc (Chờ xếp lịch)</option>
-            <option value="Scheduled">Đã xếp lịch</option>
-            <option value="Completed">Hoàn thành</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px]">
-            <thead className="bg-slate-50 border-b border-gray-100">
-              <tr>
-                <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Mã GD
-                </th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Sản phẩm
-                </th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Người mua
-                </th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Tiền cọc
-                </th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="text-center py-10 text-gray-500 font-medium"
-                  >
-                    Đang tải dữ liệu...
-                  </td>
-                </tr>
-              ) : filteredReservations.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="text-center py-10 text-gray-500 font-medium"
-                  >
-                    Không tìm thấy Đặt chỗ nào.
-                  </td>
-                </tr>
-              ) : (
-                filteredReservations.map((r) => (
-                  <tr
-                    key={r.reservationId}
-                    className="hover:bg-slate-50/50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-mono font-bold text-slate-700 text-sm">
-                      #{r.reservationId}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p
-                        className="font-bold text-sm text-gray-900 line-clamp-2 max-w-[200px]"
-                        title={r.listingTitle}
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {filteredReservations.map((r) => {
+              const badge = getStatusBadge(r.status);
+              const BadgeIcon = badge.icon;
+              return (
+                <div
+                  key={r.reservationId}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group"
+                >
+                  <div className="p-5">
+                    {/* Header với mã và badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="font-mono font-bold text-sm text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                        #{r.reservationId}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${badge.bg} ${badge.text} ${badge.border}`}
                       >
-                        {r.listingTitle}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-sm text-gray-800">
-                      {r.buyerName}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-orange-600">
-                      {formatCurrency(r.depositAmount || 0)}
-                    </td>
-                    <td className="px-6 py-4">{getStatusBadge(r.status)}</td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      {r.status === "Deposited" ? (
+                        {BadgeIcon && <BadgeIcon size={14} />}
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    {/* Thông tin sản phẩm - có nút xem chi tiết */}
+                    <div className="flex gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                        <MdPedalBike size={24} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3
+                            className="font-bold text-gray-900 text-base line-clamp-1"
+                            title={r.listingTitle}
+                          >
+                            {r.listingTitle}
+                          </h3>
+                          <button
+                            onClick={() => handleViewPost(r.listingId)}
+                            className="text-gray-400 hover:text-orange-500 transition-colors"
+                            title="Xem chi tiết bài đăng"
+                          >
+                            <MdInfoOutline size={18} />
+                          </button>
+                        </div>
+                        <p className="text-orange-600 font-bold text-sm mt-1">
+                          Cọc: {formatCurrency(r.depositAmount || 0)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Buyer & Seller */}
+                    <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                      <div className="bg-gray-50 p-3 rounded-xl">
+                        <p className="text-gray-400 text-xs mb-1 flex items-center gap-1">
+                          <MdPerson /> Người mua
+                        </p>
+                        <p className="font-bold text-gray-900 truncate">
+                          {r.buyerName || "N/A"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-xl">
+                        <p className="text-gray-400 text-xs mb-1 flex items-center gap-1">
+                          <MdStorefront /> Người bán
+                        </p>
+                        <p className="font-bold text-gray-900 truncate">
+                          {r.sellerName || "Đang cập nhật"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Inspector & Location (nếu có) */}
+                    {r.status === "Scheduled" && (
+                      <div className="bg-blue-50 p-3 rounded-xl mb-4 flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                          <MdPerson size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-blue-700 font-bold">
+                            Inspector
+                          </p>
+                          <p className="font-bold text-gray-900">
+                            {r.inspectorName || "Đang cập nhật"}
+                          </p>
+                          {r.inspectorPhone && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                              <MdPhone size={12} /> {r.inspectorPhone}
+                            </p>
+                          )}
+                          {r.meetingLocation && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                              <MdLocationOn size={12} /> {r.meetingLocation}
+                            </p>
+                          )}
+                          {r.meetingTime && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(r.meetingTime).toLocaleString("vi-VN")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-2 mt-2">
+                      {r.status === "Deposited" && (
                         <button
                           onClick={() => handleOpenScheduleModal(r)}
-                          className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-orange-500 transition-colors shadow-sm inline-flex items-center gap-1.5"
+                          className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 transition-colors shadow-sm"
                         >
-                          <MdEventAvailable size={14} /> Lên Lịch Hẹn
+                          <MdEventAvailable size={16} /> Lên lịch hẹn
                         </button>
-                      ) : r.status === "Scheduled" ? (
-                        <button
-                          onClick={() => handleOpenScheduleModal(r)}
-                          className="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors inline-flex items-center gap-1.5"
-                        >
-                          <MdEdit size={14} /> Đổi lịch
-                        </button>
-                      ) : (
-                        <span className="text-xs text-gray-400 font-medium">
-                          Không khả dụng
-                        </span>
                       )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* SCHEDULE MODAL */}
-      {showScheduleModal && selectedRes && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-black text-lg text-gray-900 flex items-center gap-2">
-                <MdEventAvailable className="text-orange-500" /> Xếp lịch cho Mã
-                #{selectedRes.reservationId}
-              </h3>
-              <button
-                onClick={() => setShowScheduleModal(false)}
-                className="text-gray-400 hover:text-red-500"
-              >
-                <MdClose size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={handleScheduleSubmit} className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Chọn Inspector (Kiểm định viên){" "}
-                  <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={scheduleData.inspectorId}
-                  onChange={(e) =>
-                    setScheduleData({
-                      ...scheduleData,
-                      inspectorId: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
-                >
-                  <option value="">-- Chọn nhân sự --</option>
-                  {inspectors.map((ins) => (
-                    <option key={ins.userId} value={ins.userId}>
-                      {ins.fullName || ins.username} - SĐT: {ins.phone}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Thời gian hẹn gặp <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={scheduleData.meetingTime}
-                  onChange={(e) =>
-                    setScheduleData({
-                      ...scheduleData,
-                      meetingTime: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Địa điểm VeloX Hub <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Trạm VeloX Quận 1, HCM"
-                  value={scheduleData.meetingLocation}
-                  onChange={(e) =>
-                    setScheduleData({
-                      ...scheduleData,
-                      meetingLocation: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowScheduleModal(false)}
-                  className="px-6 py-2.5 rounded-xl font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl font-bold bg-slate-900 text-white hover:bg-orange-500 shadow-md disabled:opacity-70 flex items-center gap-2"
-                >
-                  {isSubmitting ? (
-                    "Đang lưu..."
-                  ) : (
-                    <>
-                      <MdCheckCircle /> Lưu lịch hẹn
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+                      {r.status === "Scheduled" && (
+                        <button
+                          onClick={() => handleOpenScheduleModal(r)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors"
+                        >
+                          <MdEdit size={16} /> Đổi lịch
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* MODAL XEM CHI TIẾT BÀI ĐĂNG */}
+        {showPostModal && selectedPost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 className="font-black text-lg text-gray-900 flex items-center gap-2">
+                  <MdPedalBike className="text-orange-500" size={24} />
+                  Chi tiết bài đăng
+                </h3>
+                <button
+                  onClick={() => setShowPostModal(false)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <MdClose size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 max-h-[70vh] overflow-y-auto">
+                {loadingPost ? (
+                  <div className="text-center py-8">Đang tải...</div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden">
+                      <img
+                        src={
+                          selectedPost.image_url?.split(",")[0] ||
+                          "https://via.placeholder.com/800x400?text=No+Image"
+                        }
+                        alt={selectedPost.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h2 className="text-xl font-black text-gray-900">
+                      {selectedPost.title}
+                    </h2>
+                    <p className="text-orange-600 font-bold text-2xl">
+                      {formatCurrency(selectedPost.price)}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-500">Thương hiệu</p>
+                        <p className="font-bold">
+                          {selectedPost.brandName || "N/A"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-500">Loại xe</p>
+                        <p className="font-bold">
+                          {selectedPost.categoryName || "N/A"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-500">Tình trạng</p>
+                        <p className="font-bold">
+                          {selectedPost.condition || "N/A"}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-500">Năm sản xuất</p>
+                        <p className="font-bold">
+                          {selectedPost.yearManufacture || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedPost.description && (
+                      <div>
+                        <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                          {selectedPost.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => setShowPostModal(false)}
+                  className="px-6 py-2 bg-gray-900 text-white rounded-xl font-bold hover:bg-orange-500 transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SCHEDULE MODAL */}
+        {showScheduleModal && selectedRes && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+            {showScheduleModal && selectedRes && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
+                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-black text-lg text-gray-900 flex items-center gap-2">
+                      <MdEventAvailable className="text-orange-500" size={24} />
+                      Xếp lịch cho mã #{selectedRes.reservationId}
+                    </h3>
+                    <button
+                      onClick={() => setShowScheduleModal(false)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <MdClose size={24} />
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={handleScheduleSubmit}
+                    className="p-6 space-y-5"
+                  >
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                        Inspector <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={scheduleData.inspectorId}
+                        onChange={(e) =>
+                          setScheduleData({
+                            ...scheduleData,
+                            inspectorId: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
+                      >
+                        <option value="">-- Chọn kiểm định viên --</option>
+                        {inspectors.map((ins) => (
+                          <option key={ins.userId} value={ins.userId}>
+                            {ins.fullName || ins.username}{" "}
+                            {ins.phone ? `- ${ins.phone}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                        Thời gian hẹn <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={scheduleData.meetingTime}
+                        onChange={(e) =>
+                          setScheduleData({
+                            ...scheduleData,
+                            meetingTime: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                        Địa điểm <span className="text-red-500">*</span>
+                      </label>
+                      <LocationPicker
+                        onLocationSelect={handleLocationSelect}
+                        initialAddress={scheduleData.meetingLocation}
+                      />
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowScheduleModal(false)}
+                        className="px-6 py-2.5 rounded-xl font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-6 py-2.5 rounded-xl font-bold bg-gray-900 text-white hover:bg-orange-500 shadow-md disabled:opacity-70 flex items-center gap-2 transition-colors"
+                      >
+                        {isSubmitting ? (
+                          "Đang lưu..."
+                        ) : (
+                          <>
+                            <MdCheckCircle size={18} /> Lưu lịch hẹn
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

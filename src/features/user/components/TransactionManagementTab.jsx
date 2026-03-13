@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth"; // Import useAuth
 import { depositService } from "../../../services/depositService";
-import { reservationService } from "../../../services/reservationService"; // Import service
+import { reservationService } from "../../../services/reservationService";
+import { transactionService } from "../../../services/transactionService";
 import { toast } from "react-hot-toast";
 import {
   MdAccessTime,
@@ -11,22 +14,170 @@ import {
   MdPhone,
   MdWarning,
   MdPayment,
+  MdPerson,
+  MdImage,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 
+// Component ảnh với fallback khi lỗi
+const BikeImage = ({ src, alt, className }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setError(false);
+  }, [src]);
+
+  const handleError = () => {
+    setError(true);
+  };
+
+  if (error || !imgSrc) {
+    return (
+      <div
+        className={`${className} bg-gray-100 flex items-center justify-center text-gray-400`}
+      >
+        <MdImage size={24} />
+      </div>
+    );
+  }
+
+  return (
+    <img src={imgSrc} alt={alt} className={className} onError={handleError} />
+  );
+};
+
 const TransactionManagementTab = () => {
+  const { user } = useAuth(); // Lấy user hiện tại
   const [isProcessing, setIsProcessing] = useState(false);
-  const [reservations, setReservations] = useState([]);
+  const [mergedTransactions, setMergedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // GỌI API LẤY DANH SÁCH ĐẶT CHỖ (RESERVATION) CỦA USER NÀY
-  const fetchMyReservations = async () => {
-    try {
-      setLoading(true);
-      const res = await reservationService.getMyReservations();
-      if (res && res.result) {
-        setReservations(res.result);
+  const userId = user?.userId || user?.id; // Lấy userId từ user object
+
+  // Helper lấy ảnh từ nhiều nguồn
+  const extractImageUrl = (item) => {
+    if (item.listingImage) return item.listingImage;
+    if (item.listing?.image_url) {
+      const url = item.listing.image_url;
+      if (typeof url === "string" && url.includes(",")) {
+        return url.split(",")[0].trim();
       }
+      return url;
+    }
+    if (item.image_url) {
+      if (typeof item.image_url === "string" && item.image_url.includes(",")) {
+        return item.image_url.split(",")[0].trim();
+      }
+      return item.image_url;
+    }
+    return null;
+  };
+
+  // Xác định vai trò của user hiện tại trong transaction
+  const determineUserRole = (transaction) => {
+    const buyerId = transaction.buyerId || transaction.buyer?.userId;
+    const sellerId = transaction.sellerId || transaction.seller?.userId;
+
+    if (buyerId === userId) return "buyer";
+    if (sellerId === userId) return "seller";
+    return null; // Không liên quan
+  };
+
+  // Hàm chuyển đổi transaction (bên bán) sang format hiển thị
+  const mapTransactionToDisplay = (tx) => {
+    const listing = tx.listing || {};
+    const deposit = tx.deposit || {};
+    const reservation = tx.reservation || {};
+    const buyer = tx.buyer || {};
+    const seller = tx.seller || {};
+
+    return {
+      id: tx.transactionId,
+      reservationId: tx.transactionId,
+      listingId: listing.listingId || tx.listingId,
+      listingTitle: listing.title || tx.listingTitle || "Xe đạp VeloX",
+      listingImage: extractImageUrl(tx),
+      depositAmount: deposit.amount || tx.amount || 0,
+      status: tx.status,
+      reservedAt: tx.createAt || tx.createdAt,
+      meetingTime: reservation.meetingTime,
+      meetingLocation: reservation.meetingLocation,
+      inspectorName:
+        reservation.inspector?.fullName || tx.inspectorName || "Đang cập nhật",
+      inspectorPhone: reservation.inspector?.phone || tx.inspectorPhone,
+      buyerName: buyer.fullName || tx.buyerName,
+      sellerName: seller.fullName || tx.sellerName,
+      // Các ID để xác định vai trò
+      buyerId: buyer.userId || tx.buyerId,
+      sellerId: seller.userId || tx.sellerId,
+    };
+  };
+
+  const fetchAllTransactions = async () => {
+    setLoading(true);
+    try {
+      const [reservationsRes, transactionsRes] = await Promise.allSettled([
+        reservationService.getMyReservations(),
+        transactionService.getMyTransactions(),
+      ]);
+
+      console.log("Reservations response:", reservationsRes);
+      console.log("Transactions response:", transactionsRes);
+
+      let allItems = [];
+
+      // Xử lý reservations (bên mua) - chỉ lấy các reservation mà user là buyer
+      if (
+        reservationsRes.status === "fulfilled" &&
+        reservationsRes.value?.result
+      ) {
+        const buyerItems = reservationsRes.value.result
+          .map((r) => ({
+            ...r,
+            listingImage: extractImageUrl(r),
+            // Không gán userRole ở đây, sẽ xác định sau
+          }))
+          .filter((r) => determineUserRole(r) === "buyer"); // Chỉ giữ reservation mà user là buyer
+        allItems.push(...buyerItems);
+      } else {
+        console.warn("Không thể tải reservations:", reservationsRes.reason);
+      }
+
+      // Xử lý transactions (bên bán) - chỉ lấy các transaction mà user là seller
+      if (
+        transactionsRes.status === "fulfilled" &&
+        transactionsRes.value?.result
+      ) {
+        const sellerItems = transactionsRes.value.result
+          .map(mapTransactionToDisplay)
+          .filter((t) => determineUserRole(t) === "seller"); // Chỉ giữ transaction mà user là seller
+        allItems.push(...sellerItems);
+      } else {
+        console.warn("Không thể tải transactions:", transactionsRes.reason);
+      }
+
+      // Loại bỏ trùng lặp dựa trên ID
+      const uniqueMap = new Map();
+      allItems.forEach((item) => {
+        const key = item.reservationId || item.id;
+        if (key) uniqueMap.set(key, item);
+      });
+
+      // Xác định lại userRole cho từng item (đề phòng)
+      const merged = Array.from(uniqueMap.values())
+        .map((item) => ({
+          ...item,
+          userRole: determineUserRole(item), // Gán lại role
+        }))
+        .sort((a, b) => {
+          const dateA = a.reservedAt || a.createAt || a.createdAt;
+          const dateB = b.reservedAt || b.createAt || b.createdAt;
+          return new Date(dateB) - new Date(dateA);
+        });
+
+      setMergedTransactions(merged);
     } catch (error) {
       console.error("Lỗi tải danh sách giao dịch:", error);
     } finally {
@@ -35,37 +186,64 @@ const TransactionManagementTab = () => {
   };
 
   useEffect(() => {
-    fetchMyReservations();
-  }, []);
-
-  const activeTransactions = reservations.filter((t) =>
-    ["Waiting_Payment", "Deposited", "Scheduled"].includes(t.status),
-  );
+    if (userId) fetchAllTransactions();
+  }, [userId]);
 
   const renderStatusBadge = (status) => {
-    switch (status) {
-      case "Waiting_Payment":
-        return (
-          <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-red-200 animate-pulse">
-            <MdWarning /> Chờ thanh toán
-          </span>
-        );
-      case "Deposited":
-        return (
-          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-200">
-            <MdAdminPanelSettings /> Đang chờ Admin xếp lịch
-          </span>
-        );
-      case "Scheduled":
-        return (
-          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-green-200">
-            <MdCheckCircle /> Đã lên lịch hẹn
-          </span>
-        );
-      default:
-        return null;
-    }
+    const statusMap = {
+      Waiting_Payment: {
+        label: "Chờ thanh toán",
+        icon: MdWarning,
+        color: "red",
+      },
+      Deposited: {
+        label: "Đang chờ Admin xếp lịch",
+        icon: MdAdminPanelSettings,
+        color: "blue",
+      },
+      Scheduled: {
+        label: "Đã lên lịch hẹn",
+        icon: MdCheckCircle,
+        color: "green",
+      },
+      Pending: {
+        label: "Chờ xử lý",
+        icon: MdAdminPanelSettings,
+        color: "blue",
+      },
+      Paid: { label: "Đã thanh toán cọc", icon: MdCheckCircle, color: "green" },
+      Completed: { label: "Hoàn tất", icon: MdCheckCircle, color: "green" },
+      Cancelled: { label: "Đã hủy", icon: MdWarning, color: "gray" },
+    };
+    const config = statusMap[status] || {
+      label: status,
+      icon: MdWarning,
+      color: "gray",
+    };
+    const Icon = config.icon;
+    return (
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border ${
+          config.color === "red"
+            ? "bg-red-100 text-red-800 border-red-200"
+            : config.color === "blue"
+              ? "bg-blue-100 text-blue-800 border-blue-200"
+              : config.color === "green"
+                ? "bg-green-100 text-green-800 border-green-200"
+                : "bg-gray-100 text-gray-800 border-gray-200"
+        }`}
+      >
+        <Icon size={14} />
+        {config.label}
+      </span>
+    );
   };
+
+  const activeTransactions = mergedTransactions.filter((t) =>
+    ["Waiting_Payment", "Deposited", "Scheduled", "Pending", "Paid"].includes(
+      t.status,
+    ),
+  );
 
   const handleContinuePayment = async (listingId) => {
     setIsProcessing(true);
@@ -75,7 +253,7 @@ const TransactionManagementTab = () => {
         window.location.href = res.result.paymentUrl;
       } else if (res.result?.deposit) {
         toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
-        fetchMyReservations(); // Load lại data nếu trừ ví thành công
+        fetchAllTransactions();
       }
     } catch (error) {
       toast.error(
@@ -97,11 +275,9 @@ const TransactionManagementTab = () => {
   return (
     <div className="animate-in fade-in duration-300">
       <div className="mb-6 border-b border-gray-100 pb-4">
-        <h2 className="text-2xl font-bold text-zinc-900">
-          Quản lý giao dịch (Dành cho Người mua)
-        </h2>
+        <h2 className="text-2xl font-bold text-zinc-900">Quản lý giao dịch</h2>
         <p className="text-gray-500 text-sm">
-          Các giao dịch đặt cọc mua xe đang chờ thực hiện
+          Các giao dịch bạn đang tham gia với tư cách người mua hoặc người bán
         </p>
       </div>
 
@@ -113,153 +289,166 @@ const TransactionManagementTab = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {activeTransactions.map((t) => (
             <div
-              key={t.reservationId}
-              className={`border rounded-2xl bg-white shadow-sm overflow-hidden transition-shadow ${
+              key={t.reservationId || t.id}
+              className={`border rounded-2xl bg-white shadow-sm overflow-hidden transition-all hover:shadow-md ${
                 t.status === "Waiting_Payment"
                   ? "border-red-200"
-                  : "border-gray-200 hover:shadow-md"
+                  : "border-gray-200"
               }`}
             >
-              {/* Header Card */}
-              <div className="p-5 flex justify-between items-start gap-4 bg-slate-50/50">
-                <div className="flex gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-gray-200 flex items-center justify-center shrink-0">
-                    <MdReceiptLong
-                      size={32}
-                      className={
-                        t.status === "Waiting_Payment"
-                          ? "text-red-400"
-                          : "text-orange-400"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        Mã Đặt chỗ: #{t.reservationId}
-                      </span>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(t.reservedAt).toLocaleDateString("vi-VN")}
+              {/* Layout ngang: Ảnh + Thông tin chính + Badge + Hành động */}
+              <div className="flex flex-col sm:flex-row">
+                <Link
+                  to={`/bikes/${t.listingId}`}
+                  className="sm:w-32 sm:h-32 h-40 w-full sm:shrink-0 bg-gray-100 flex items-center justify-center overflow-hidden"
+                >
+                  <BikeImage
+                    src={t.listingImage}
+                    alt={t.listingTitle}
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+
+                <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="space-y-2 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link
+                        to={`/bikes/${t.listingId}`}
+                        className="font-bold text-lg text-zinc-900 hover:text-orange-600 transition-colors line-clamp-1"
+                      >
+                        {t.listingTitle}
+                      </Link>
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                        {t.userRole === "seller" ? "Người bán" : "Người mua"}
                       </span>
                     </div>
-                    <h3 className="font-bold text-lg text-zinc-900 line-clamp-1">
-                      {t.listingTitle || "Xe đạp VeloX"}
-                    </h3>
-                    <p className="text-orange-600 font-bold text-sm mt-1">
-                      Tiền cọc: {formatCurrency(t.depositAmount || 0)}
-                    </p>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                      <span className="text-orange-600 font-bold">
+                        Cọc: {formatCurrency(t.depositAmount || 0)}
+                      </span>
+                      {/* Chỉ hiển thị thông tin người mua nếu user là seller */}
+                      {t.userRole === "seller" && t.buyerName && (
+                        <span className="text-gray-600 flex items-center gap-1">
+                          <MdPerson size={16} className="text-gray-400" />
+                          Người mua: {t.buyerName}
+                        </span>
+                      )}
+                      {/* Chỉ hiển thị thông tin người bán nếu user là buyer */}
+                      {t.userRole === "buyer" && t.sellerName && (
+                        <span className="text-gray-600 flex items-center gap-1">
+                          <MdPerson size={16} className="text-gray-400" />
+                          Người bán: {t.sellerName}
+                        </span>
+                      )}
+                      {/* Mã đặt chỗ cho buyer */}
+                      {t.userRole === "buyer" && (
+                        <span className="text-gray-600 flex items-center gap-1">
+                          <MdReceiptLong size={16} className="text-gray-400" />
+                          Mã đặt chỗ: #{t.reservationId}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-gray-400">
+                      {new Date(
+                        t.reservedAt || t.createAt || t.createdAt,
+                      ).toLocaleString("vi-VN")}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {renderStatusBadge(t.status)}
+
+                    {t.status === "Waiting_Payment" &&
+                      t.userRole === "buyer" && (
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => handleContinuePayment(t.listingId)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <MdPayment size={16} /> Thanh toán
+                        </button>
+                      )}
                   </div>
                 </div>
-                {renderStatusBadge(t.status)}
               </div>
 
-              {/* Body Content */}
-              <div className="px-5 pb-5 pt-3">
-                {t.status === "Waiting_Payment" && (
-                  <div className="bg-red-50 rounded-xl p-4 border border-red-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-red-900 text-sm mb-1">
-                        Chưa hoàn tất thanh toán cọc!
-                      </p>
-                      <p className="text-sm text-red-800">
-                        Bạn đã tạo yêu cầu đặt cọc nhưng giao dịch thanh toán
-                        chưa thành công. Vui lòng thanh toán phần còn thiếu để
-                        Admin xếp lịch.
-                      </p>
-                    </div>
-                    <button
-                      disabled={isProcessing}
-                      onClick={() => handleContinuePayment(t.listingId)}
-                      className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-md transition-colors whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <MdPayment size={18} /> Thanh toán ngay
-                    </button>
+              {/* Phần mở rộng khi có lịch hẹn */}
+              {(t.status === "Scheduled" || t.meetingTime) && (
+                <div className="border-t border-gray-100 bg-gray-50 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MdAccessTime
+                      className="text-orange-600 shrink-0"
+                      size={18}
+                    />
+                    <span className="text-gray-700">
+                      {t.meetingTime
+                        ? new Date(t.meetingTime).toLocaleString("vi-VN", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Chưa chốt thời gian"}
+                    </span>
                   </div>
-                )}
+                  <div className="flex items-center gap-2 text-sm">
+                    <MdLocationOn
+                      className="text-orange-600 shrink-0"
+                      size={18}
+                    />
+                    <span className="text-gray-700 truncate">
+                      {t.meetingLocation || "Chưa chốt địa điểm"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs shrink-0">
+                      IN
+                    </div>
+                    <span className="text-gray-700 truncate">
+                      {t.inspectorName || "Chưa phân công Inspector"}
+                    </span>
+                    {t.inspectorPhone && (
+                      <a
+                        href={`tel:${t.inspectorPhone}`}
+                        className="text-blue-600 hover:text-blue-800 ml-1"
+                        title="Gọi Inspector"
+                      >
+                        <MdPhone size={16} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
-                {t.status === "Deposited" && (
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex items-center gap-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shrink-0">
-                      <MdAdminPanelSettings size={20} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-blue-900 text-sm mb-1">
-                        Đang xử lý hồ sơ...
-                      </p>
-                      <p className="text-sm text-blue-800">
-                        Admin đang liên hệ với người bán để tìm Inspector và địa
-                        điểm phù hợp. Vui lòng chờ thông báo.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {t.status === "Scheduled" && (
-                  <div className="border border-green-200 rounded-xl overflow-hidden relative">
-                    <div className="bg-green-50 p-3 border-b border-green-100 flex justify-between items-center">
-                      <span className="font-bold text-green-800 text-sm flex items-center gap-2">
-                        <MdReceiptLong /> VÉ MỜI GIAO DỊCH
-                      </span>
-                    </div>
-                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-white">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold mb-1">
-                          Thời gian gặp mặt
-                        </p>
-                        <p className="text-zinc-900 font-medium flex items-center gap-2">
-                          <MdAccessTime className="text-orange-600" />
-                          {t.meetingTime
-                            ? new Date(t.meetingTime).toLocaleString("vi-VN", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "Chưa chốt"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold mb-1">
-                          Địa điểm giao dịch
-                        </p>
-                        <p className="text-zinc-900 font-medium flex items-center gap-2">
-                          <MdLocationOn className="text-orange-600 shrink-0" />{" "}
-                          <span className="truncate">
-                            {t.meetingLocation || "Chưa chốt"}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="md:col-span-2 bg-gray-50 p-3 rounded-lg flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                          IN
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 font-bold">
-                            Inspector phụ trách
-                          </p>
-                          <p className="text-sm font-bold text-zinc-900">
-                            {t.inspectorName || "Đang cập nhật"}
-                          </p>
-                        </div>
-                        {t.inspectorPhone && (
-                          <a
-                            href={`tel:${t.inspectorPhone}`}
-                            className="text-blue-600 hover:text-blue-800 p-2 bg-blue-50 rounded-full border border-blue-100 shadow-sm"
-                            title="Gọi Inspector"
-                          >
-                            <MdPhone size={18} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Thông báo phụ cho các trạng thái khác */}
+              {t.status === "Deposited" && (
+                <div className="border-t border-gray-100 bg-blue-50 p-3 text-sm text-blue-800 flex items-center gap-2">
+                  <MdAdminPanelSettings size={18} />
+                  <span>Đang chờ Admin xếp lịch hẹn...</span>
+                </div>
+              )}
+              {t.status === "Paid" && t.userRole === "seller" && (
+                <div className="border-t border-gray-100 bg-green-50 p-3 text-sm text-green-800 flex items-center gap-2">
+                  <MdCheckCircle size={18} />
+                  <span>
+                    Người mua đã đặt cọc thành công. Admin sẽ sớm liên hệ.
+                  </span>
+                </div>
+              )}
+              {t.status === "Pending" && t.userRole === "seller" && (
+                <div className="border-t border-gray-100 bg-blue-50 p-3 text-sm text-blue-800 flex items-center gap-2">
+                  <MdAdminPanelSettings size={18} />
+                  <span>
+                    Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>

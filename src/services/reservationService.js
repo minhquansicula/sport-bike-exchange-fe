@@ -11,6 +11,14 @@ export const reservationService = {
     return response.data;
   },
 
+  scheduleReservation: async (reservationId, data) => {
+    const response = await api.put(
+      `/reservations/${reservationId}/schedule`,
+      data,
+    );
+    return response.data;
+  },
+
   // THÊM HÀM NÀY ĐỂ USER LẤY DANH SÁCH CỦA CHÍNH MÌNH
   getMyReservations: async () => {
     const response = await api.get("/reservations/my-reservations");
