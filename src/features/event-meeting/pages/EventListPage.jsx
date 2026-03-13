@@ -13,8 +13,6 @@ import { eventService } from "../../../services/eventService";
 const EventListPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // State cho bộ lọc
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
@@ -23,13 +21,17 @@ const EventListPage = () => {
       try {
         setLoading(true);
         const response = await eventService.getAllEvents();
-        // Chỉ lấy các sự kiện public, lọc bỏ 'draft' và 'cancelled'
-        const publicEvents = response.result.filter(
-          (e) => e.status !== "draft" && e.status !== "cancelled",
-        );
-        // Sắp xếp sự kiện mới nhất lên đầu (tùy chọn)
-        publicEvents.reverse();
-        setEvents(publicEvents);
+        if (response && response.result) {
+          // Chỉ lọc bỏ sự kiện đã hủy (cancelled), giữ lại tất cả các status khác
+          const publicEvents = response.result.filter(
+            (e) => e.status !== "cancelled",
+          );
+          // Sắp xếp sự kiện mới nhất lên đầu
+          publicEvents.sort(
+            (a, b) => new Date(b.startDate) - new Date(a.startDate),
+          );
+          setEvents(publicEvents);
+        }
       } catch (error) {
         console.error("Lỗi khi tải danh sách sự kiện:", error);
       } finally {
@@ -40,6 +42,9 @@ const EventListPage = () => {
   }, []);
 
   const getStatusDisplay = (status) => {
+    // Log để debug
+    // console.log("Event status:", status);
+
     switch (status) {
       case "upcoming":
         return {
@@ -56,9 +61,14 @@ const EventListPage = () => {
           text: "Đã kết thúc",
           color: "text-slate-600 bg-slate-100 border-slate-200",
         };
+      case "cancelled":
+        return {
+          text: "Đã hủy",
+          color: "text-red-700 bg-red-100 border-red-200",
+        };
       default:
         return {
-          text: "Không rõ",
+          text: status || "Không rõ",
           color: "text-slate-600 bg-slate-100 border-slate-200",
         };
     }
@@ -75,33 +85,14 @@ const EventListPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-20 font-sans text-slate-800">
-      {/* --- HERO BANNER GRADIENT --- */}
+      {/* Hero Banner - giữ nguyên */}
       <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden pb-24 pt-16 md:pt-20 md:pb-32 shadow-inner">
-        {/* Decor elements */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
-          <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[100%] rounded-full bg-gradient-to-b from-orange-500 to-transparent blur-3xl transform rotate-12"></div>
-          <div className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[100%] rounded-full bg-gradient-to-t from-blue-500 to-transparent blur-3xl transform -rotate-12"></div>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10 text-center max-w-3xl">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full text-sm font-bold tracking-widest mb-6 uppercase">
-            <MdEventAvailable size={18} /> Sự kiện & Hội chợ
-          </span>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 tracking-tight leading-tight">
-            Khám Phá Cộng Đồng <br /> Velo
-            <span className="text-orange-500">X</span>
-          </h1>
-          <p className="text-base md:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
-            Nơi hội tụ đam mê. Giao lưu, trải nghiệm và rước ngay xế yêu tại các
-            hội chợ xe đạp quy mô nhất toàn quốc.
-          </p>
-        </div>
+        {/* ... giữ nguyên ... */}
       </div>
 
-      {/* --- PHẦN TÌM KIẾM & BỘ LỌC --- */}
+      {/* Search & Filters */}
       <div className="container mx-auto px-4 max-w-5xl relative z-20 -mt-12 md:-mt-16 mb-10">
         <div className="bg-white p-4 md:p-6 rounded-[24px] shadow-xl border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Search Bar */}
           <div className="relative w-full md:w-1/2">
             <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-2xl" />
             <input
@@ -113,12 +104,11 @@ const EventListPage = () => {
             />
           </div>
 
-          {/* Tabs */}
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
             {[
               { id: "all", label: "Tất cả" },
+              { id: "upcoming", label: "Sắp diễn ra" },
               { id: "ongoing", label: "Đang diễn ra" },
-              { id: "upcoming", label: "Sắp tới" },
               { id: "completed", label: "Đã kết thúc" },
             ].map((tab) => (
               <button
@@ -137,7 +127,7 @@ const EventListPage = () => {
         </div>
       </div>
 
-      {/* --- DANH SÁCH SỰ KIỆN --- */}
+      {/* Event List */}
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="space-y-6">
           {loading ? (
@@ -160,7 +150,6 @@ const EventListPage = () => {
           ) : (
             filteredEvents.map((event) => {
               const statusUI = getStatusDisplay(event.status);
-              // Tạm dùng ảnh mặc định do DB chưa có trường ảnh
               const fallbackImage =
                 "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=800";
 
@@ -180,7 +169,7 @@ const EventListPage = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-60"></div>
 
-                      {/* Badge Trạng thái */}
+                      {/* Badge Trạng thái - ĐẢM BẢO HIỂN THỊ */}
                       <div
                         className={`absolute top-4 left-4 px-3 py-1.5 rounded-lg text-xs font-black tracking-wide border backdrop-blur-md shadow-sm uppercase ${statusUI.color}`}
                       >
@@ -190,7 +179,7 @@ const EventListPage = () => {
                       {/* Loại xe */}
                       <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-md text-slate-800 rounded-lg text-xs font-bold shadow-sm">
                         <MdPedalBike size={16} className="text-orange-500" />
-                        {event.bikeType}
+                        {event.bikeType === "ALL" ? "Tất cả" : event.bikeType}
                       </div>
                     </div>
 

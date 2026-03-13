@@ -12,7 +12,7 @@ import {
   MdAdminPanelSettings,
   MdFactCheck,
   MdAccountBalanceWallet,
-  MdEventAvailable, // Bổ sung import icon
+  MdEventAvailable,
 } from "react-icons/md";
 
 const UserMenu = () => {
@@ -20,20 +20,27 @@ const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
+  // Nếu không có user, không render gì
+  if (!user) return null;
+
+  // Lấy tên hiển thị
   const displayName =
     user?.fullName || user?.name || user?.username || "Người dùng";
 
+  // Fallback avatar từ ui-avatars
   const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     displayName,
-  )}&background=random&color=fff&background=ea580c&size=128`;
+  )}&background=ea580c&color=fff&size=128`;
 
-  const displayAvatar =
-    user?.avatar && user.avatar.trim() !== "" ? user.avatar : fallbackAvatar;
+  // Avatar hiển thị: ưu tiên user.avatar, nếu không có hoặc lỗi thì dùng fallback
+  const [avatarSrc, setAvatarSrc] = useState(user?.avatar || fallbackAvatar);
 
+  // Xác định role
   const userRole = String(user?.role || "").toUpperCase();
   const isAdmin = userRole.includes("ADMIN");
   const isInspector = userRole.includes("INSPECTOR");
 
+  // Đóng menu khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -44,12 +51,15 @@ const UserMenu = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (!user) return null;
-
   const handleLinkClick = () => setIsOpen(false);
+
+  const handleAvatarError = () => {
+    setAvatarSrc(fallbackAvatar);
+  };
 
   return (
     <div className="relative" ref={menuRef}>
+      {/* Nút mở menu */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 focus:outline-none group p-1 rounded-full hover:bg-gray-50 transition-colors"
@@ -61,42 +71,40 @@ const UserMenu = () => {
         </div>
         <div className="relative">
           <img
-            src={displayAvatar}
+            src={avatarSrc}
             alt="Avatar"
             className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover group-hover:border-orange-200 transition-all"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = fallbackAvatar;
-            }}
+            onError={handleAvatarError}
           />
           <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow border border-gray-100">
             <MdKeyboardArrowDown
-              className={`text-gray-500 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+              className={`text-gray-500 transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
               size={14}
             />
           </div>
         </div>
       </button>
 
+      {/* Dropdown menu */}
       {isOpen && (
         <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-gray-100 py-2 z-50 transform origin-top-right animate-in fade-in slide-in-from-top-2">
+          {/* Thông tin user */}
           <div className="px-6 py-4 border-b border-gray-50 flex items-center gap-3 bg-gray-50/50">
             <img
-              src={displayAvatar}
+              src={avatarSrc}
               alt="Avatar Small"
               className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = fallbackAvatar;
-              }}
+              onError={handleAvatarError}
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-900 truncate">
                 {displayName}
               </p>
-              <p className="text-xs text-gray-500 truncate mt-0.5">
+              {/* <p className="text-xs text-gray-500 truncate mt-0.5">
                 {user.email || "Chưa cập nhật email"}
-              </p>
+              </p> */}
               <span
                 className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${
                   isAdmin
@@ -115,6 +123,7 @@ const UserMenu = () => {
             </div>
           </div>
 
+          {/* Danh sách menu */}
           <div className="py-2 px-2 space-y-1">
             {isAdmin ? (
               <Link
@@ -122,8 +131,7 @@ const UserMenu = () => {
                 onClick={handleLinkClick}
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-md hover:shadow-lg transition-all"
               >
-                <MdAdminPanelSettings size={20} className="text-white" /> Trang
-                quản trị
+                <MdAdminPanelSettings size={20} /> Trang quản trị
               </Link>
             ) : isInspector ? (
               <Link
@@ -131,8 +139,7 @@ const UserMenu = () => {
                 onClick={handleLinkClick}
                 className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-md hover:shadow-lg transition-all"
               >
-                <MdFactCheck size={20} className="text-white" /> Khu vực kiểm
-                định
+                <MdFactCheck size={20} /> Khu vực kiểm định
               </Link>
             ) : (
               <>
@@ -186,6 +193,7 @@ const UserMenu = () => {
             )}
           </div>
 
+          {/* Nút đăng xuất */}
           <div className="border-t border-gray-50 pt-2 mt-1 px-3 pb-2">
             <button
               onClick={() => {

@@ -5,13 +5,8 @@ let fetchEventsPromise = null;
 
 export const eventService = {
   getAllEvents: async (forceRefresh = false) => {
-    if (eventsCache && !forceRefresh) {
-      return eventsCache;
-    }
-
-    if (fetchEventsPromise && !forceRefresh) {
-      return fetchEventsPromise;
-    }
+    if (eventsCache && !forceRefresh) return eventsCache;
+    if (fetchEventsPromise && !forceRefresh) return fetchEventsPromise;
 
     fetchEventsPromise = api
       .get("/events")
@@ -41,6 +36,12 @@ export const eventService = {
 
   updateEvent: async (eventId, eventData) => {
     const response = await api.put(`/events/${eventId}`, eventData);
+    eventService.clearCache();
+    return response.data;
+  },
+
+  cancelEvent: async (eventId) => {
+    const response = await api.put(`/events/${eventId}/cancel`);
     eventService.clearCache();
     return response.data;
   },

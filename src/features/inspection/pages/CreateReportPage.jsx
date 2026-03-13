@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { inspectorService } from "../../../services/inspectorService";
+import { uploadService } from "../../../services/uploadService";
+import { toast } from "react-hot-toast";
 import {
   MdArrowBack,
   MdSave,
@@ -12,9 +15,14 @@ import {
   MdImage,
   MdPeople,
 } from "react-icons/md";
+import formatCurrency from "../../../utils/formatCurrency";
 
 const CreateReportPage = () => {
+  const [searchParams] = useSearchParams();
+  const taskId = searchParams.get("taskId");
   const navigate = useNavigate();
+  const [task, setTask] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     bikeCondition: "good",
@@ -28,13 +36,40 @@ const CreateReportPage = () => {
     images: [],
   });
 
-  // State điểm danh
   const [attendance, setAttendance] = useState({
     buyerPresent: false,
     sellerPresent: false,
   });
 
   const [newIssue, setNewIssue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch task details if taskId exists
+  useEffect(() => {
+    if (taskId) {
+      const fetchTask = async () => {
+        try {
+          const res = await inspectorService.getTaskById(taskId);
+          setTask(res.result);
+        } catch (error) {
+          toast.error("Không thể tải thông tin nhiệm vụ");
+          navigate("/inspector/tasks");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchTask();
+    } else {
+      setLoading(false);
+    }
+  }, [taskId, navigate]);
+
+  // Cleanup image URLs khi unmount
+  useEffect(() => {
+    return () => {
+      formData.images.forEach((img) => URL.revokeObjectURL(img.preview));
+    };
+  }, [formData.images]);
 
   const handleAttendanceChange = (role) => {
     setAttendance((prev) => ({
@@ -46,23 +81,21 @@ const CreateReportPage = () => {
   const isAttendanceComplete =
     attendance.buyerPresent && attendance.sellerPresent;
 
-  // --- FIX MEMORY LEAK TẠI ĐÂY ---
-  useEffect(() => {
-    return () => {
-      // Dọn dẹp URL Object khi component unmount (người dùng rời trang) để tránh tràn RAM
-      formData.images.forEach((img) => URL.revokeObjectURL(img.preview));
-    };
-  }, [formData.images]);
-
-  // Handle image upload
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    const newImages = files.map((file) => ({
+    // Giới hạn kích thước 10MB mỗi ảnh
+    const validFiles = files.filter((file) => file.size <= 10 * 1024 * 1024);
+    if (validFiles.length !== files.length) {
+      toast.error("Một số ảnh vượt quá 10MB, đã bỏ qua");
+    }
+
+    const newImages = validFiles.map((file) => ({
       id: Date.now() + Math.random(),
       file,
-      preview: URL.createObjectURL(file), // Tạo URL tạm để preview
+      preview: URL.createObjectURL(file),
       name: file.name,
     }));
+
     setFormData((prev) => ({
       ...prev,
       images: [...prev.images, ...newImages],
@@ -70,12 +103,10 @@ const CreateReportPage = () => {
   };
 
   const removeImage = (imageId) => {
-    // Dọn dẹp URL của ảnh bị xóa
     const imageToRemove = formData.images.find((img) => img.id === imageId);
     if (imageToRemove) {
       URL.revokeObjectURL(imageToRemove.preview);
     }
-
     setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((img) => img.id !== imageId),
@@ -107,18 +138,68 @@ const CreateReportPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isAttendanceComplete) {
-      alert("Vui lòng xác nhận điểm danh 2 bên trước khi lưu báo cáo!");
+      toast.error("Vui lòng xác nhận điểm danh 2 bên trước khi lưu báo cáo!");
       return;
     }
 
-    console.log("Report data:", formData);
-    alert("Đã tạo báo cáo kiểm định thành công!");
-    navigate("/inspector/tasks");
+    if (!taskId) {
+      toast.error("Thiếu thông tin nhiệm vụ!");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Upload ảnh trước
+      const uploadedUrls = [];
+      if (formData.images.length > 0) {
+        for (const img of formData.images) {
+          const res = await uploadService.uploadImage(img.file);
+          if (res?.result) uploadedUrls.push(res.result);
+        }
+      }
+
+      // Chuẩn bị payload
+      const payload = {
+        taskId: parseInt(taskId),
+        attendance: {
+          buyerPresent: attendance.buyerPresent,
+          sellerPresent: attendance.sellerPresent,
+        },
+        checklist: {
+          frameCheck: formData.frameCheck,
+          brakeCheck: formData.brakeCheck,
+          wheelCheck: formData.wheelCheck,
+          gearCheck: formData.gearCheck,
+        },
+        bikeCondition: formData.bikeCondition,
+        overallScore: formData.overallScore,
+        issues: formData.issues,
+        notes: formData.notes,
+        images: uploadedUrls,
+      };
+
+      await inspectorService.createReport(taskId, payload);
+      toast.success("Tạo báo cáo kiểm định thành công!");
+      navigate(`/inspector/tasks/${taskId}`);
+    } catch (error) {
+      console.error("Lỗi tạo báo cáo:", error);
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"></div>
+      </div>
+    );
+  }
 
   const checklistItems = [
     { name: "frameCheck", label: "Khung xe nguyên vẹn, không nứt/móp" },
@@ -141,9 +222,11 @@ const CreateReportPage = () => {
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
             Tạo báo cáo kiểm định
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Đánh giá và cấp chứng nhận chất lượng xe
-          </p>
+          {task && (
+            <p className="text-gray-500 text-sm mt-1">
+              Nhiệm vụ: {task.bikeName} - Mã #{task.id}
+            </p>
+          )}
         </div>
       </div>
 

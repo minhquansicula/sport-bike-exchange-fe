@@ -56,6 +56,7 @@ import InspectorHomePage from "./features/inspection/pages/InspectorHomePage";
 import InspectorTaskPage from "./features/inspection/pages/InspectorTaskPage";
 import CreateReportPage from "./features/inspection/pages/CreateReportPage";
 import InspectorProfilePage from "./features/inspection/pages/InspectorProfilePage";
+import InspectorTaskDetailPage from "./features/inspection/pages/InspectorTaskDetailPage";
 
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 
@@ -127,6 +128,10 @@ const router = createBrowserRouter([
           { path: "create-report", element: <CreateReportPage /> },
           { path: "history", element: <InspectorTaskPage /> },
           { path: "profile", element: <InspectorProfilePage /> },
+          {
+            path: "tasks/:id",
+            element: <InspectorTaskDetailPage />,
+          },
         ],
       },
     ],

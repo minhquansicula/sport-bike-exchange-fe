@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../../hooks/useAuth";
+import { inspectorService } from "../../../services/inspectorService";
+import { uploadService } from "../../../services/uploadService";
+import { toast } from "react-hot-toast";
 import {
   MdCameraAlt,
   MdVerified,
@@ -16,6 +19,7 @@ import {
 
 const InspectorProfilePage = () => {
   const { user, updateUser } = useAuth();
+  const fileInputRef = useRef();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -26,6 +30,7 @@ const InspectorProfilePage = () => {
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -43,13 +48,40 @@ const InspectorProfilePage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    updateUser(formData);
-    setIsEditing(false);
-    alert("Cập nhật thông tin thành công!");
+  const handleAvatarClick = () => {
+    fileInputRef.current.click();
   };
 
-  // Mock thống kê
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const res = await uploadService.uploadImage(file);
+      const avatarUrl = res.result;
+      await inspectorService.updateProfile({ avatar: avatarUrl });
+      updateUser({ avatar: avatarUrl });
+      toast.success("Cập nhật ảnh đại diện thành công!");
+    } catch (error) {
+      toast.error("Cập nhật avatar thất bại");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await inspectorService.updateProfile(formData);
+      updateUser(formData);
+      setIsEditing(false);
+      toast.success("Cập nhật thông tin thành công!");
+    } catch (error) {
+      toast.error("Cập nhật thất bại");
+    }
+  };
+
+  // Mock thống kê (có thể thay bằng API sau)
   const stats = [
     { label: "Tổng kiểm định", value: 156, icon: <MdAssignment size={20} /> },
     { label: "Đánh giá", value: "4.9", icon: <MdStar size={20} /> },
@@ -69,20 +101,34 @@ const InspectorProfilePage = () => {
       {/* Header Profile Card */}
       <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-        
+
         <div className="relative flex flex-col md:flex-row items-center gap-6">
           {/* Avatar */}
           <div className="relative group">
             <div className="w-28 h-28 rounded-full border-4 border-white/30 shadow-xl overflow-hidden bg-white">
               <img
-                src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=10B981&color=fff`}
+                src={
+                  user.avatar ||
+                  `https://ui-avatars.com/api/?name=${user.name}&background=10B981&color=fff`
+                }
                 alt="Avatar"
                 className="w-full h-full object-cover"
               />
             </div>
-            <button className="absolute bottom-1 right-1 p-2 bg-white text-emerald-600 rounded-full hover:bg-emerald-50 shadow-lg cursor-pointer transition-transform hover:scale-110">
+            <button
+              onClick={handleAvatarClick}
+              disabled={isUploading}
+              className="absolute bottom-1 right-1 p-2 bg-white text-emerald-600 rounded-full hover:bg-emerald-50 shadow-lg cursor-pointer transition-transform hover:scale-110 disabled:opacity-50"
+            >
               <MdCameraAlt size={16} />
             </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              accept="image/*"
+              className="hidden"
+            />
           </div>
 
           {/* Info */}
@@ -179,7 +225,9 @@ const InspectorProfilePage = () => {
               disabled={true}
               className="w-full px-4 py-2.5 border border-transparent bg-gray-50 text-gray-500 rounded-lg cursor-not-allowed"
             />
-            <p className="text-xs text-gray-400 mt-1">Email không thể thay đổi</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Email không thể thay đổi
+            </p>
           </div>
 
           {/* Số điện thoại */}
@@ -253,7 +301,11 @@ const InspectorProfilePage = () => {
           {[
             { bike: "Trek Marlin 7", date: "28/01/2026", result: "Đạt" },
             { bike: "Giant Escape 2", date: "27/01/2026", result: "Đạt" },
-            { bike: "Specialized Allez", date: "25/01/2026", result: "Không đạt" },
+            {
+              bike: "Specialized Allez",
+              date: "25/01/2026",
+              result: "Không đạt",
+            },
           ].map((item, index) => (
             <div
               key={index}
