@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { bikeService } from "../../../services/bikeService";
-// Bổ sung import depositService (Bạn nhớ tạo service này nhé)
 import { depositService } from "../../../services/depositService";
+import { reservationService } from "../../../services/reservationService";
 import formatCurrency from "../../../utils/formatCurrency";
 import { useAuth } from "../../../hooks/useAuth";
 import { useWishlist } from "../../../context/WishlistContext";
 import toast, { Toaster } from "react-hot-toast";
+import Modal from "../../../components/common/Modal";
 
 import {
   MdLocationOn,
@@ -22,6 +23,7 @@ import {
   MdCalendarToday,
   MdErrorOutline,
   MdBlock,
+  MdCancel,
   MdColorLens,
   MdPrecisionManufacturing,
   MdHardware,
@@ -34,6 +36,7 @@ import {
   MdCompress,
   MdFavoriteBorder,
   MdFavorite,
+  MdWarning,
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
@@ -45,6 +48,11 @@ const BikeDetailPage = () => {
   const [bike, setBike] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isDepositing, setIsDepositing] = useState(false);
+  const [hasDeposited, setHasDeposited] = useState(false);
+  const [depositReservationId, setDepositReservationId] = useState(null);
+  const [depositStatus, setDepositStatus] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const [timestamp] = useState(new Date().getTime());
 
@@ -63,6 +71,33 @@ const BikeDetailPage = () => {
     };
     if (id) fetchBikeDetail();
   }, [id]);
+
+  // Kiểm tra xem user đã đặt cọc listing này chưa
+  useEffect(() => {
+    const checkExistingDeposit = async () => {
+      if (!user || !id) return;
+      try {
+        const res = await reservationService.getMyReservations();
+        if (res?.result) {
+          const activeStatuses = ["Waiting_Payment", "Deposited", "Scheduled", "Pending", "Paid"];
+          const matchedReservation = res.result.find(
+            (r) => {
+              const listingId = r.listingId || r.listing?.listingId;
+              return String(listingId) === String(id) && activeStatuses.includes(r.status);
+            }
+          );
+          setHasDeposited(!!matchedReservation);
+          if (matchedReservation) {
+            setDepositReservationId(matchedReservation.reservationId);
+            setDepositStatus(matchedReservation.status);
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi kiểm tra đặt cọc:", error);
+      }
+    };
+    checkExistingDeposit();
+  }, [user, id]);
 
   const userRole = String(user?.role || "").toUpperCase();
   const isStaff = userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
@@ -101,6 +136,33 @@ const BikeDetailPage = () => {
       );
     } finally {
       setIsDepositing(false);
+    }
+  };
+
+  // HÀM XỬ LÝ HỦY ĐẶT CỌC
+  const handleCancelDeposit = () => {
+    if (!depositReservationId) return;
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelDeposit = async () => {
+    if (!depositReservationId) return;
+    setIsCancelling(true);
+    try {
+      await reservationService.cancelReservation(depositReservationId);
+      toast.success("Đã hủy đặt cọc thành công!");
+      setHasDeposited(false);
+      setDepositReservationId(null);
+      setShowCancelModal(false);
+    } catch (error) {
+      console.error("Lỗi hủy đặt cọc:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Lỗi khi hủy đặt cọc",
+      );
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -328,6 +390,46 @@ const BikeDetailPage = () => {
                       <MdEdit size={20} />
                       Chỉnh sửa tin của bạn
                     </Link>
+                  ) : hasDeposited ? (
+                    <>
+                      <button
+                        disabled
+                        className="w-full bg-gray-100 text-gray-400 font-bold py-4 rounded-xl cursor-not-allowed flex items-center justify-center gap-2 border border-gray-200"
+                      >
+                        <MdCheckCircle size={20} />
+                        Bạn đã đặt cọc xe này rồi
+                      </button>
+
+                      {depositStatus !== "Scheduled" && (
+                      <button
+                        onClick={handleCancelDeposit}
+                        disabled={isCancelling}
+                        className="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+                      >
+                        <MdCancel size={20} />
+                        {isCancelling ? "Đang hủy..." : "Hủy đặt cọc"}
+                      </button>
+                      )}
+
+                      <button
+                        onClick={() => bike && toggleWishlist(bike.listingId)}
+                        className={`w-full font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 border ${
+                          bike && isInWishlist(bike.listingId)
+                            ? "bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                            : "bg-white text-zinc-600 border-gray-200 hover:border-red-300 hover:text-red-500"
+                        }`}
+                      >
+                        {bike && isInWishlist(bike.listingId) ? (
+                          <>
+                            <MdFavorite size={20} /> Đã yêu thích
+                          </>
+                        ) : (
+                          <>
+                            <MdFavoriteBorder size={20} /> Thêm vào yêu thích
+                          </>
+                        )}
+                      </button>
+                    </>
                   ) : (
                     <>
                       <button
@@ -392,6 +494,48 @@ const BikeDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal xác nhận hủy đặt cọc */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Xác nhận hủy đặt cọc"
+        footer={
+          <>
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+            >
+              Quay lại
+            </button>
+            <button
+              onClick={confirmCancelDeposit}
+              disabled={isCancelling}
+              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <MdCancel size={18} />
+              {isCancelling ? "Đang hủy..." : "Xác nhận hủy"}
+            </button>
+          </>
+        }
+      >
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <MdWarning className="text-red-600" size={36} />
+          </div>
+          <h4 className="text-lg font-bold text-zinc-900">
+            Bạn sẽ mất toàn bộ tiền cọc!
+          </h4>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Khi hủy đặt cọc, số tiền cọc bạn đã thanh toán sẽ{" "}
+            <strong className="text-red-600">không được hoàn lại</strong>.
+            Hành động này không thể hoàn tác.
+          </p>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+            ⚠️ Vui lòng cân nhắc kỹ trước khi xác nhận hủy.
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

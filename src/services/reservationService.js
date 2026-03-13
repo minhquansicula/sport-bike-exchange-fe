@@ -40,4 +40,10 @@ export const reservationService = {
     );
     return response.data;
   },
+
+  // Hủy đặt cọc
+  cancelReservation: async (reservationId) => {
+    const response = await api.put(`/reservations/cancel/${reservationId}`);
+    return response.data;
+  },
 };

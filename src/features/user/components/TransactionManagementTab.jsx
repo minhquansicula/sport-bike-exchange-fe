@@ -4,6 +4,7 @@ import { useAuth } from "../../../hooks/useAuth"; // Import useAuth
 import { depositService } from "../../../services/depositService";
 import { reservationService } from "../../../services/reservationService";
 import { transactionService } from "../../../services/transactionService";
+import Modal from "../../../components/common/Modal";
 import { toast } from "react-hot-toast";
 import {
   MdAccessTime,
@@ -16,6 +17,7 @@ import {
   MdPayment,
   MdPerson,
   MdImage,
+  MdCancel,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 
@@ -53,6 +55,7 @@ const TransactionManagementTab = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedTransactions, setMergedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancelTarget, setCancelTarget] = useState(null); // reservationId đang muốn hủy
 
   const userId = user?.userId || user?.id; // Lấy userId từ user object
 
@@ -264,6 +267,27 @@ const TransactionManagementTab = () => {
     }
   };
 
+  const handleCancelReservation = async (reservationId) => {
+    setCancelTarget(reservationId);
+  };
+
+  const confirmCancelReservation = async () => {
+    if (!cancelTarget) return;
+    setIsProcessing(true);
+    try {
+      await reservationService.cancelReservation(cancelTarget);
+      toast.success("Đã hủy đặt cọc thành công!");
+      fetchAllTransactions();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể hủy đặt cọc.",
+      );
+    } finally {
+      setIsProcessing(false);
+      setCancelTarget(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-20 text-center text-gray-500 font-medium">
@@ -373,6 +397,17 @@ const TransactionManagementTab = () => {
                           <MdPayment size={16} /> Thanh toán
                         </button>
                       )}
+
+                    {t.userRole === "buyer" &&
+                      ["Waiting_Payment", "Deposited", "Pending", "Paid"].includes(t.status) && (
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => handleCancelReservation(t.reservationId)}
+                          className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <MdCancel size={16} /> Hủy đặt cọc
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -453,6 +488,48 @@ const TransactionManagementTab = () => {
           ))}
         </div>
       )}
+
+      {/* Modal xác nhận hủy đặt cọc */}
+      <Modal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        title="Xác nhận hủy đặt cọc"
+        footer={
+          <>
+            <button
+              onClick={() => setCancelTarget(null)}
+              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+            >
+              Quay lại
+            </button>
+            <button
+              onClick={confirmCancelReservation}
+              disabled={isProcessing}
+              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <MdCancel size={18} />
+              {isProcessing ? "Đang hủy..." : "Xác nhận hủy"}
+            </button>
+          </>
+        }
+      >
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <MdWarning className="text-red-600" size={36} />
+          </div>
+          <h4 className="text-lg font-bold text-zinc-900">
+            Bạn sẽ mất toàn bộ tiền cọc!
+          </h4>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Khi hủy đặt cọc, số tiền cọc bạn đã thanh toán sẽ{" "}
+            <strong className="text-red-600">không được hoàn lại</strong>.
+            Hành động này không thể hoàn tác.
+          </p>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+            ⚠️ Vui lòng cân nhắc kỹ trước khi xác nhận hủy.
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
