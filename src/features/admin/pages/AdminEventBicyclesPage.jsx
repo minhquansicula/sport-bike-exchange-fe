@@ -61,15 +61,20 @@ const AdminEventBicyclesPage = () => {
     }
   };
 
-  // Trích xuất dữ liệu để hiển thị trong popup
+  // Trích xuất dữ liệu để hiển thị trong popup (ĐÃ SỬA THEO API MỚI)
   const extractBikeDisplayData = (item) => {
     const source = item.listing?.bicycle || item.bicycle || {};
     const listing = item.listing || {};
     return {
       eventBikeId: item.eventBikeId,
       status: item.status,
-      title: listing.title || source.model || "Xe đạp tham gia sự kiện",
-      price: listing.price || source.price || 0,
+      // Ưu tiên lấy title và price trực tiếp từ item
+      title:
+        item.title ||
+        listing.title ||
+        source.model ||
+        "Xe đạp tham gia sự kiện",
+      price: item.price || listing.price || source.price || 0,
       description:
         listing.description || source.description || "Không có mô tả chi tiết.",
       images: listing.image_url
@@ -81,7 +86,8 @@ const AdminEventBicyclesPage = () => {
             ],
       condition: listing.condition || source.condition || "Không rõ",
       brand: source.brand?.name || source.brandName || "Không rõ",
-      category: source.category?.name || item.type || "Không rõ",
+      // Ưu tiên lấy bikeType trực tiếp từ item
+      category: item.bikeType || source.category?.name || "Không rõ",
 
       // Thông số kỹ thuật
       year: source.yearManufacture || "Chưa cập nhật",
@@ -109,7 +115,9 @@ const AdminEventBicyclesPage = () => {
   };
 
   const filteredBikes = eventBikes.filter((item) => {
-    const title = item.listing?.title || item.bicycle?.model || "";
+    // Sửa lại cách lấy title cho bộ lọc tìm kiếm
+    const title =
+      item.title || item.listing?.title || item.bicycle?.model || "";
     const seller = item.sellerName || "";
     const eventName = item.event?.name || "";
 

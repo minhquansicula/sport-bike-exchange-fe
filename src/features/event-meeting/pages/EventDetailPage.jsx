@@ -51,7 +51,7 @@ const EventDetailPage = () => {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [libraryBikes, setLibraryBikes] = useState([]);
 
-  // Form xe mới (Bổ sung toàn bộ field từ Entity)
+  // Form xe mới
   const [formData, setFormData] = useState({
     brand: "",
     model: "",
@@ -247,14 +247,16 @@ const EventDetailPage = () => {
           setIsSubmitting(false);
           return;
         }
-        // Gọi API sử dụng hàm mới thêm vào Service
+
+        // CẬP NHẬT MỚI: Gọi api gửi id bài đăng có sẵn xuống
         await eventBicycleService.registerBicycleToEvent(
           id,
           parseInt(selectedListingId),
         );
+
         alert("Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.");
         setShowRegisterModal(false);
-        setSelectedListingId(""); // Reset lựa chọn
+        setSelectedListingId("");
       } else {
         const newErrors = {};
         if (!formData.brand) newErrors.brand = "Chọn thương hiệu";
@@ -284,12 +286,18 @@ const EventDetailPage = () => {
           bikeType: formData.category,
           title: `Xe tham gia sự kiện: ${formData.model}`,
           description: "Đăng ký trực tiếp vào sự kiện",
-          price: parseFloat(formData.price) || 0,
+
+          // 1. Đảm bảo ép kiểu float an toàn, nếu trống thì mặc định là 0
+          price: formData.price ? parseFloat(formData.price) : 0,
+
           model: formData.model,
           condition: formData.condition,
-          manufactureYear: formData.manufactureYear
+
+          // 2. ĐỔI TÊN KEY THÀNH yearManufacture (cho khớp Backend) và ép kiểu int
+          yearManufacture: formData.manufactureYear
             ? parseInt(formData.manufactureYear)
             : 0,
+
           frameSize: formData.frameSize || "Không rõ",
           frameMaterial: formData.frameMaterial || "Không rõ",
           color: formData.color || "Không rõ",
@@ -316,14 +324,21 @@ const EventDetailPage = () => {
         if (!createdBikeId)
           throw new Error("Không lấy được ID xe sau khi tạo.");
 
+        // CẬP NHẬT MỚI: Truyền thêm EventBicycleCreationRequest body
+        const requestBody = {
+          title: `Xe tham gia sự kiện: ${formData.model}`,
+          price: parseFloat(formData.price) || 0,
+          bikeType: formData.category,
+        };
+
         await eventBicycleService.registerBicycleToEventWithoutPosting(
           id,
           createdBikeId,
+          requestBody,
         );
 
         alert("Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.");
         setShowRegisterModal(false);
-        // Reset form
         setFormData({
           brand: "",
           model: "",
@@ -373,12 +388,17 @@ const EventDetailPage = () => {
     );
   };
 
+  // CẬP NHẬT MỚI: Lấy trực tiếp item.title và item.price
   const extractBikeDisplayData = (item) => {
     const source = item.listing?.bicycle || item.bicycle || {};
     const listing = item.listing || {};
     return {
-      title: listing.title || source.model || "Xe đạp tham gia sự kiện",
-      price: listing.price || source.price || 0,
+      title:
+        item.title ||
+        listing.title ||
+        source.model ||
+        "Xe đạp tham gia sự kiện",
+      price: item.price || listing.price || source.price || 0,
       description:
         listing.description ||
         source.description ||
@@ -392,7 +412,7 @@ const EventDetailPage = () => {
             ],
       condition: listing.condition || source.condition || "Không rõ",
       brand: source.brand?.name || source.brandName || "Không rõ",
-      category: source.category?.name || item.type || "Không rõ",
+      category: item.bikeType || source.category?.name || "Không rõ",
       year: source.yearManufacture || "Chưa cập nhật",
       frameSize: source.frameSize || "Chưa cập nhật",
       frameMaterial: source.frameMaterial || "Chưa cập nhật",
@@ -515,7 +535,6 @@ const EventDetailPage = () => {
       </div>
 
       <div className="container mx-auto px-4 -mt-10 relative z-20">
-        {/* INFO CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           <div className="bg-white p-6 md:p-8 rounded-[24px] shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-4">
             <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -585,7 +604,6 @@ const EventDetailPage = () => {
           </div>
         </div>
 
-        {/* DANH SÁCH XE */}
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
@@ -677,7 +695,6 @@ const EventDetailPage = () => {
           </div>
         )}
 
-        {/* Call to action */}
         {eventDetail.status !== "completed" &&
           eventDetail.status !== "cancelled" && (
             <div className="mt-16 text-center bg-slate-900 rounded-[32px] p-10 relative overflow-hidden shadow-2xl">
@@ -701,7 +718,6 @@ const EventDetailPage = () => {
           )}
       </div>
 
-      {/* MODAL XEM CHI TIẾT XE KHI CLICK VÀO CARD */}
       {selectedViewBike &&
         (() => {
           const bikeInfo = extractBikeDisplayData(selectedViewBike);
@@ -875,7 +891,6 @@ const EventDetailPage = () => {
           );
         })()}
 
-      {/* MODAL ĐĂNG KÝ XE VÀO SỰ KIỆN */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all overflow-y-auto py-10">
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col relative my-auto animate-in zoom-in-95 duration-200">
@@ -942,7 +957,6 @@ const EventDetailPage = () => {
                           ))}
                         </select>
 
-                        {/* HIỂN THỊ PREVIEW XE NẾU ĐƯỢC CHỌN */}
                         {selectedListingId &&
                           (() => {
                             const previewBike = myListings.find(

@@ -18,9 +18,14 @@ export const eventBicycleService = {
   },
 
   // Đăng ký xe vào sự kiện (dành cho Xe mới tạo)
-  registerBicycleToEventWithoutPosting: async (eventId, bicycleId) => {
+  registerBicycleToEventWithoutPosting: async (
+    eventId,
+    bicycleId,
+    requestBody,
+  ) => {
     const response = await api.post(
       `/event-bicycles/event/${eventId}/bicycle/${bicycleId}/register`,
+      requestBody,
     );
     eventBicycleService.clearCache(); // Xóa cache vì đã thêm xe mới
     return response.data;
