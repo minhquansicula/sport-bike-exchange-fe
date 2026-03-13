@@ -65,7 +65,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className="p-6 bg-gradient-to-br from-orange-50 to-white border-b border-gray-100">
               <div className="flex items-center gap-4">
                 <img
-                  src={user.avatar}
+                  src={user.avatar || null}
                   alt="Avatar"
                   className="w-14 h-14 rounded-full border-2 border-white shadow-md"
                 />
