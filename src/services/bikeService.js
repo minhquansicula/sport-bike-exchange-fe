@@ -171,6 +171,12 @@ export const bikeService = {
     return response.data;
   },
 
+  retryPayment: async (listingId) => {
+    const response = await api.post(`/post/retry-payment/${listingId}`);
+    bikeService.clearCache();
+    return response.data;
+  },
+
   clearCache: () => {
     bikesCache = null;
     fetchBikesPromise = null;

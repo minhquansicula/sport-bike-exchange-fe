@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   MdAdd,
@@ -6,10 +6,35 @@ import {
   MdOutlineEdit,
   MdOutlineDelete,
   MdCircle,
+  MdPayment,
 } from "react-icons/md";
+import { bikeService } from "../../../services/bikeService";
+import { toast } from "react-hot-toast";
 
 const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
-  // 1. SMART LOADING: Hiệu ứng Skeleton hiện đại
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // HÀM XỬ LÝ THANH TOÁN LẠI PHÍ ĐĂNG BÀI
+  const handleRetryPayment = async (listingId) => {
+    setIsProcessing(true);
+    try {
+      const res = await bikeService.retryPayment(listingId);
+      if (res.result?.paymentUrl) {
+        window.location.href = res.result.paymentUrl; // Chuyển hướng VNPay
+      } else if (res.result?.listing) {
+        toast.success("Đã trừ tiền từ ví thành công! Bài đăng đang chờ duyệt.");
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể khởi tạo thanh toán.",
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 1. SMART LOADING
   if (isLoading)
     return (
       <div className="animate-pulse">
@@ -34,7 +59,7 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
       </div>
     );
 
-  // 2. EMPTY STATE: Đơn giản, mềm mại và tập trung vào Call-to-Action
+  // 2. EMPTY STATE
   if (!myBikes || myBikes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 bg-zinc-50/50 rounded-[32px] border border-zinc-100">
@@ -66,15 +91,26 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
           label: "Đang hiển thị",
           colorClass: "text-green-500 animate-pulse",
         };
+      case "waiting_payment":
+        return {
+          label: "Chờ thanh toán phí",
+          colorClass: "text-red-500 animate-pulse",
+        };
+      case "deposited":
+        return { label: "Đã có người cọc", colorClass: "text-blue-500" };
+      case "scheduled":
+        return { label: "Đã xếp lịch hẹn", colorClass: "text-indigo-500" };
+      case "sold":
+        return { label: "Đã bán", colorClass: "text-gray-500" };
       case "rejected":
-        return { label: "Từ chối duyệt", colorClass: "text-red-500" };
+        return { label: "Từ chối duyệt", colorClass: "text-rose-500" };
       case "pending":
       default:
         return { label: "Chờ duyệt", colorClass: "text-amber-500" };
     }
   };
 
-  // 3. MAIN CONTENT: Thiết kế thẻ xe (Card) tinh gọn
+  // 3. MAIN CONTENT
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
@@ -99,11 +135,17 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {myBikes.map((bike) => {
           const statusConfig = getStatusConfig(bike.status);
+          const isWaitingPayment =
+            bike.status?.toLowerCase() === "waiting_payment";
 
           return (
             <div
               key={bike.listingId}
-              className="group bg-white border border-zinc-100 rounded-[24px] p-3 hover:border-zinc-200 hover:shadow-2xl hover:shadow-zinc-200/40 transition-all duration-500 flex flex-col"
+              className={`group bg-white border ${
+                isWaitingPayment
+                  ? "border-red-200 shadow-sm"
+                  : "border-zinc-100"
+              } rounded-[24px] p-3 hover:border-zinc-200 hover:shadow-xl hover:shadow-zinc-200/40 transition-all duration-500 flex flex-col`}
             >
               {/* Image Area */}
               <Link to={`/bikes/${bike.listingId}`} className="block relative">
@@ -116,11 +158,12 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
                     alt={bike.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
-
-                  {/* Status Badge (Hiệu ứng kính mờ - Glassmorphism) */}
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                  {/* Status Badge */}
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
                     <MdCircle size={8} className={statusConfig.colorClass} />
-                    <span className="text-[10px] font-black uppercase tracking-wider text-zinc-800">
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-wider ${isWaitingPayment ? "text-red-600" : "text-zinc-800"}`}
+                    >
                       {statusConfig.label}
                     </span>
                   </div>
@@ -138,16 +181,27 @@ const MyBikesTab = ({ myBikes, isLoading, onDelete }) => {
                   </p>
                 </Link>
 
-                {/* Actions Area - Đường kẻ mỏng phân tách, nút dạng minimal */}
-                <div className="mt-auto pt-4 border-t border-zinc-50 flex items-center justify-between">
+                {/* Actions Area */}
+                <div className="mt-auto pt-4 border-t border-zinc-50 flex items-center justify-between gap-2">
                   <span className="text-xs text-zinc-400 font-medium">
                     Mã: #{bike.listingId}
                   </span>
 
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
+                    {/* NÚT THANH TOÁN LẠI (Chỉ hiện khi Waiting_Payment) */}
+                    {isWaitingPayment && (
+                      <button
+                        onClick={() => handleRetryPayment(bike.listingId)}
+                        disabled={isProcessing}
+                        className="flex items-center gap-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                      >
+                        <MdPayment size={16} /> Thanh toán phí
+                      </button>
+                    )}
+
                     <Link
                       to={`/edit-bike/${bike.listingId}`}
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 transition-colors tooltip-trigger"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
                       title="Sửa tin"
                     >
                       <MdOutlineEdit size={20} />

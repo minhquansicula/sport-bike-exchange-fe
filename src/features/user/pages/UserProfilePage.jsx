@@ -1,4 +1,3 @@
-// File: src/pages/user/UserProfilePage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useTransaction } from "../../../context/TransactionContext";
@@ -7,6 +6,7 @@ import { MdCameraAlt, MdVerified, MdLock } from "react-icons/md";
 import { userService } from "../../../services/userService";
 import { uploadService } from "../../../services/uploadService";
 import { bikeService } from "../../../services/bikeService";
+import { depositService } from "../../../services/depositService"; // Thêm dòng này
 import ProfileSidebar from "../components/ProfileSidebar";
 import UserInfoTab from "../components/UserInfoTab";
 import MyBikesTab from "../components/MyBikesTab";
@@ -14,7 +14,7 @@ import TransactionManagementTab from "../components/TransactionManagementTab";
 import TransactionHistoryTab from "../components/TransactionHistoryTab";
 import WalletTab from "../components/WalletTab";
 import SecurityTab from "../components/SecurityTab";
-import MyEventBikesTab from "../components/MyEventBikesTab"; // <-- THÊM DÒNG NÀY
+import MyEventBikesTab from "../components/MyEventBikesTab";
 import { Toaster, toast } from "react-hot-toast";
 
 const UserProfilePage = () => {
@@ -44,6 +44,50 @@ const UserProfilePage = () => {
     bio: "",
     avatar: user?.avatar || "",
   });
+
+  // XỬ LÝ KẾT QUẢ VNPAY TRẢ VỀ
+  useEffect(() => {
+    const handleVNPayReturn = async () => {
+      const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
+      const depositId = searchParams.get("depositId");
+
+      if (depositId && vnp_ResponseCode) {
+        // Dọn dẹp URL cho gọn gàng sau khi bắt được param
+        const newParams = new URLSearchParams(searchParams);
+        [
+          "vnp_Amount",
+          "vnp_BankCode",
+          "vnp_BankTranNo",
+          "vnp_CardType",
+          "vnp_OrderInfo",
+          "vnp_PayDate",
+          "vnp_ResponseCode",
+          "vnp_TmnCode",
+          "vnp_TransactionNo",
+          "vnp_TransactionStatus",
+          "vnp_TxnRef",
+          "vnp_SecureHash",
+          "depositId",
+        ].forEach((param) => newParams.delete(param));
+        setSearchParams(newParams);
+
+        if (vnp_ResponseCode === "00") {
+          try {
+            const res = await depositService.confirmDepositPayment(depositId);
+            toast.success(res.result || "Thanh toán đặt cọc thành công!");
+            setTimeout(() => window.location.reload(), 1500); // Reload để cập nhật trạng thái transaction
+          } catch (error) {
+            toast.error(
+              error.response?.data?.message || "Lỗi xác nhận thanh toán.",
+            );
+          }
+        } else {
+          toast.error("Giao dịch thanh toán đã bị hủy.");
+        }
+      }
+    };
+    handleVNPayReturn();
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
@@ -83,7 +127,7 @@ const UserProfilePage = () => {
           const response = await bikeService.getMyBikeListings();
           setMyBikes(response.result || []);
         } catch (error) {
-          console.error("Lỗi tải danh sách xe cá nhân:", error);
+          console.error("Lỗi tải danh sách xe:", error);
         } finally {
           setIsBikesLoading(false);
         }
@@ -101,15 +145,12 @@ const UserProfilePage = () => {
         );
         toast.success("Đã gỡ bài đăng thành công!");
       } catch (error) {
-        console.error("Lỗi khi xóa bài đăng:", error);
-        toast.error("Gỡ bài thất bại, vui lòng thử lại.");
+        toast.error("Gỡ bài thất bại.");
       }
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
-  };
+  const triggerFileInput = () => fileInputRef.current.click();
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
@@ -124,7 +165,6 @@ const UserProfilePage = () => {
     try {
       const response = await uploadService.uploadImage(file);
       const imageUrl = response.result;
-
       const updatePayload = {
         fullName: formData.name,
         phone: formData.phone,
@@ -139,7 +179,6 @@ const UserProfilePage = () => {
       if (updateUser) updateUser({ avatar: imageUrl });
       toast.success("Cập nhật ảnh đại diện thành công!");
     } catch (error) {
-      console.error("Upload avatar lỗi:", error);
       toast.error("Cập nhật avatar thất bại.");
     } finally {
       setIsUploading(false);
@@ -167,13 +206,10 @@ const UserProfilePage = () => {
       };
 
       await userService.updateUser(formData.id, updateData);
-
       if (updateUser)
         updateUser({ fullName: formData.name, avatar: formData.avatar });
-
       toast.success("Cập nhật hồ sơ thành công!");
     } catch (error) {
-      console.error("Lỗi cập nhật:", error);
       toast.error("Cập nhật thất bại.");
     } finally {
       setIsSaving(false);
@@ -304,9 +340,7 @@ const UserProfilePage = () => {
                   loading={isSaving}
                 />
               )}
-
               {activeTab === "wallet" && <WalletTab />}
-
               {activeTab === "my-bikes" && (
                 <MyBikesTab
                   myBikes={myBikes}
@@ -314,26 +348,16 @@ const UserProfilePage = () => {
                   onDelete={handleDeleteBike}
                 />
               )}
-
-              {/* THÊM RENDER CHO COMPONENT XE SỰ KIỆN TẠI ĐÂY */}
               {activeTab === "my-event-bikes" && (
                 <MyEventBikesTab user={user} />
               )}
-
               {activeTab === "transaction-manage" && (
-                <TransactionManagementTab
-                  transactions={transactions}
-                  sellerAcceptTransaction={sellerAcceptTransaction}
-                  sellerRejectTransaction={sellerRejectTransaction}
-                />
+                <TransactionManagementTab transactions={transactions} />
               )}
-
               {activeTab === "transactions-history" && (
                 <TransactionHistoryTab transactions={transactions} />
               )}
-
               {activeTab === "security" && <SecurityTab />}
-
               {activeTab === "notification" && (
                 <div className="animate-in fade-in duration-300 text-center py-20 text-gray-400">
                   <MdVerified size={48} className="mx-auto opacity-20 mb-4" />

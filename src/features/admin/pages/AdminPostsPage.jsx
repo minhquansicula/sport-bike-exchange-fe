@@ -183,7 +183,7 @@ const AdminPostsPage = () => {
         };
       case "available":
         return {
-          label: "Đã duyệt",
+          label: "Đang bán (Đã duyệt)",
           icon: <MdCheckCircle size={14} />,
           style: "bg-emerald-100 text-emerald-700 border-emerald-200",
         };
@@ -199,6 +199,20 @@ const AdminPostsPage = () => {
           icon: <MdCheckCircle size={14} />,
           style: "bg-gray-100 text-gray-700 border-gray-200",
         };
+      // --- BỔ SUNG 2 TRẠNG THÁI MỚI ---
+      case "waiting_payment":
+        return {
+          label: "Chờ thanh toán",
+          icon: <MdAccessTime size={14} />,
+          style: "bg-purple-100 text-purple-700 border-purple-200",
+        };
+      case "deposited":
+        return {
+          label: "Đã có người cọc",
+          icon: <MdCheckCircle size={14} />,
+          style: "bg-blue-100 text-blue-700 border-blue-200",
+        };
+      // -------------------------------
       default:
         return {
           label: status,

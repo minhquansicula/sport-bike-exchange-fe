@@ -51,4 +51,9 @@ export const userService = {
     const response = await api.put(`/users/role/${userId}`, roleData);
     return response.data;
   },
+
+  getAllUsers: async () => {
+    const response = await api.get("/users"); // Thay đổi đường dẫn URL cho khớp với API Get All Users bên BE của bạn
+    return response.data;
+  },
 };
