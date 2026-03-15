@@ -17,6 +17,7 @@ import {
   MdPayment,
   MdPerson,
   MdImage,
+  MdCancel,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 
@@ -53,7 +54,9 @@ const TransactionManagementTab = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedTransactions, setMergedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null); // reservationId đang muốn hủy
+  const [sellerCancelTarget, setSellerCancelTarget] = useState(null); // reservationId người bán muốn hủy
+  const [cancelReason, setCancelReason] = useState(""); // lý do hủy
 
   const userId = user?.userId || user?.id;
 
@@ -93,7 +96,11 @@ const TransactionManagementTab = () => {
 
     return {
       id: tx.transactionId,
-      reservationId: tx.transactionId,
+      reservationId:
+        reservation.reservationId ||
+        tx.reservation?.reservationId ||
+        tx.reservationId ||
+        tx.transactionId,
       listingId: listing.listingId || tx.listingId,
       listingTitle: listing.title || tx.listingTitle || "Xe đạp VeloX",
       listingImage: extractImageUrl(tx),
@@ -268,6 +275,27 @@ const TransactionManagementTab = () => {
     }
   };
 
+  const confirmSellerCancelReservation = async () => {
+    if (!sellerCancelTarget || !cancelReason.trim()) return;
+    setIsProcessing(true);
+    try {
+      await reservationService.requestCancelReservationBySeller(
+        sellerCancelTarget,
+        { cancelDescription: cancelReason },
+      );
+      toast.success("Đã gửi yêu cầu hủy giao dịch thành công!");
+      fetchAllTransactions();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể gửi yêu cầu hủy giao dịch.",
+      );
+    } finally {
+      setIsProcessing(false);
+      setSellerCancelTarget(null);
+      setCancelReason("");
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-20 text-center text-gray-500 font-medium">
@@ -381,105 +409,131 @@ const TransactionManagementTab = () => {
                           </button>
                         )}
 
-                      {t.status === "Waiting_Payment" &&
-                        t.userRole === "buyer" && (
+                      {t.userRole === "buyer" &&
+                        [
+                          "Waiting_Payment",
+                          "Deposited",
+                          "Pending",
+                          "Paid",
+                        ].includes(t.status) && (
                           <button
                             disabled={isProcessing}
-                            onClick={() => handleContinuePayment(t.listingId)}
-                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                            onClick={() =>
+                              handleCancelReservation(t.reservationId)
+                            }
+                            className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
                           >
-                            <MdPayment size={16} /> Thanh toán
+                            <MdCancel size={16} /> Hủy đặt cọc
+                          </button>
+                        )}
+
+                      {t.userRole === "seller" &&
+                        [
+                          "Waiting_Payment",
+                          "Deposited",
+                          "Pending",
+                          "Paid",
+                          "Scheduled",
+                        ].includes(t.status) && (
+                          <button
+                            disabled={isProcessing}
+                            onClick={() =>
+                              setSellerCancelTarget(t.reservationId)
+                            }
+                            className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                          >
+                            <MdCancel size={16} /> Yêu cầu hủy
                           </button>
                         )}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {(t.status === "Scheduled" || t.meetingTime) && (
-                <div className="border-t border-gray-100 bg-gray-50/50 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2.5 text-sm">
-                    <MdAccessTime
-                      className="text-gray-400 shrink-0"
-                      size={18}
-                    />
-                    <span className="text-gray-700">
-                      {t.meetingTime
-                        ? new Date(t.meetingTime).toLocaleString("vi-VN", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "Chưa chốt thời gian"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-sm">
-                    <MdLocationOn
-                      className="text-gray-400 shrink-0"
-                      size={18}
-                    />
-                    {t.meetingLocation ? (
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                          t.meetingLocation,
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 hover:underline truncate"
-                        title="Xem trên Google Maps"
-                      >
-                        {t.meetingLocation}
-                      </a>
-                    ) : (
-                      <span className="text-gray-700 truncate">
-                        Chưa chốt địa điểm
+                {(t.status === "Scheduled" || t.meetingTime) && (
+                  <div className="border-t border-gray-100 bg-gray-50/50 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2.5 text-sm">
+                      <MdAccessTime
+                        className="text-gray-400 shrink-0"
+                        size={18}
+                      />
+                      <span className="text-gray-700">
+                        {t.meetingTime
+                          ? new Date(t.meetingTime).toLocaleString("vi-VN", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "Chưa chốt thời gian"}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2.5 text-sm">
-                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-semibold text-xs shrink-0">
-                      IN
                     </div>
-                    <span className="text-gray-700 truncate">
-                      {t.inspectorName || "Chưa phân công"}
-                    </span>
-                    {t.inspectorPhone && (
-                      <a
-                        href={`tel:${t.inspectorPhone}`}
-                        className="text-blue-600 hover:text-blue-800 ml-auto"
-                        title="Gọi Inspector"
-                      >
-                        <MdPhone size={16} />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2.5 text-sm">
+                      <MdLocationOn
+                        className="text-gray-400 shrink-0"
+                        size={18}
+                      />
+                      {t.meetingLocation ? (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            t.meetingLocation,
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                          title="Xem trên Google Maps"
+                        >
+                          {t.meetingLocation}
+                        </a>
+                      ) : (
+                        <span className="text-gray-700 truncate">
+                          Chưa chốt địa điểm
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2.5 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-semibold text-xs shrink-0">
+                        IN
+                      </div>
+                      <span className="text-gray-700 truncate">
+                        {t.inspectorName || "Chưa phân công"}
+                      </span>
+                      {t.inspectorPhone && (
+                        <a
+                          href={`tel:${t.inspectorPhone}`}
+                          className="text-blue-600 hover:text-blue-800 ml-auto"
+                          title="Gọi Inspector"
+                        >
+                          <MdPhone size={16} />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {t.status === "Deposited" && (
-                <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
-                  <MdAdminPanelSettings size={18} className="text-blue-500" />
-                  <span>Đang chờ Admin xếp lịch hẹn...</span>
-                </div>
-              )}
-              {t.status === "Paid" && t.userRole === "seller" && (
-                <div className="border-t border-gray-50 bg-green-50/50 p-3 text-sm text-green-700 flex items-center gap-2.5">
-                  <MdCheckCircle size={18} className="text-green-500" />
-                  <span>
-                    Người mua đã đặt cọc thành công. Admin sẽ sớm liên hệ.
-                  </span>
-                </div>
-              )}
-              {t.status === "Pending" && t.userRole === "seller" && (
-                <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
-                  <MdAdminPanelSettings size={18} className="text-blue-500" />
-                  <span>
-                    Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.
-                  </span>
-                </div>
-              )}
+                {t.status === "Deposited" && (
+                  <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
+                    <MdAdminPanelSettings size={18} className="text-blue-500" />
+                    <span>Đang chờ Admin xếp lịch hẹn...</span>
+                  </div>
+                )}
+                {t.status === "Paid" && t.userRole === "seller" && (
+                  <div className="border-t border-gray-50 bg-green-50/50 p-3 text-sm text-green-700 flex items-center gap-2.5">
+                    <MdCheckCircle size={18} className="text-green-500" />
+                    <span>
+                      Người mua đã đặt cọc thành công. Admin sẽ sớm liên hệ.
+                    </span>
+                  </div>
+                )}
+                {t.status === "Pending" && t.userRole === "seller" && (
+                  <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
+                    <MdAdminPanelSettings size={18} className="text-blue-500" />
+                    <span>
+                      Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -522,6 +576,61 @@ const TransactionManagementTab = () => {
             </span>
             . Hành động này không thể thay đổi sau khi xác nhận.
           </p>
+        </div>
+      </Modal>
+
+      {/* Modal yêu cầu hủy giao dịch (Seller) */}
+      <Modal
+        isOpen={!!sellerCancelTarget}
+        onClose={() => {
+          setSellerCancelTarget(null);
+          setCancelReason("");
+        }}
+        title="Yêu cầu hủy giao dịch"
+        footer={
+          <>
+            <button
+              onClick={() => {
+                setSellerCancelTarget(null);
+                setCancelReason("");
+              }}
+              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={confirmSellerCancelReservation}
+              disabled={isProcessing || !cancelReason.trim()}
+              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <MdCancel size={18} />
+              {isProcessing ? "Đang gửi..." : "Gửi yêu cầu hủy"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <MdWarning className="text-red-600" size={36} />
+          </div>
+          <h4 className="text-lg font-bold text-center text-zinc-900">
+            Bạn muốn yêu cầu hủy giao dịch này?
+          </h4>
+          <p className="text-gray-600 text-sm text-center">
+            Yêu cầu hủy sẽ được gửi đến quản trị viên để xem xét và phê duyệt.
+            Vui lòng nhập lý do cụ thể để quản trị viên xử lý.
+          </p>
+          <div className="mt-4 text-left">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lý do hủy giao dịch <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Nhập lý do chi tiết (ví dụ: Xe bị hỏng, thay đổi ý định...)"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[100px] resize-none"
+            />
+          </div>
         </div>
       </Modal>
     </div>

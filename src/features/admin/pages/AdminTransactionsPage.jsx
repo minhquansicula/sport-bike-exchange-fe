@@ -36,10 +36,11 @@ const AdminTransactionsPage = () => {
     inspectorId: "",
     meetingLocation: "",
     meetingTime: "",
-    latitude: null, // <-- thêm
+    latitude: null,
     longitude: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingCancel, setIsProcessingCancel] = useState(false);
 
   // State cho modal xem bài đăng
   const [showPostModal, setShowPostModal] = useState(false);
@@ -139,6 +140,34 @@ const AdminTransactionsPage = () => {
     }
   };
 
+  const handleApproveCancel = async (reservationId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn CHẤP NHẬN yêu cầu hủy giao dịch này?")) return;
+    setIsProcessingCancel(true);
+    try {
+      await reservationService.approveCancelReservationByAdmin(reservationId);
+      toast.success("Đã chấp nhận yêu cầu hủy giao dịch!");
+      fetchReservations();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi duyệt hủy giao dịch!");
+    } finally {
+      setIsProcessingCancel(false);
+    }
+  };
+
+  const handleRejectCancel = async (reservationId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn TỪ CHỐI yêu cầu hủy giao dịch này?")) return;
+    setIsProcessingCancel(true);
+    try {
+      await reservationService.rejectCancelReservationByAdmin(reservationId);
+      toast.success("Đã từ chối yêu cầu hủy giao dịch!");
+      fetchReservations();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi từ chối hủy giao dịch!");
+    } finally {
+      setIsProcessingCancel(false);
+    }
+  };
+
   // Hàm xem chi tiết bài đăng
   const handleViewPost = async (listingId) => {
     setLoadingPost(true);
@@ -168,6 +197,14 @@ const AdminTransactionsPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
+      case "Cancel_Pending":
+        return {
+          label: "Yêu cầu hủy",
+          icon: MdCancel,
+          bg: "bg-red-50",
+          text: "text-red-700",
+          border: "border-red-200",
+        };
       case "Waiting_Payment":
         return {
           label: "Chờ thanh toán",
@@ -371,8 +408,38 @@ const AdminTransactionsPage = () => {
                       </div>
                     )}
 
+                    {/* Hiển thị lý do hủy nếu có (nếu Cancel_Pending hoặc trường hợp hủy khác) */}
+                    {(r.cancelDescription || r.status === "Cancel_Pending") && r.status !== "Cancelled" && (
+                      <div className="bg-red-50 p-3 rounded-xl mb-4 text-sm border border-red-100">
+                        <p className="font-bold text-red-700 mb-1 flex items-center gap-1">
+                          <MdCancel size={16} /> Lý do yêu cầu hủy:
+                        </p>
+                        <p className="text-red-600">
+                          {r.cancelDescription || "Người bán yêu cầu hủy giao dịch (không kèm lý do)"}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex justify-end gap-2 mt-2">
+                      {(r.status === "Cancel_Pending" || (r.cancelDescription && r.status !== "Cancelled")) && (
+                        <>
+                          <button
+                            disabled={isProcessingCancel}
+                            onClick={() => handleApproveCancel(r.reservationId)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                          >
+                            <MdCheckCircle size={16} /> Duyệt hủy
+                          </button>
+                          <button
+                            disabled={isProcessingCancel}
+                            onClick={() => handleRejectCancel(r.reservationId)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          >
+                            <MdClose size={16} /> Từ chối
+                          </button>
+                        </>
+                      )}
                       {r.status === "Deposited" && (
                         <button
                           onClick={() => handleOpenScheduleModal(r)}
