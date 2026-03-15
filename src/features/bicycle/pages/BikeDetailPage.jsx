@@ -72,20 +72,26 @@ const BikeDetailPage = () => {
     if (id) fetchBikeDetail();
   }, [id]);
 
-  // Kiểm tra xem user đã đặt cọc listing này chưa
   useEffect(() => {
     const checkExistingDeposit = async () => {
       if (!user || !id) return;
       try {
         const res = await reservationService.getMyReservations();
         if (res?.result) {
-          const activeStatuses = ["Waiting_Payment", "Deposited", "Scheduled", "Pending", "Paid"];
-          const matchedReservation = res.result.find(
-            (r) => {
-              const listingId = r.listingId || r.listing?.listingId;
-              return String(listingId) === String(id) && activeStatuses.includes(r.status);
-            }
-          );
+          const activeStatuses = [
+            "Waiting_Payment",
+            "Deposited",
+            "Scheduled",
+            "Pending",
+            "Paid",
+          ];
+          const matchedReservation = res.result.find((r) => {
+            const listingId = r.listingId || r.listing?.listingId;
+            return (
+              String(listingId) === String(id) &&
+              activeStatuses.includes(r.status)
+            );
+          });
           setHasDeposited(!!matchedReservation);
           if (matchedReservation) {
             setDepositReservationId(matchedReservation.reservationId);
@@ -107,7 +113,6 @@ const BikeDetailPage = () => {
     bike &&
     (user.username === bike.sellerName || user.userId === bike.sellerId);
 
-  // HÀM XỬ LÝ ĐẶT CỌC BẰNG VNPAY
   const handleDeposit = async () => {
     if (!user) {
       toast.error("Vui lòng đăng nhập để đặt cọc xe!");
@@ -119,7 +124,6 @@ const BikeDetailPage = () => {
     try {
       const res = await depositService.createDepositViaVNPay(bike.listingId);
       if (res.result?.paymentUrl) {
-        // Chuyển hướng sang VNPay
         window.location.href = res.result.paymentUrl;
       } else if (res.result?.deposit) {
         toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
@@ -139,7 +143,6 @@ const BikeDetailPage = () => {
     }
   };
 
-  // HÀM XỬ LÝ HỦY ĐẶT CỌC
   const handleCancelDeposit = () => {
     if (!depositReservationId) return;
     setShowCancelModal(true);
@@ -157,9 +160,7 @@ const BikeDetailPage = () => {
     } catch (error) {
       console.error("Lỗi hủy đặt cọc:", error);
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Lỗi khi hủy đặt cọc",
+        error.response?.data?.message || error.message || "Lỗi khi hủy đặt cọc",
       );
     } finally {
       setIsCancelling(false);
@@ -245,7 +246,6 @@ const BikeDetailPage = () => {
                   thuật
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  {/* ... CÁC CHỈ SỐ KỸ THUẬT GIỮ NGUYÊN ... */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs mb-1 flex items-center gap-1">
                       <MdStraighten /> Size Khung
@@ -401,14 +401,13 @@ const BikeDetailPage = () => {
                       </button>
 
                       {depositStatus !== "Scheduled" && (
-                      <button
-                        onClick={handleCancelDeposit}
-                        disabled={isCancelling}
-                        className="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
-                      >
-                        <MdCancel size={20} />
-                        {isCancelling ? "Đang hủy..." : "Hủy đặt cọc"}
-                      </button>
+                        <button
+                          onClick={handleCancelDeposit}
+                          disabled={isCancelling}
+                          className="w-full bg-white hover:bg-red-50 text-gray-600 hover:text-red-600 border border-gray-200 hover:border-red-200 font-medium py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+                        >
+                          {isCancelling ? "Đang hủy..." : "Hủy đặt cọc"}
+                        </button>
                       )}
 
                       <button
@@ -495,45 +494,42 @@ const BikeDetailPage = () => {
         </div>
       </div>
 
-      {/* Modal xác nhận hủy đặt cọc */}
       <Modal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
-        title="Xác nhận hủy đặt cọc"
+        title=""
         footer={
-          <>
+          <div className="flex w-full gap-3 mt-2">
             <button
               onClick={() => setShowCancelModal(false)}
-              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+              className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
             >
-              Quay lại
+              Hủy qua
             </button>
             <button
               onClick={confirmCancelDeposit}
               disabled={isCancelling}
-              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <MdCancel size={18} />
-              {isCancelling ? "Đang hủy..." : "Xác nhận hủy"}
+              {isCancelling ? "Đang xử lý..." : "Xác nhận hủy"}
             </button>
-          </>
+          </div>
         }
       >
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-            <MdWarning className="text-red-600" size={36} />
+        <div className="flex flex-col items-center text-center pb-4 pt-2">
+          <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-5">
+            <MdWarning className="text-red-500" size={28} />
           </div>
-          <h4 className="text-lg font-bold text-zinc-900">
-            Bạn sẽ mất toàn bộ tiền cọc!
+          <h4 className="text-xl font-semibold text-gray-900 mb-2">
+            Bạn chắc chắn muốn hủy?
           </h4>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            Khi hủy đặt cọc, số tiền cọc bạn đã thanh toán sẽ{" "}
-            <strong className="text-red-600">không được hoàn lại</strong>.
-            Hành động này không thể hoàn tác.
+          <p className="text-gray-500 text-sm leading-relaxed px-4">
+            Tiền cọc của bạn sẽ{" "}
+            <span className="text-red-500 font-medium">
+              không được hoàn lại
+            </span>
+            . Hành động này không thể thay đổi sau khi xác nhận.
           </p>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-            ⚠️ Vui lòng cân nhắc kỹ trước khi xác nhận hủy.
-          </div>
         </div>
       </Modal>
     </div>

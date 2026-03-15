@@ -1,3 +1,4 @@
+// File: src/pages/event/EventDetailPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
@@ -5,6 +6,8 @@ import { eventService } from "../../../services/eventService";
 import { eventBicycleService } from "../../../services/eventBicycleService";
 import { uploadService } from "../../../services/uploadService";
 import { bikeService } from "../../../services/bikeService";
+import { depositService } from "../../../services/depositService"; // 1. IMPORT SERVICE ĐẶT CỌC
+import { toast } from "react-hot-toast";
 
 import {
   MdLocationOn,
@@ -24,7 +27,37 @@ import {
   MdInfoOutline,
   MdPerson,
   MdSettingsSuggest,
+  MdImage,
 } from "react-icons/md";
+
+// Component hiển thị ảnh với fallback
+const BikeImage = ({ src, alt, className }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setError(false);
+  }, [src]);
+
+  const handleError = () => {
+    setError(true);
+  };
+
+  if (error || !imgSrc) {
+    return (
+      <div
+        className={`${className} bg-gray-100 flex items-center justify-center text-gray-400`}
+      >
+        <MdImage size={24} />
+      </div>
+    );
+  }
+
+  return (
+    <img src={imgSrc} alt={alt} className={className} onError={handleError} />
+  );
+};
 
 const EventDetailPage = () => {
   const { id } = useParams();
@@ -37,6 +70,9 @@ const EventDetailPage = () => {
 
   // Popup Xem chi tiết xe
   const [selectedViewBike, setSelectedViewBike] = useState(null);
+
+  // 2. STATE QUẢN LÝ TRẠNG THÁI ĐẶT CỌC
+  const [isDepositing, setIsDepositing] = useState(false);
 
   // Popup & Chế độ đăng ký xe vào sự kiện
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -93,18 +129,17 @@ const EventDetailPage = () => {
           setEventDetail(eventRes.result);
         }
 
-        const bikesList = Array.isArray(bikesRes?.result)
-          ? bikesRes.result
-          : Array.isArray(bikesRes)
-            ? bikesRes
-            : [];
-        // Lọc xe thuộc sự kiện này và đã được admin duyệt
-        const approvedBikes = bikesList.filter(
-          (b) => b.event?.eventId === parseInt(id) && b.status === "Available",
-        );
+        const eventIdNum = parseInt(id);
+        const approvedBikes = (bikesRes?.result || []).filter((b) => {
+          const bikeEventId = b.eventId ?? b.event?.eventId;
+          const bikeStatus = b.status?.toLowerCase();
+          return bikeEventId === eventIdNum && bikeStatus === "available";
+        });
+
         setEventBikes(approvedBikes);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu sự kiện:", error);
+        toast.error("Không thể tải thông tin sự kiện");
       } finally {
         setLoading(false);
       }
@@ -166,7 +201,7 @@ const EventDetailPage = () => {
 
   const handleOpenRegister = () => {
     if (!user) {
-      alert("Vui lòng đăng nhập để đăng ký bán xe tại sự kiện này!");
+      toast.error("Vui lòng đăng nhập để đăng ký bán xe tại sự kiện này!");
       navigate("/login");
       return;
     }
@@ -237,24 +272,26 @@ const EventDetailPage = () => {
   };
 
   const handleRegisterSubmit = async (e) => {
+    // [LOGIC ĐĂNG KÝ GIỮ NGUYÊN]
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       if (registerMode === "existing") {
         if (!selectedListingId) {
-          alert("Vui lòng chọn một xe đang bán!");
+          toast.error("Vui lòng chọn một xe đang bán!");
           setIsSubmitting(false);
           return;
         }
 
-        // CẬP NHẬT MỚI: Gọi api gửi id bài đăng có sẵn xuống
         await eventBicycleService.registerBicycleToEvent(
           id,
           parseInt(selectedListingId),
         );
 
-        alert("Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.");
+        toast.success(
+          "Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.",
+        );
         setShowRegisterModal(false);
         setSelectedListingId("");
       } else {
@@ -286,18 +323,12 @@ const EventDetailPage = () => {
           bikeType: formData.category,
           title: `Xe tham gia sự kiện: ${formData.model}`,
           description: "Đăng ký trực tiếp vào sự kiện",
-
-          // 1. Đảm bảo ép kiểu float an toàn, nếu trống thì mặc định là 0
           price: formData.price ? parseFloat(formData.price) : 0,
-
           model: formData.model,
           condition: formData.condition,
-
-          // 2. ĐỔI TÊN KEY THÀNH yearManufacture (cho khớp Backend) và ép kiểu int
           yearManufacture: formData.manufactureYear
             ? parseInt(formData.manufactureYear)
             : 0,
-
           frameSize: formData.frameSize || "Không rõ",
           frameMaterial: formData.frameMaterial || "Không rõ",
           color: formData.color || "Không rõ",
@@ -324,11 +355,12 @@ const EventDetailPage = () => {
         if (!createdBikeId)
           throw new Error("Không lấy được ID xe sau khi tạo.");
 
-        // CẬP NHẬT MỚI: Truyền thêm EventBicycleCreationRequest body
         const requestBody = {
           title: `Xe tham gia sự kiện: ${formData.model}`,
           price: parseFloat(formData.price) || 0,
           bikeType: formData.category,
+          condition: formData.condition,
+          image_url: uploadedImageUrls.join(","),
         };
 
         await eventBicycleService.registerBicycleToEventWithoutPosting(
@@ -337,7 +369,9 @@ const EventDetailPage = () => {
           requestBody,
         );
 
-        alert("Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.");
+        toast.success(
+          "Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.",
+        );
         setShowRegisterModal(false);
         setFormData({
           brand: "",
@@ -367,7 +401,7 @@ const EventDetailPage = () => {
       }
     } catch (error) {
       console.error("Lỗi đăng ký xe event:", error);
-      alert(
+      toast.error(
         error.response?.data?.message ||
           error.message ||
           "Có lỗi xảy ra, vui lòng thử lại.",
@@ -377,60 +411,98 @@ const EventDetailPage = () => {
     }
   };
 
-  const handleDeposit = (eventBike) => {
+  // 3. HÀM XỬ LÝ ĐẶT CỌC XE SỰ KIỆN QUA VNPAY
+  const handleDeposit = async (eventBike) => {
     if (!user) {
-      alert("Vui lòng đăng nhập để đặt cọc xe!");
+      toast.error("Vui lòng đăng nhập để đặt cọc xe!");
       navigate("/login");
       return;
     }
-    alert(
-      `Chức năng thanh toán cọc cho xe ID ${eventBike.eventBikeId} đang được phát triển!`,
-    );
+
+    // Tìm listing_id của xe này (nếu có listing).
+    // Trong DB của bạn EventBicycle có liên kết với listing (listing_id).
+    const targetListingId = eventBike.listing?.listingId || eventBike.listingId;
+
+    if (!targetListingId) {
+      toast.error("Xe này hiện chưa sẵn sàng giao dịch đặt cọc!");
+      return;
+    }
+
+    setIsDepositing(true);
+    try {
+      // Gọi API đặt cọc dựa trên listingId
+      const res = await depositService.createDepositViaVNPay(targetListingId);
+      if (res.result?.paymentUrl) {
+        window.location.href = res.result.paymentUrl;
+      } else if (res.result?.deposit) {
+        toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
+        navigate("/profile?tab=transaction-manage");
+      } else {
+        toast.success(res.message || "Tạo yêu cầu thành công");
+      }
+    } catch (error) {
+      console.error("Lỗi đặt cọc xe sự kiện:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Lỗi khi tạo giao dịch đặt cọc",
+      );
+    } finally {
+      setIsDepositing(false);
+    }
   };
 
-  // CẬP NHẬT MỚI: Lấy trực tiếp item.title và item.price
   const extractBikeDisplayData = (item) => {
-    const source = item.listing?.bicycle || item.bicycle || {};
-    const listing = item.listing || {};
+    const eventBike = item;
+    const listing = eventBike.listing || {};
+    const bicycle = eventBike.bicycle || listing.bicycle || {};
+
     return {
       title:
-        item.title ||
+        eventBike.title ||
         listing.title ||
-        source.model ||
+        bicycle.model ||
         "Xe đạp tham gia sự kiện",
-      price: item.price || listing.price || source.price || 0,
+      price: eventBike.price || listing.price || bicycle.price || 0,
       description:
         listing.description ||
-        source.description ||
+        bicycle.description ||
         "Xe đăng ký trực tiếp sự kiện chưa có mô tả.",
-      images: listing.image_url
-        ? listing.image_url.split(",")
-        : source.image_url
-          ? source.image_url.split(",")
-          : [
-              "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80",
-            ],
-      condition: listing.condition || source.condition || "Không rõ",
-      brand: source.brand?.name || source.brandName || "Không rõ",
-      category: item.bikeType || source.category?.name || "Không rõ",
-      year: source.yearManufacture || "Chưa cập nhật",
-      frameSize: source.frameSize || "Chưa cập nhật",
-      frameMaterial: source.frameMaterial || "Chưa cập nhật",
-      color: source.color || "Chưa cập nhật",
-      wheelSize: source.wheelSize || "Chưa cập nhật",
-      rim: source.rim || "Chưa cập nhật",
-      brakeType: source.brakeType || "Chưa cập nhật",
-      forkType: source.forkType || "Chưa cập nhật",
-      shockAbsorber: source.shockAbsorber || "Chưa cập nhật",
-      drivetrain: source.drivetrain || "Chưa cập nhật",
-      numberOfGears: source.numberOfGears || "Chưa cập nhật",
-      chainring: source.chainring || "Chưa cập nhật",
-      chain: source.chain || "Chưa cập nhật",
-      handlebar: source.handlebar || "Chưa cập nhật",
-      saddle: source.saddle || "Chưa cập nhật",
-      weight: source.weight ? `${source.weight} kg` : "Chưa cập nhật",
-      sellerName: item.sellerName || "Ẩn danh",
-      sellerId: item.seller?.userId || item.sellerId,
+      images: eventBike.image_url
+        ? eventBike.image_url.split(",")
+        : listing.image_url
+          ? listing.image_url.split(",")
+          : bicycle.image_url
+            ? bicycle.image_url.split(",")
+            : [
+                "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80",
+              ],
+      condition:
+        eventBike.condition ||
+        listing.condition ||
+        bicycle.condition ||
+        "Không rõ",
+      brand: bicycle.brand?.name || bicycle.brandName || "Không rõ",
+      category: eventBike.bikeType || bicycle.category?.name || "Không rõ",
+      year: bicycle.yearManufacture || "Chưa cập nhật",
+      frameSize: bicycle.frameSize || "Chưa cập nhật",
+      frameMaterial: bicycle.frameMaterial || "Chưa cập nhật",
+      color: bicycle.color || "Chưa cập nhật",
+      wheelSize: bicycle.wheelSize || "Chưa cập nhật",
+      rim: bicycle.rim || "Chưa cập nhật",
+      brakeType: bicycle.brakeType || "Chưa cập nhật",
+      forkType: bicycle.forkType || "Chưa cập nhật",
+      shockAbsorber: bicycle.shockAbsorber || "Chưa cập nhật",
+      drivetrain: bicycle.drivetrain || "Chưa cập nhật",
+      numberOfGears: bicycle.numberOfGears || "Chưa cập nhật",
+      chainring: bicycle.chainring || "Chưa cập nhật",
+      chain: bicycle.chain || "Chưa cập nhật",
+      handlebar: bicycle.handlebar || "Chưa cập nhật",
+      saddle: bicycle.saddle || "Chưa cập nhật",
+      weight: bicycle.weight ? `${bicycle.weight} kg` : "Chưa cập nhật",
+      sellerName:
+        eventBike.sellerName || eventBike.seller?.fullName || "Ẩn danh",
+      sellerId: eventBike.sellerId || eventBike.seller?.userId,
     };
   };
 
@@ -472,6 +544,7 @@ const EventDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans selection:bg-orange-500 selection:text-white">
+      {/* Hero Section */}
       <div className="bg-slate-900 text-white relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-40 scale-105 animate-kenburns"
@@ -534,6 +607,7 @@ const EventDetailPage = () => {
         </div>
       </div>
 
+      {/* Info Cards */}
       <div className="container mx-auto px-4 -mt-10 relative z-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           <div className="bg-white p-6 md:p-8 rounded-[24px] shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-4">
@@ -604,6 +678,7 @@ const EventDetailPage = () => {
           </div>
         </div>
 
+        {/* Danh sách xe tham gia */}
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
@@ -626,10 +701,7 @@ const EventDetailPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {eventBikes.map((bike) => {
               const bikeInfo = extractBikeDisplayData(bike);
-              const isMyBike =
-                user &&
-                (bike.sellerName === user.username ||
-                  bikeInfo.sellerId === user.id);
+              const isMyBike = user && bikeInfo.sellerId === user.userId;
 
               return (
                 <div
@@ -638,7 +710,7 @@ const EventDetailPage = () => {
                   className="bg-white rounded-[20px] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 group flex flex-col cursor-pointer"
                 >
                   <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
-                    <img
+                    <BikeImage
                       src={bikeInfo.images[0]}
                       alt={bikeInfo.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -676,14 +748,17 @@ const EventDetailPage = () => {
                             Xe của bạn
                           </div>
                         ) : (
+                          // 4. BUTTON ĐẶT CỌC NGOÀI DANH SÁCH (Tùy chọn)
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeposit(bike);
                             }}
-                            className="w-full py-2.5 bg-slate-900 hover:bg-orange-500 text-white rounded-xl font-bold transition-colors flex justify-center items-center gap-2"
+                            disabled={isDepositing}
+                            className="w-full py-2.5 bg-slate-900 hover:bg-orange-500 text-white rounded-xl font-bold transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
                           >
-                            <MdShoppingCartCheckout size={20} /> Đặt cọc
+                            <MdShoppingCartCheckout size={20} />
+                            {isDepositing ? "Đang xử lý..." : "Đặt cọc"}
                           </button>
                         )}
                       </>
@@ -718,13 +793,11 @@ const EventDetailPage = () => {
           )}
       </div>
 
+      {/* Modal chi tiết xe */}
       {selectedViewBike &&
         (() => {
           const bikeInfo = extractBikeDisplayData(selectedViewBike);
-          const isMyBike =
-            user &&
-            (selectedViewBike.sellerName === user.username ||
-              bikeInfo.sellerId === user.id);
+          const isMyBike = user && bikeInfo.sellerId === user.userId;
 
           return (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto py-10">
@@ -744,9 +817,10 @@ const EventDetailPage = () => {
 
                 <div className="p-6 md:p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Ảnh */}
                     <div className="space-y-4">
                       <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                        <img
+                        <BikeImage
                           src={bikeInfo.images[0]}
                           alt={bikeInfo.title}
                           className="w-full h-full object-cover"
@@ -755,7 +829,7 @@ const EventDetailPage = () => {
                       {bikeInfo.images.length > 1 && (
                         <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                           {bikeInfo.images.map((img, idx) => (
-                            <img
+                            <BikeImage
                               key={idx}
                               src={img}
                               alt=""
@@ -766,6 +840,7 @@ const EventDetailPage = () => {
                       )}
                     </div>
 
+                    {/* Thông tin */}
                     <div className="space-y-6">
                       <div>
                         <h2 className="text-2xl font-black text-slate-900 leading-tight mb-2">
@@ -873,14 +948,14 @@ const EventDetailPage = () => {
                           Đây là xe của bạn
                         </span>
                       ) : (
+                        // 5. NÚT ĐẶT CỌC TRONG MODAL CHI TIẾT
                         <button
-                          onClick={() => {
-                            setSelectedViewBike(null);
-                            handleDeposit(selectedViewBike);
-                          }}
-                          className="flex items-center gap-2 px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg"
+                          onClick={() => handleDeposit(selectedViewBike)}
+                          disabled={isDepositing}
+                          className="flex items-center gap-2 px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-wait transition-all"
                         >
-                          <MdShoppingCartCheckout size={20} /> Đặt cọc ngay
+                          <MdShoppingCartCheckout size={20} />
+                          {isDepositing ? "Đang xử lý..." : "Đặt cọc ngay"}
                         </button>
                       )}
                     </>
@@ -891,9 +966,11 @@ const EventDetailPage = () => {
           );
         })()}
 
+      {/* Modal đăng ký xe (GIỮ NGUYÊN FORM ĐĂNG KÝ) */}
       {showRegisterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all overflow-y-auto py-10">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all overflow-y-auto py-10">
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col relative my-auto animate-in zoom-in-95 duration-200">
+            {/* Header Modal */}
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white rounded-t-3xl z-10">
               <div>
                 <h3 className="text-xl font-black text-slate-900">
@@ -911,21 +988,31 @@ const EventDetailPage = () => {
               </button>
             </div>
 
+            {/* Chế độ chọn */}
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex gap-4">
               <button
                 onClick={() => setRegisterMode("new")}
-                className={`px-4 py-2 font-bold rounded-lg transition-colors ${registerMode === "new" ? "bg-orange-500 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"}`}
+                className={`px-4 py-2 font-bold rounded-lg transition-colors ${
+                  registerMode === "new"
+                    ? "bg-orange-500 text-white"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
               >
                 Tạo xe mới
               </button>
               <button
                 onClick={() => setRegisterMode("existing")}
-                className={`px-4 py-2 font-bold rounded-lg transition-colors ${registerMode === "existing" ? "bg-orange-500 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"}`}
+                className={`px-4 py-2 font-bold rounded-lg transition-colors ${
+                  registerMode === "existing"
+                    ? "bg-orange-500 text-white"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
               >
                 Chọn xe đang bán
               </button>
             </div>
 
+            {/* Nội dung form */}
             <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
               <form
                 id="registerBikeForm"
@@ -966,7 +1053,7 @@ const EventDetailPage = () => {
                             if (!previewBike) return null;
                             return (
                               <div className="flex items-center gap-4 p-4 border border-orange-200 bg-orange-50 rounded-xl animate-in fade-in zoom-in-95 duration-200">
-                                <img
+                                <BikeImage
                                   src={previewBike.image_url?.split(",")[0]}
                                   alt="preview"
                                   className="w-24 h-24 rounded-lg object-cover border border-orange-200 shadow-sm"
@@ -1008,7 +1095,9 @@ const EventDetailPage = () => {
                             });
                             setErrors({ ...errors, brand: null });
                           }}
-                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.brand ? "border-red-500" : "border-slate-200"}`}
+                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
+                            errors.brand ? "border-red-500" : "border-slate-200"
+                          }`}
                         >
                           <option value="">Chọn hãng xe</option>
                           {availableBrands.map((b, idx) => (
@@ -1035,7 +1124,9 @@ const EventDetailPage = () => {
                           placeholder="VD: Marlin 7"
                           value={formData.model}
                           onChange={handleChange}
-                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.model ? "border-red-500" : "border-slate-200"}`}
+                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
+                            errors.model ? "border-red-500" : "border-slate-200"
+                          }`}
                         />
                         {errors.model && (
                           <p className="text-red-500 text-xs mt-1">
@@ -1080,7 +1171,11 @@ const EventDetailPage = () => {
                             eventDetail?.bikeType &&
                             eventDetail.bikeType !== "ALL"
                           }
-                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.category ? "border-red-500" : "border-slate-200"}`}
+                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
+                            errors.category
+                              ? "border-red-500"
+                              : "border-slate-200"
+                          }`}
                         >
                           <option value="">Chọn loại</option>
                           {availableCategories.map((c, idx) => (
@@ -1107,7 +1202,11 @@ const EventDetailPage = () => {
                             placeholder="VD: 5000000"
                             value={formData.price}
                             onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.price ? "border-red-500" : "border-slate-200"}`}
+                            className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
+                              errors.price
+                                ? "border-red-500"
+                                : "border-slate-200"
+                            }`}
                           />
                           <MdAttachMoney className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl" />
                         </div>
@@ -1125,7 +1224,11 @@ const EventDetailPage = () => {
                           name="condition"
                           value={formData.condition}
                           onChange={handleChange}
-                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.condition ? "border-red-500" : "border-slate-200"}`}
+                          className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
+                            errors.condition
+                              ? "border-red-500"
+                              : "border-slate-200"
+                          }`}
                         >
                           <option value="">Đánh giá xe</option>
                           <option value="Như mới">Như mới</option>
@@ -1284,7 +1387,11 @@ const EventDetailPage = () => {
                         Hình ảnh thực tế <span className="text-red-500">*</span>
                       </label>
                       <label
-                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer ${errors.images ? "border-red-500 bg-red-50" : "border-slate-300 bg-slate-50 hover:bg-slate-100"}`}
+                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer ${
+                          errors.images
+                            ? "border-red-500 bg-red-50"
+                            : "border-slate-300 bg-slate-50 hover:bg-slate-100"
+                        }`}
                       >
                         <MdCloudUpload
                           size={32}
@@ -1335,6 +1442,7 @@ const EventDetailPage = () => {
               </form>
             </div>
 
+            {/* Footer Modal */}
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-3xl">
               <button
                 type="button"
