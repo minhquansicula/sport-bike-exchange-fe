@@ -142,12 +142,12 @@ const Header = ({ onOpenSidebar }) => {
             )}
 
             {/* Icon Thông Báo (Hiển thị cho tất cả mọi người) */}
-            <button
+            {/* <button
               className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-full transition-colors mr-2"
               title="Thông báo"
             >
               <MdNotifications size={24} />
-            </button>
+            </button> */}
           </div>
 
           <div className="pl-2 border-l border-gray-100">
