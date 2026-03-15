@@ -56,6 +56,8 @@ const TransactionManagementTab = () => {
   const [mergedTransactions, setMergedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelTarget, setCancelTarget] = useState(null); // reservationId đang muốn hủy
+  const [sellerCancelTarget, setSellerCancelTarget] = useState(null); // reservationId người bán muốn hủy
+  const [cancelReason, setCancelReason] = useState(""); // lý do hủy
 
   const userId = user?.userId || user?.id; // Lấy userId từ user object
 
@@ -98,7 +100,7 @@ const TransactionManagementTab = () => {
 
     return {
       id: tx.transactionId,
-      reservationId: tx.transactionId,
+      reservationId: reservation.reservationId || tx.reservation?.reservationId || tx.reservationId || tx.transactionId,
       listingId: listing.listingId || tx.listingId,
       listingTitle: listing.title || tx.listingTitle || "Xe đạp VeloX",
       listingImage: extractImageUrl(tx),
@@ -288,6 +290,27 @@ const TransactionManagementTab = () => {
     }
   };
 
+  const confirmSellerCancelReservation = async () => {
+    if (!sellerCancelTarget || !cancelReason.trim()) return;
+    setIsProcessing(true);
+    try {
+      await reservationService.requestCancelReservationBySeller(
+        sellerCancelTarget,
+        { cancelDescription: cancelReason }
+      );
+      toast.success("Đã gửi yêu cầu hủy giao dịch thành công!");
+      fetchAllTransactions();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể gửi yêu cầu hủy giao dịch."
+      );
+    } finally {
+      setIsProcessing(false);
+      setSellerCancelTarget(null);
+      setCancelReason("");
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-20 text-center text-gray-500 font-medium">
@@ -406,6 +429,17 @@ const TransactionManagementTab = () => {
                           className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
                         >
                           <MdCancel size={16} /> Hủy đặt cọc
+                        </button>
+                      )}
+
+                    {t.userRole === "seller" &&
+                      ["Waiting_Payment", "Deposited", "Pending", "Paid", "Scheduled"].includes(t.status) && (
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => setSellerCancelTarget(t.reservationId)}
+                          className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-400 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <MdCancel size={16} /> Yêu cầu hủy
                         </button>
                       )}
                   </div>
@@ -527,6 +561,61 @@ const TransactionManagementTab = () => {
           </p>
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
             ⚠️ Vui lòng cân nhắc kỹ trước khi xác nhận hủy.
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal yêu cầu hủy giao dịch (Seller) */}
+      <Modal
+        isOpen={!!sellerCancelTarget}
+        onClose={() => {
+          setSellerCancelTarget(null);
+          setCancelReason("");
+        }}
+        title="Yêu cầu hủy giao dịch"
+        footer={
+          <>
+            <button
+              onClick={() => {
+                setSellerCancelTarget(null);
+                setCancelReason("");
+              }}
+              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={confirmSellerCancelReservation}
+              disabled={isProcessing || !cancelReason.trim()}
+              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <MdCancel size={18} />
+              {isProcessing ? "Đang gửi..." : "Gửi yêu cầu hủy"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <MdWarning className="text-red-600" size={36} />
+          </div>
+          <h4 className="text-lg font-bold text-center text-zinc-900">
+            Bạn muốn yêu cầu hủy giao dịch này?
+          </h4>
+          <p className="text-gray-600 text-sm text-center">
+            Yêu cầu hủy sẽ được gửi đến quản trị viên để xem xét và phê duyệt.
+            Vui lòng nhập lý do cụ thể để quản trị viên xử lý.
+          </p>
+          <div className="mt-4 text-left">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lý do hủy giao dịch <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Nhập lý do chi tiết (ví dụ: Xe bị hỏng, thay đổi ý định...)"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[100px] resize-none"
+            />
           </div>
         </div>
       </Modal>

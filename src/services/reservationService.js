@@ -46,4 +46,29 @@ export const reservationService = {
     const response = await api.put(`/reservations/cancel/${reservationId}`);
     return response.data;
   },
+
+  // Yêu cầu hủy giao dịch (dành cho người bán)
+  requestCancelReservationBySeller: async (reservationId, data) => {
+    const response = await api.put(
+      `/reservations/${reservationId}/request-cancel`,
+      data
+    );
+    return response.data;
+  },
+
+  // Admin duyệt yêu cầu hủy giao dịch
+  approveCancelReservationByAdmin: async (reservationId) => {
+    const response = await api.put(
+      `/reservations/${reservationId}/approve-cancel`
+    );
+    return response.data;
+  },
+
+  // Admin từ chối yêu cầu hủy giao dịch
+  rejectCancelReservationByAdmin: async (reservationId) => {
+    const response = await api.put(
+      `/reservations/${reservationId}/reject-cancel`
+    );
+    return response.data;
+  },
 };
