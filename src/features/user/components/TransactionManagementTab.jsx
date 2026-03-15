@@ -54,9 +54,9 @@ const TransactionManagementTab = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedTransactions, setMergedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cancelTarget, setCancelTarget] = useState(null); // reservationId đang muốn hủy
-  const [sellerCancelTarget, setSellerCancelTarget] = useState(null); // reservationId người bán muốn hủy
-  const [cancelReason, setCancelReason] = useState(""); // lý do hủy
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [sellerCancelTarget, setSellerCancelTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   const userId = user?.userId || user?.id;
 
@@ -105,7 +105,7 @@ const TransactionManagementTab = () => {
       listingTitle: listing.title || tx.listingTitle || "Xe đạp VeloX",
       listingImage: extractImageUrl(tx),
       depositAmount: deposit.amount || tx.amount || 0,
-      status: tx.status,
+      status: reservation.status || tx.status,
       reservedAt: tx.createAt || tx.createdAt,
       meetingTime: reservation.meetingTime,
       meetingLocation: reservation.meetingLocation,
@@ -169,6 +169,7 @@ const TransactionManagementTab = () => {
           return new Date(dateB) - new Date(dateA);
         });
 
+      console.log("[DEBUG] All merged transactions:", merged.map(t => ({ id: t.reservationId, status: t.status, role: determineUserRole(t) })));
       setMergedTransactions(merged);
     } catch (error) {
       console.error("Lỗi tải danh sách giao dịch:", error);
@@ -206,6 +207,11 @@ const TransactionManagementTab = () => {
       Paid: { label: "Đã thanh toán cọc", icon: MdCheckCircle, color: "green" },
       Completed: { label: "Hoàn tất", icon: MdCheckCircle, color: "green" },
       Cancelled: { label: "Đã hủy", icon: MdWarning, color: "gray" },
+      Pending_Cancel: {
+        label: "Đang yêu cầu hủy",
+        icon: MdWarning,
+        color: "red",
+      },
     };
     const config = statusMap[status] || {
       label: status,
@@ -232,7 +238,7 @@ const TransactionManagementTab = () => {
   };
 
   const activeTransactions = mergedTransactions.filter((t) =>
-    ["Waiting_Payment", "Deposited", "Scheduled", "Pending", "Paid"].includes(
+    ["Waiting_Payment", "Deposited", "Scheduled", "Pending", "Paid", "Pending_Cancel"].includes(
       t.status,
     ),
   );
@@ -524,6 +530,14 @@ const TransactionManagementTab = () => {
                   <MdAdminPanelSettings size={18} className="text-blue-500" />
                   <span>
                     Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.
+                  </span>
+                </div>
+              )}
+              {t.status === "Pending_Cancel" && (
+                <div className="border-t border-red-50 bg-red-50/50 p-3 text-sm text-red-700 flex items-center gap-2.5">
+                  <MdWarning size={18} className="text-red-500" />
+                  <span>
+                    Giao dịch đang chờ Admin duyệt yêu cầu hủy.
                   </span>
                 </div>
               )}

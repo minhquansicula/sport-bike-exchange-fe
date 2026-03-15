@@ -197,7 +197,7 @@ const AdminTransactionsPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case "Cancel_Pending":
+      case "Pending_Cancel":
         return {
           label: "Yêu cầu hủy",
           icon: MdCancel,
@@ -408,8 +408,8 @@ const AdminTransactionsPage = () => {
                       </div>
                     )}
 
-                    {/* Hiển thị lý do hủy nếu có (nếu Cancel_Pending hoặc trường hợp hủy khác) */}
-                    {(r.cancelDescription || r.status === "Cancel_Pending") && r.status !== "Cancelled" && (
+                    {/* Hiển thị lý do hủy nếu có (nếu Pending_Cancel hoặc trường hợp hủy khác) */}
+                    {(r.cancelDescription || r.status === "Pending_Cancel") && r.status !== "Cancelled" && (
                       <div className="bg-red-50 p-3 rounded-xl mb-4 text-sm border border-red-100">
                         <p className="font-bold text-red-700 mb-1 flex items-center gap-1">
                           <MdCancel size={16} /> Lý do yêu cầu hủy:
@@ -422,7 +422,7 @@ const AdminTransactionsPage = () => {
 
                     {/* Actions */}
                     <div className="flex justify-end gap-2 mt-2">
-                      {(r.status === "Cancel_Pending" || (r.cancelDescription && r.status !== "Cancelled")) && (
+                      {(r.status === "Pending_Cancel" || (r.cancelDescription && r.status !== "Cancelled")) && (
                         <>
                           <button
                             disabled={isProcessingCancel}
