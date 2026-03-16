@@ -5,7 +5,9 @@ import {
   MdCheckCircle,
   MdShoppingCartCheckout,
   MdImage,
+  MdBlock,
 } from "react-icons/md";
+import { reservationService } from "../../../services/reservationService";
 
 const BikeImage = ({ src, alt, className }) => {
   const [imgSrc, setImgSrc] = useState(src);
@@ -41,6 +43,27 @@ const EventBikesGrid = ({
   handleOpenRegister,
   extractBikeDisplayData,
 }) => {
+  const [myReservations, setMyReservations] = useState([]);
+
+  // Lấy danh sách cọc của user để xem xe nào đã cọc rồi
+  useEffect(() => {
+    const fetchReservations = async () => {
+      if (!user) return;
+      try {
+        const res = await reservationService.getMyReservations();
+        if (res?.result) {
+          setMyReservations(res.result);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy danh sách cọc:", error);
+      }
+    };
+    fetchReservations();
+  }, [user]);
+
+  const userRole = String(user?.role || "").toUpperCase();
+  const isStaff = userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
+
   return (
     <div className="container mx-auto px-4 relative z-20">
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -66,6 +89,28 @@ const EventBikesGrid = ({
           {eventBikes.map((bike) => {
             const bikeInfo = extractBikeDisplayData(bike);
             const isMyBike = user && bikeInfo.sellerId === user.userId;
+            const targetListingId = bike.listing?.listingId || bike.listingId;
+            const currentEventBikeId = bike.eventBikeId;
+
+            // Kiểm tra xe này user đã cọc chưa
+            const hasDeposited = myReservations.some((r) => {
+              const isMatchEventBike =
+                r.eventBicycle?.eventBikeId === currentEventBikeId;
+              const isMatchListing =
+                targetListingId &&
+                (r.listingId || r.listing?.listingId) === targetListingId;
+              const activeStatuses = [
+                "Waiting_Payment",
+                "Deposited",
+                "Scheduled",
+                "Pending",
+                "Paid",
+              ];
+              return (
+                (isMatchEventBike || isMatchListing) &&
+                activeStatuses.includes(r.status)
+              );
+            });
 
             return (
               <div
@@ -105,12 +150,27 @@ const EventBikesGrid = ({
                     </div>
                   </div>
 
+                  {/* LOGIC NÚT BẤM (CHẶN ADMIN, CHẶN CHỦ XE, KIỂM TRA ĐÃ CỌC) */}
                   {eventDetail.status !== "completed" && (
                     <>
-                      {isMyBike ? (
-                        <div className="w-full py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-center">
-                          Xe của bạn
+                      {isStaff ? (
+                        <button
+                          disabled
+                          className="w-full py-2.5 bg-slate-100 text-slate-400 rounded-xl font-bold cursor-not-allowed flex justify-center items-center gap-2"
+                        >
+                          <MdBlock size={20} /> Tài khoản nội bộ
+                        </button>
+                      ) : isMyBike ? (
+                        <div className="w-full py-2.5 bg-slate-100 text-slate-400 rounded-xl font-bold text-center cursor-not-allowed border border-slate-200">
+                          Đây là xe của bạn
                         </div>
+                      ) : hasDeposited ? (
+                        <button
+                          disabled
+                          className="w-full py-2.5 bg-green-50 text-green-600 rounded-xl font-bold cursor-not-allowed flex justify-center items-center gap-2 border border-green-200"
+                        >
+                          <MdCheckCircle size={20} /> Đã đặt cọc
+                        </button>
                       ) : (
                         <button
                           onClick={(e) => {
@@ -121,7 +181,7 @@ const EventBikesGrid = ({
                           className="w-full py-2.5 bg-slate-900 hover:bg-orange-500 text-white rounded-xl font-bold transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
                         >
                           <MdShoppingCartCheckout size={20} />{" "}
-                          {isDepositing ? "Đang xử lý..." : "Đặt cọc"}
+                          {isDepositing ? "Đang xử lý..." : "Đặt cọc ngay"}
                         </button>
                       )}
                     </>

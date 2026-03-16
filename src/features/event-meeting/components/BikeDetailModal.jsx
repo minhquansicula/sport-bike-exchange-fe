@@ -1,9 +1,9 @@
 // File: src/features/event-meeting/components/BikeDetailModal.jsx
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom"; // Thêm useNavigate
+import { useNavigate } from "react-router-dom";
 import { reservationService } from "../../../services/reservationService";
-import { depositService } from "../../../services/depositService"; // Thêm depositService
+import { depositService } from "../../../services/depositService";
 import Modal from "../../../components/common/Modal";
 import {
   MdInfoOutline,
@@ -50,19 +50,22 @@ const BikeDetailModal = ({
   const [hasDeposited, setHasDeposited] = useState(false);
   const [depositReservationId, setDepositReservationId] = useState(null);
   const [depositStatus, setDepositStatus] = useState(null);
-
-  const [isDepositing, setIsDepositing] = useState(false); // Quản lý trạng thái loading nút Đặt cọc
-  const [isCancelling, setIsCancelling] = useState(false); // Quản lý trạng thái loading nút Hủy
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  // Lấy ID xe hiện tại
+  // Lấy ID xe hiện tại trên sàn (nếu có) để check trạng thái
   const targetListingId =
     selectedViewBike?.listing?.listingId || selectedViewBike?.listingId;
 
   // Kiểm tra trạng thái cọc khi mở Modal
   useEffect(() => {
     const checkExistingDeposit = async () => {
-      if (!user || !targetListingId) return;
+      if (!user || !selectedViewBike) return;
+
+      // SỬA ĐỔI: So sánh qua eventBikeId trong trường hợp xe chưa có listing trên sàn
+      const currentEventBikeId = selectedViewBike.eventBikeId;
+
       try {
         const res = await reservationService.getMyReservations();
         if (res?.result) {
@@ -73,10 +76,17 @@ const BikeDetailModal = ({
             "Pending",
             "Paid",
           ];
+
+          // Tìm theo EventBikeId trước, nếu không có thì tìm theo ListingId
           const matchedReservation = res.result.find((r) => {
-            const rListingId = r.listingId || r.listing?.listingId;
+            const isMatchEventBike =
+              r.eventBicycle?.eventBikeId === currentEventBikeId;
+            const isMatchListing =
+              targetListingId &&
+              (r.listingId || r.listing?.listingId) === targetListingId;
+
             return (
-              String(rListingId) === String(targetListingId) &&
+              (isMatchEventBike || isMatchListing) &&
               activeStatuses.includes(r.status)
             );
           });
@@ -86,7 +96,6 @@ const BikeDetailModal = ({
             setDepositReservationId(matchedReservation.reservationId);
             setDepositStatus(matchedReservation.status);
           } else {
-            // Reset lại state nếu không tìm thấy
             setDepositReservationId(null);
             setDepositStatus(null);
           }
@@ -100,7 +109,7 @@ const BikeDetailModal = ({
     }
   }, [user, selectedViewBike, targetListingId]);
 
-  // --- HÀM XỬ LÝ ĐẶT CỌC ---
+  // --- SỬA LẠI: HÀM XỬ LÝ ĐẶT CỌC DÀNH CHO SỰ KIỆN ---
   const handleDeposit = async () => {
     if (!user) {
       toast.error("Vui lòng đăng nhập để đặt cọc xe!");
@@ -108,23 +117,29 @@ const BikeDetailModal = ({
       return;
     }
 
-    if (!targetListingId) {
-      toast.error("Xe này hiện chưa sẵn sàng giao dịch đặt cọc!");
+    // Lấy EventBikeId thay vì ListingId
+    const eventBikeId = selectedViewBike?.eventBikeId;
+
+    if (!eventBikeId) {
+      toast.error("Không tìm thấy thông tin xe trong sự kiện!");
       return;
     }
 
     setIsDepositing(true);
     try {
-      const res = await depositService.createDepositViaVNPay(targetListingId);
+      // GỌI API ĐẶT CỌC SỰ KIỆN MÀ CHÚNG TA VỪA TẠO
+      const res =
+        await depositService.createDepositViaVNPayForEvent(eventBikeId);
+
       if (res.result?.paymentUrl) {
         window.location.href = res.result.paymentUrl;
       } else if (res.result?.deposit) {
         toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
-        // Cập nhật lại UI sau khi trừ tiền ví thành công
         setHasDeposited(true);
         setDepositStatus("Deposited");
+        navigate("/profile?tab=transaction-manage"); // Điều hướng đến trang quản lý giao dịch
       } else {
-        toast.success(res.message || "Tạo yêu cầu thành công");
+        toast.success(res.message || "Tạo yêu cầu đặt cọc thành công");
       }
     } catch (error) {
       console.error("Lỗi đặt cọc xe sự kiện:", error);
@@ -153,6 +168,8 @@ const BikeDetailModal = ({
       setHasDeposited(false);
       setDepositReservationId(null);
       setShowCancelModal(false);
+      // F5 Lại trang hoặc đóng modal để update danh sách xe
+      setSelectedViewBike(null);
     } catch (error) {
       console.error("Lỗi hủy đặt cọc:", error);
       toast.error(
