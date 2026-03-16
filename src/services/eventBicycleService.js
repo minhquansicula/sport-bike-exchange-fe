@@ -68,10 +68,27 @@ export const eventBicycleService = {
     return fetchEventBikesPromise;
   },
 
+  // Cập nhật thông tin xe trong sự kiện
+  updateEventBicycle: async (eventBikeId, updateData) => {
+    const response = await api.put(
+      `/event-bicycles/${eventBikeId}`,
+      updateData,
+    );
+    eventBicycleService.clearCache(); // Xóa cache vì thông tin xe vừa đổi
+    return response.data;
+  },
+
   // Cập nhật trạng thái xe trong sự kiện (Ví dụ: Duyệt xe)
   updateEventBicycleStatus: async (eventBikeId) => {
     const response = await api.put(`/event-bicycles/${eventBikeId}/status`);
     eventBicycleService.clearCache(); // Xóa cache vì trạng thái xe vừa đổi
+    return response.data;
+  },
+
+  // Xóa/Hủy đăng ký xe khỏi sự kiện
+  deleteEventBicycle: async (eventBikeId) => {
+    const response = await api.delete(`/event-bicycles/${eventBikeId}`);
+    eventBicycleService.clearCache(); // Xóa cache để mất xe khỏi danh sách
     return response.data;
   },
 

@@ -1,4 +1,3 @@
-// File: src/features/event-meeting/components/RegisterBikeModal.jsx
 import React, { useState, useEffect } from "react";
 import {
   MdClose,
@@ -47,9 +46,9 @@ const RegisterBikeModal = ({
   const [myListings, setMyListings] = useState([]);
   const [selectedListingId, setSelectedListingId] = useState("");
 
-  // --- STATE THANH TOÁN ---
   const [showFeeModal, setShowFeeModal] = useState(false);
   const [listingFee, setListingFee] = useState(0);
+  const [previewPriceForFee, setPreviewPriceForFee] = useState(0);
 
   const [allLibraryData, setAllLibraryData] = useState([]);
   const [availableBrands, setAvailableBrands] = useState([]);
@@ -90,7 +89,6 @@ const RegisterBikeModal = ({
           if (res?.result) setMyListings(res.result);
         })
         .catch(console.error);
-
       if (availableBrands.length === 0) {
         bikeService
           .getBicycleLibrary()
@@ -201,28 +199,36 @@ const RegisterBikeModal = ({
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  // --- BƯỚC 1: XỬ LÝ TRƯỚC KHI SUBMIT CHÍNH THỨC (TÍNH PHÍ) ---
+  // ========================================================
+  // BƯỚC 1: XỬ LÝ TRƯỚC KHI GỬI (TÍNH PHÍ SÀN VÀ HIỂN THỊ POPUP)
+  // ========================================================
   const handlePreSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    // 1. Nếu chọn xe đang bán -> Đăng ký luôn (Không thu phí tạo mới)
-    if (registerMode === "existing") {
-      if (!selectedListingId) {
-        toast.error("Vui lòng chọn một xe đang bán!");
-        return;
-      }
-      const isAlreadyRegistered = eventBikes.some(
-        (bike) =>
-          (bike.listing?.listingId || bike.listingId) ===
-          parseInt(selectedListingId),
-      );
-      if (isAlreadyRegistered) {
-        toast.error("Xe này đã được đăng ký vào sự kiện rồi!");
-        return;
-      }
+    try {
+      let priceForFee = 0;
 
-      setIsSubmitting(true);
-      try {
+      // NẾU CHỌN XE ĐÃ BÁN (Không bật Popup phí)
+      if (registerMode === "existing") {
+        if (!selectedListingId) {
+          toast.error("Vui lòng chọn một xe đang bán!");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const isAlreadyRegistered = eventBikes.some(
+          (bike) =>
+            (bike.listing?.listingId || bike.listingId) ===
+            parseInt(selectedListingId),
+        );
+        if (isAlreadyRegistered) {
+          toast.error("Xe này đã có trong danh sách duyệt của sự kiện!");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Gọi thẳng API không qua popup phí
         await eventBicycleService.registerBicycleToEvent(
           eventId,
           parseInt(selectedListingId),
@@ -232,53 +238,47 @@ const RegisterBikeModal = ({
         );
         setShowRegisterModal(false);
         setSelectedListingId("");
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message ||
-            error.message ||
-            "Có lỗi xảy ra, vui lòng thử lại.",
-        );
-      } finally {
-        setIsSubmitting(false);
       }
-    }
-    // 2. Nếu đăng ký tạo xe mới -> Phải Validation, Gọi phí, và Bật Popup
-    else {
-      const newErrors = {};
-      if (!formData.brand) newErrors.brand = "Chọn thương hiệu";
-      if (!formData.model.trim()) newErrors.model = "Nhập dòng xe";
-      if (!formData.category) newErrors.category = "Chọn loại xe";
-      if (!formData.price || formData.price <= 0)
-        newErrors.price = "Nhập giá hợp lệ";
-      if (!formData.condition) newErrors.condition = "Chọn tình trạng";
-      if (formData.images.length === 0) newErrors.images = "Thêm ít nhất 1 ảnh";
+      // NẾU TẠO XE MỚI (Bật Popup Phí)
+      else {
+        const newErrors = {};
+        if (!formData.brand) newErrors.brand = "Chọn thương hiệu";
+        if (!formData.model.trim()) newErrors.model = "Nhập dòng xe";
+        if (!formData.category) newErrors.category = "Chọn loại xe";
+        if (!formData.price || parseFloat(formData.price) <= 0)
+          newErrors.price = "Nhập giá hợp lệ";
+        if (!formData.condition) newErrors.condition = "Chọn tình trạng";
+        if (formData.images.length === 0)
+          newErrors.images = "Thêm ít nhất 1 ảnh";
 
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
+        if (Object.keys(newErrors).length > 0) {
+          setErrors(newErrors);
+          setIsSubmitting(false);
+          return;
+        }
 
-      setIsSubmitting(true);
-      try {
-        const feeResponse = await bikeService.calculateListingFee(
-          parseFloat(formData.price),
-        );
+        priceForFee = parseFloat(formData.price);
+        const feeResponse = await bikeService.calculateListingFee(priceForFee);
         if (feeResponse && feeResponse.result !== undefined) {
           setListingFee(feeResponse.result);
-          setShowFeeModal(true); // Hiển thị Popup xác nhận phí
+          setPreviewPriceForFee(priceForFee);
+          setShowFeeModal(true); // Mở Popup phí
         } else {
           throw new Error("Không lấy được thông tin phí sàn");
         }
-      } catch (error) {
-        console.error("Lỗi khi tính phí:", error);
-        toast.error("Có lỗi xảy ra khi tính phí sàn. Vui lòng thử lại sau.");
-      } finally {
-        setIsSubmitting(false);
       }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // --- BƯỚC 2: CONFIRM SUBMIT (SAU KHI ĐỒNG Ý PHÍ SÀN) ---
+  // ========================================================
+  // BƯỚC 2: XÁC NHẬN SUBMIT TẠO XE MỚI (SAU KHI ĐỒNG Ý PHÍ SÀN)
+  // ========================================================
   const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -288,7 +288,6 @@ const RegisterBikeModal = ({
         if (res?.result) uploadedImageUrls.push(res.result);
       }
 
-      // Tạo Bicycle Payload
       const createBicyclePayload = {
         brandName: formData.brand,
         categoryName: formData.category,
@@ -326,7 +325,6 @@ const RegisterBikeModal = ({
 
       if (!createdBikeId) throw new Error("Không lấy được ID xe sau khi tạo.");
 
-      // Gọi đăng ký xe vào sự kiện
       const requestBody = {
         title: `Xe tham gia sự kiện: ${formData.model}`,
         price: parseFloat(formData.price) || 0,
@@ -342,18 +340,14 @@ const RegisterBikeModal = ({
         );
 
       if (registerRes && registerRes.result) {
-        const { paymentUrl, message } = registerRes.result;
-
-        if (paymentUrl) {
-          toast.loading("Đang chuyển hướng thanh toán...");
-          window.location.href = paymentUrl;
+        if (registerRes.result.paymentUrl) {
+          toast.loading("Đang chuyển hướng thanh toán VNPay...");
+          window.location.href = registerRes.result.paymentUrl;
         } else {
           toast.success(
-            message ||
+            registerRes.result.message ||
               "Đăng ký xe tham gia sự kiện thành công! Chờ Admin duyệt.",
           );
-
-          // Reset
           setShowFeeModal(false);
           setShowRegisterModal(false);
           setFormData({
@@ -386,6 +380,7 @@ const RegisterBikeModal = ({
         }
       }
     } catch (error) {
+      console.error("Lỗi đăng ký xe event:", error);
       toast.error(
         error.response?.data?.message ||
           error.message ||
@@ -422,21 +417,13 @@ const RegisterBikeModal = ({
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex gap-4">
             <button
               onClick={() => setRegisterMode("new")}
-              className={`px-4 py-2 font-bold rounded-lg transition-colors ${
-                registerMode === "new"
-                  ? "bg-orange-500 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-              }`}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${registerMode === "new" ? "bg-orange-500 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"}`}
             >
               Tạo xe mới
             </button>
             <button
               onClick={() => setRegisterMode("existing")}
-              className={`px-4 py-2 font-bold rounded-lg transition-colors ${
-                registerMode === "existing"
-                  ? "bg-orange-500 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-              }`}
+              className={`px-4 py-2 font-bold rounded-lg transition-colors ${registerMode === "existing" ? "bg-orange-500 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"}`}
             >
               Chọn xe đang bán
             </button>
@@ -521,9 +508,7 @@ const RegisterBikeModal = ({
                           if (errors.brand)
                             setErrors({ ...errors, brand: null });
                         }}
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
-                          errors.brand ? "border-red-500" : "border-slate-200"
-                        }`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.brand ? "border-red-500" : "border-slate-200"}`}
                       >
                         <option value="">Chọn hãng xe</option>
                         {availableBrands.map((b, idx) => (
@@ -549,9 +534,7 @@ const RegisterBikeModal = ({
                         placeholder="VD: Marlin 7"
                         value={formData.model}
                         onChange={handleChange}
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
-                          errors.model ? "border-red-500" : "border-slate-200"
-                        }`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.model ? "border-red-500" : "border-slate-200"}`}
                       />
                       {errors.model && (
                         <p className="text-red-500 text-xs mt-1">
@@ -599,11 +582,7 @@ const RegisterBikeModal = ({
                           eventDetail?.bikeType &&
                           eventDetail.bikeType !== "ALL"
                         }
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
-                          errors.category
-                            ? "border-red-500"
-                            : "border-slate-200"
-                        }`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.category ? "border-red-500" : "border-slate-200"}`}
                       >
                         <option value="">Chọn loại</option>
                         {availableCategories.map((c, idx) => (
@@ -627,11 +606,7 @@ const RegisterBikeModal = ({
                         name="condition"
                         value={formData.condition}
                         onChange={handleChange}
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${
-                          errors.condition
-                            ? "border-red-500"
-                            : "border-slate-200"
-                        }`}
+                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.condition ? "border-red-500" : "border-slate-200"}`}
                       >
                         <option value="">Đánh giá xe</option>
                         <option value="Như mới">
@@ -655,11 +630,9 @@ const RegisterBikeModal = ({
                     </div>
                   </div>
 
-                  {/* THAY ĐỔI FORMAT TIỀN Ở ĐÂY */}
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      Giá bán mong muốn (VNĐ){" "}
-                      <span className="text-red-500">*</span>
+                      Giá bán (VNĐ) <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <MdAttachMoney
@@ -679,9 +652,7 @@ const RegisterBikeModal = ({
                           if (errors.price)
                             setErrors({ ...errors, price: null });
                         }}
-                        className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 font-bold outline-none ${
-                          errors.price ? "border-red-500" : "border-slate-200"
-                        }`}
+                        className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 font-bold outline-none ${errors.price ? "border-red-500" : "border-slate-200"}`}
                       />
                     </div>
                     {errors.price && (
@@ -753,11 +724,7 @@ const RegisterBikeModal = ({
                       Hình ảnh thực tế <span className="text-red-500">*</span>
                     </label>
                     <label
-                      className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-                        errors.images
-                          ? "border-red-500 bg-red-50"
-                          : "border-slate-300 bg-slate-50 hover:bg-slate-100"
-                      }`}
+                      className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${errors.images ? "border-red-500 bg-red-50" : "border-slate-300 bg-slate-50 hover:bg-slate-100"}`}
                     >
                       <MdCloudUpload
                         size={32}
@@ -832,7 +799,6 @@ const RegisterBikeModal = ({
         </div>
       </div>
 
-      {/* --- MODAL XÁC NHẬN THANH TOÁN PHÍ SÀN (Nằm trên RegisterModal z-[70]) --- */}
       {showFeeModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
@@ -844,8 +810,8 @@ const RegisterBikeModal = ({
                 Thanh toán phí đăng ký
               </h3>
               <p className="text-gray-500 text-sm mb-6">
-                Để đăng ký xe mới vào sự kiện, bạn cần thanh toán một khoản phí
-                sàn. Số tiền này sẽ được trừ vào ví của bạn.
+                Để tham gia sự kiện, bạn cần thanh toán một khoản phí sàn. Số
+                tiền này sẽ được trừ vào ví của bạn.
               </p>
 
               <div className="bg-gray-50 border border-gray-200 rounded-xl w-full p-4 mb-6">
@@ -854,7 +820,7 @@ const RegisterBikeModal = ({
                     Giá xe đăng bán:
                   </span>
                   <span className="font-bold text-gray-900">
-                    {formatDisplayAmount(formData.price)} đ
+                    {formatDisplayAmount(previewPriceForFee)} đ
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
@@ -882,7 +848,7 @@ const RegisterBikeModal = ({
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>{" "}
                       Đang xử lý
                     </>
                   ) : (

@@ -1,4 +1,10 @@
+// File: src/features/event-meeting/components/BikeDetailModal.jsx
 import React, { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom"; // Thêm useNavigate
+import { reservationService } from "../../../services/reservationService";
+import { depositService } from "../../../services/depositService"; // Thêm depositService
+import Modal from "../../../components/common/Modal";
 import {
   MdInfoOutline,
   MdClose,
@@ -6,6 +12,9 @@ import {
   MdSettingsSuggest,
   MdShoppingCartCheckout,
   MdImage,
+  MdBlock,
+  MdCheckCircle,
+  MdWarning,
 } from "react-icons/md";
 
 const BikeImage = ({ src, alt, className }) => {
@@ -34,14 +43,132 @@ const BikeDetailModal = ({
   setSelectedViewBike,
   user,
   eventDetail,
-  handleDeposit,
-  isDepositing,
   extractBikeDisplayData,
 }) => {
+  const navigate = useNavigate();
+
+  const [hasDeposited, setHasDeposited] = useState(false);
+  const [depositReservationId, setDepositReservationId] = useState(null);
+  const [depositStatus, setDepositStatus] = useState(null);
+
+  const [isDepositing, setIsDepositing] = useState(false); // Quản lý trạng thái loading nút Đặt cọc
+  const [isCancelling, setIsCancelling] = useState(false); // Quản lý trạng thái loading nút Hủy
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  // Lấy ID xe hiện tại
+  const targetListingId =
+    selectedViewBike?.listing?.listingId || selectedViewBike?.listingId;
+
+  // Kiểm tra trạng thái cọc khi mở Modal
+  useEffect(() => {
+    const checkExistingDeposit = async () => {
+      if (!user || !targetListingId) return;
+      try {
+        const res = await reservationService.getMyReservations();
+        if (res?.result) {
+          const activeStatuses = [
+            "Waiting_Payment",
+            "Deposited",
+            "Scheduled",
+            "Pending",
+            "Paid",
+          ];
+          const matchedReservation = res.result.find((r) => {
+            const rListingId = r.listingId || r.listing?.listingId;
+            return (
+              String(rListingId) === String(targetListingId) &&
+              activeStatuses.includes(r.status)
+            );
+          });
+
+          setHasDeposited(!!matchedReservation);
+          if (matchedReservation) {
+            setDepositReservationId(matchedReservation.reservationId);
+            setDepositStatus(matchedReservation.status);
+          } else {
+            // Reset lại state nếu không tìm thấy
+            setDepositReservationId(null);
+            setDepositStatus(null);
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi kiểm tra đặt cọc:", error);
+      }
+    };
+    if (selectedViewBike) {
+      checkExistingDeposit();
+    }
+  }, [user, selectedViewBike, targetListingId]);
+
+  // --- HÀM XỬ LÝ ĐẶT CỌC ---
+  const handleDeposit = async () => {
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để đặt cọc xe!");
+      navigate("/login");
+      return;
+    }
+
+    if (!targetListingId) {
+      toast.error("Xe này hiện chưa sẵn sàng giao dịch đặt cọc!");
+      return;
+    }
+
+    setIsDepositing(true);
+    try {
+      const res = await depositService.createDepositViaVNPay(targetListingId);
+      if (res.result?.paymentUrl) {
+        window.location.href = res.result.paymentUrl;
+      } else if (res.result?.deposit) {
+        toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
+        // Cập nhật lại UI sau khi trừ tiền ví thành công
+        setHasDeposited(true);
+        setDepositStatus("Deposited");
+      } else {
+        toast.success(res.message || "Tạo yêu cầu thành công");
+      }
+    } catch (error) {
+      console.error("Lỗi đặt cọc xe sự kiện:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Lỗi khi tạo giao dịch đặt cọc",
+      );
+    } finally {
+      setIsDepositing(false);
+    }
+  };
+
+  // --- HÀM HỦY CỌC ---
+  const handleCancelDeposit = () => {
+    if (!depositReservationId) return;
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelDeposit = async () => {
+    if (!depositReservationId) return;
+    setIsCancelling(true);
+    try {
+      await reservationService.cancelReservation(depositReservationId);
+      toast.success("Đã hủy đặt cọc thành công!");
+      setHasDeposited(false);
+      setDepositReservationId(null);
+      setShowCancelModal(false);
+    } catch (error) {
+      console.error("Lỗi hủy đặt cọc:", error);
+      toast.error(
+        error.response?.data?.message || error.message || "Lỗi khi hủy đặt cọc",
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (!selectedViewBike) return null;
 
   const bikeInfo = extractBikeDisplayData(selectedViewBike);
   const isMyBike = user && bikeInfo.sellerId === user.userId;
+  const userRole = String(user?.role || "").toUpperCase();
+  const isStaff = userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto py-10">
@@ -161,22 +288,48 @@ const BikeDetailModal = ({
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-3xl">
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex flex-wrap justify-end gap-3 rounded-b-3xl">
           <button
             onClick={() => setSelectedViewBike(null)}
-            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100"
+            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-colors"
           >
             Đóng
           </button>
+
           {eventDetail.status !== "completed" && (
             <>
-              {isMyBike ? (
+              {isStaff ? (
+                <button
+                  disabled
+                  className="px-6 py-2.5 bg-slate-200 text-slate-500 rounded-xl font-bold cursor-not-allowed flex items-center gap-2"
+                >
+                  <MdBlock size={20} /> Tài khoản nội bộ
+                </button>
+              ) : isMyBike ? (
                 <span className="px-6 py-2.5 bg-slate-200 text-slate-500 rounded-xl font-bold cursor-not-allowed">
                   Đây là xe của bạn
                 </span>
+              ) : hasDeposited ? (
+                <>
+                  {depositStatus !== "Scheduled" && (
+                    <button
+                      onClick={handleCancelDeposit}
+                      disabled={isCancelling}
+                      className="px-6 py-2.5 bg-white hover:bg-red-50 text-gray-600 hover:text-red-600 border border-slate-200 hover:border-red-200 font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isCancelling ? "Đang hủy..." : "Hủy đặt cọc"}
+                    </button>
+                  )}
+                  <button
+                    disabled
+                    className="flex items-center gap-2 px-8 py-2.5 bg-gray-200 text-gray-500 rounded-xl font-bold cursor-not-allowed"
+                  >
+                    <MdCheckCircle size={20} /> Đã đặt cọc
+                  </button>
+                </>
               ) : (
                 <button
-                  onClick={() => handleDeposit(selectedViewBike)}
+                  onClick={handleDeposit}
                   disabled={isDepositing}
                   className="flex items-center gap-2 px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-wait transition-all"
                 >
@@ -188,6 +341,46 @@ const BikeDetailModal = ({
           )}
         </div>
       </div>
+
+      {/* --- MODAL XÁC NHẬN HỦY CỌC --- */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title=""
+        footer={
+          <div className="flex w-full gap-3 mt-2">
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+            >
+              Hủy qua
+            </button>
+            <button
+              onClick={confirmCancelDeposit}
+              disabled={isCancelling}
+              className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isCancelling ? "Đang xử lý..." : "Xác nhận hủy"}
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center pb-4 pt-2 relative z-[70]">
+          <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-5">
+            <MdWarning className="text-red-500" size={28} />
+          </div>
+          <h4 className="text-xl font-semibold text-gray-900 mb-2">
+            Bạn chắc chắn muốn hủy?
+          </h4>
+          <p className="text-gray-500 text-sm leading-relaxed px-4">
+            Tiền cọc của bạn sẽ{" "}
+            <span className="text-red-500 font-medium">
+              không được hoàn lại
+            </span>
+            . Hành động này không thể thay đổi sau khi xác nhận.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   MdCheckCircle,
   MdPedalBike,
   MdEdit,
+  MdDeleteOutline, // Import thêm icon Xóa
   MdClose,
   MdSave,
 } from "react-icons/md";
@@ -32,7 +33,7 @@ const MyEventBikesTab = ({ user }) => {
   const fetchMyEventBikes = async () => {
     try {
       setLoading(true);
-      const response = await eventBicycleService.getAllEventBicycles();
+      const response = await eventBicycleService.getAllEventBicycles(true); // forceRefresh = true
 
       const allBikes = Array.isArray(response?.result)
         ? response.result
@@ -103,6 +104,13 @@ const MyEventBikesTab = ({ user }) => {
         </span>
       );
     }
+    if (status === "Waiting_Payment") {
+      return (
+        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 border border-blue-200 flex items-center gap-1.5 shadow-sm">
+          Chờ thanh toán phí
+        </span>
+      );
+    }
     return (
       <span className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 flex items-center gap-1.5 shadow-sm">
         {status}
@@ -127,6 +135,30 @@ const MyEventBikesTab = ({ user }) => {
     setIsUpdateModalOpen(true);
   };
 
+  // --- HÀM XỬ LÝ XÓA XE ---
+  const handleDeleteBike = async (eventBikeId, e) => {
+    e.stopPropagation();
+
+    if (
+      !window.confirm(
+        "Bạn có chắc chắn muốn hủy đăng ký và xóa xe này khỏi sự kiện không?",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await eventBicycleService.deleteEventBicycle(eventBikeId);
+      toast.success("Đã xóa xe khỏi sự kiện thành công!");
+      fetchMyEventBikes(); // Tải lại danh sách sau khi xóa
+    } catch (error) {
+      console.error("Lỗi khi xóa xe sự kiện:", error);
+      toast.error(
+        error.response?.data?.message || "Xóa xe thất bại. Vui lòng thử lại.",
+      );
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUpdateForm((prev) => ({ ...prev, [name]: value }));
@@ -146,7 +178,9 @@ const MyEventBikesTab = ({ user }) => {
         description: updateForm.description,
       });
 
-      toast.success("Cập nhật thông tin xe thành công!");
+      toast.success(
+        "Cập nhật thông tin xe thành công! Xe chuyển về chờ duyệt.",
+      );
       setIsUpdateModalOpen(false);
       fetchMyEventBikes();
     } catch (error) {
@@ -211,6 +245,15 @@ const MyEventBikesTab = ({ user }) => {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   {getStatusBadge(item.status)}
+
+                  {/* NÚT XÓA XE */}
+                  <button
+                    onClick={(e) => handleDeleteBike(item.eventBikeId, e)}
+                    className="absolute top-3 right-3 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white p-2 rounded-full transition-colors shadow-sm opacity-0 group-hover:opacity-100"
+                    title="Xóa/Hủy đăng ký"
+                  >
+                    <MdDeleteOutline size={20} />
+                  </button>
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <h3
