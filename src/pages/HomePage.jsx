@@ -1,4 +1,3 @@
-// File: src/pages/HomePage.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BikeCard from "../features/bicycle/components/BikeCard";
@@ -51,6 +50,7 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      {/* --- HERO SECTION --- */}
       <div className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-orange-700 z-0"></div>
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] z-0 mix-blend-overlay"></div>
@@ -60,25 +60,26 @@ const HomePage = () => {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-orange-500/30 bg-orange-900/20 backdrop-blur-md mb-8">
               <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
               <span className="text-xs font-bold text-orange-100 tracking-wider uppercase">
-                Mô hình giao dịch trực tiếp 3 bên
+                Cộng đồng chơi xe chuyên nghiệp Sài Gòn
               </span>
             </div>
 
             <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight mb-6 leading-tight">
-              Sàn Xe Đạp Cũ <br />
+              Sàn Giao Dịch Xe Đạp <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-200">
                 Chuẩn Inspector
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-gray-300 mb-10 font-light leading-relaxed max-w-2xl mx-auto">
-              Không ship cod, không rủi ro. Người mua, Người bán và Chuyên gia
-              kiểm định gặp mặt trực tiếp tại
+              Nơi kết nối đam mê của các biker Sài Thành. Không lo lừa đảo,
+              không ship COD rủi ro. Mọi giao dịch đều được kiểm định trực tiếp
+              tại
               <span className="text-white font-bold">
                 {" "}
-                Trạm Giao Dịch VeloX
-              </span>{" "}
-              để chốt đơn an toàn.
+                Trạm Giao Dịch VeloX TP.HCM
+              </span>
+              .
             </p>
 
             <form
@@ -90,7 +91,7 @@ const HomePage = () => {
               </div>
               <input
                 type="text"
-                placeholder="Tìm dòng xe bạn thích (VD: Trek, Giant...)"
+                placeholder="Tìm dòng xe bạn thích (VD: Trek, Specialized...)"
                 className="flex-1 h-12 bg-transparent border-none outline-none text-white placeholder-gray-400 text-lg px-4"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
@@ -102,13 +103,15 @@ const HomePage = () => {
                 Tìm Xe
               </button>
             </form>
-            <p className="mt-4 text-sm text-gray-400">
-              *Hơn 100+ điểm giao dịch trên toàn quốc hỗ trợ kiểm tra xe
+            <p className="mt-4 text-sm text-gray-400 font-medium">
+              *Hệ thống chỉ hỗ trợ giao dịch và kiểm định trực tiếp khu vực nội
+              thành TP. Hồ Chí Minh
             </p>
           </div>
         </div>
       </div>
 
+      {/* --- LATEST BIKES --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
           <div>
@@ -116,14 +119,14 @@ const HomePage = () => {
               Mới lên sàn
             </h2>
             <p className="text-zinc-500 mt-2 text-lg">
-              Các xe vừa được chủ nhân đăng bán, chờ bạn đến xem.
+              Các siêu phẩm vừa được anh em biker Sài Gòn đăng bán.
             </p>
           </div>
           <Link
             to="/bikes"
             className="group flex items-center gap-2 px-6 py-3 rounded-full border border-zinc-200 text-zinc-900 font-bold hover:bg-black hover:text-white transition-all duration-300"
           >
-            Xem tất cả xe
+            Khám phá toàn bộ
             <MdArrowForward className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
@@ -141,15 +144,16 @@ const HomePage = () => {
         )}
       </div>
 
+      {/* --- PROCESS SECTION --- */}
       <div className="bg-zinc-50 py-24 border-t border-zinc-100">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black text-zinc-900 mb-4">
-              Quy trình Giao dịch An toàn
+              Giao Dịch 3 Bên Minh Bạch
             </h2>
-            <p className="text-zinc-500 max-w-2xl mx-auto">
-              Chúng tôi loại bỏ hoàn toàn rủi ro mua bán online bằng mô hình gặp
-              mặt trực tiếp có chuyên gia hỗ trợ.
+            <p className="text-zinc-500 max-w-2xl mx-auto text-lg">
+              VeloX xây dựng sân chơi công bằng cho anh em. Tạm biệt rủi ro mua
+              bán xe cũ với quy trình kiểm định chuyên nghiệp ngay tại TP.HCM.
             </p>
           </div>
 
@@ -159,11 +163,12 @@ const HomePage = () => {
                 <MdLocationOn />
               </div>
               <h3 className="text-xl font-bold text-zinc-900 mb-3">
-                Gặp tại Điểm Giao Dịch
+                Gặp Mặt Tại Trạm VeloX
               </h3>
               <p className="text-zinc-500 leading-relaxed">
-                Không ship xe. Người mua và người bán hẹn gặp nhau tại các Trạm
-                giao dịch ủy quyền của VeloX để xem xe thực tế.
+                Người mua và người bán hẹn gặp trực tiếp tại các Trạm giao dịch
+                ủy quyền của VeloX nằm trải đều khắp các quận tại TP.HCM. Tuyệt
+                đối không ship xe xa xôi.
               </p>
             </div>
 
@@ -172,11 +177,12 @@ const HomePage = () => {
                 <MdVerifiedUser />
               </div>
               <h3 className="text-xl font-bold text-zinc-900 mb-3">
-                Inspector Check Xe
+                Chuyên Gia Thẩm Định
               </h3>
               <p className="text-zinc-500 leading-relaxed">
-                Tại điểm giao dịch, chuyên gia Inspector sẽ có mặt để kiểm tra
-                tình trạng xe, đảm bảo xe đúng mô tả trước khi bạn trả tiền.
+                Các chuyên gia (Inspector) giàu kinh nghiệm sẽ kiểm tra chéo
+                tình trạng khung sườn, bộ truyền động... đảm bảo xe đúng mô tả
+                trước khi chốt đơn.
               </p>
             </div>
 
@@ -185,28 +191,31 @@ const HomePage = () => {
                 <MdSecurity />
               </div>
               <h3 className="text-xl font-bold text-zinc-900 mb-3">
-                Thanh toán Đảm bảo
+                Giữ Tiền An Toàn
               </h3>
               <p className="text-zinc-500 leading-relaxed">
-                Tiền được giữ trung gian. Chỉ khi Inspector xác nhận xe đạt
-                chuẩn và bạn đồng ý mua, tiền mới được chuyển cho người bán.
+                Tiền đặt cọc được VeloX bảo chứng trung gian. Chỉ khi Inspector
+                xác nhận xe đạt chuẩn và hai bên đồng ý mua bán, tiền mới được
+                giải ngân.
               </p>
             </div>
           </div>
         </div>
       </div>
 
+      {/* --- CTA SECTION --- */}
       <div className="container mx-auto px-4 py-20">
         <div className="relative rounded-3xl p-12 md:p-20 text-center overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-black to-orange-800 z-0"></div>
 
           <div className="relative z-10 max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-black text-white mb-6">
-              Bạn muốn bán xe cũ?
+              Lên Đời Xế Yêu Của Bạn?
             </h2>
             <p className="text-orange-100 text-lg mb-10">
-              Mang xe đến điểm giao dịch gần nhất, Inspector sẽ định giá và hỗ
-              trợ bạn bán xe nhanh chóng.
+              Đăng tin ngay hôm nay. VeloX sẽ hỗ trợ kết nối và sắp xếp lịch
+              kiểm định tại Trạm gần nhất khu vực Sài Gòn để bạn bán xe nhanh
+              gọn lẹ.
             </p>
             <Link
               to="/post-bike"

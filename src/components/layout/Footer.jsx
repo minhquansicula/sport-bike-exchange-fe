@@ -22,9 +22,9 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-sm leading-relaxed">
-              Sàn thương mại điện tử mua bán xe đạp cũ uy tín hàng đầu Việt Nam.
-              Tất cả xe đều được kiểm định chất lượng bởi đội ngũ Inspector
-              chuyên nghiệp.
+              Cộng đồng giao dịch xe đạp chuyên nghiệp lớn nhất TP. Hồ Chí Minh.
+              Giao dịch trực tiếp, an toàn tuyệt đối với đội ngũ Inspector kiểm
+              định tận nơi.
             </p>
             {/* Social Icons */}
             <div className="flex gap-4">
@@ -42,7 +42,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Cột 2: Mua bán */}
+          {/* Cột 2: Khám phá */}
           <div>
             <h4 className="text-white font-bold text-lg mb-6 relative inline-block after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-12 after:h-1 after:bg-orange-500 after:rounded-full">
               Khám phá
@@ -53,7 +53,7 @@ const Footer = () => {
                   to="/bikes"
                   className="hover:text-orange-500 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs">›</span> Mua xe đạp cũ
+                  <span className="text-xs">›</span> Mua xe đạp tại Sài Gòn
                 </Link>
               </li>
               <li>
@@ -66,10 +66,10 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/pricing"
+                  to="/events"
                   className="hover:text-orange-500 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs">›</span> Bảng giá dịch vụ
+                  <span className="text-xs">›</span> Sự kiện & Chợ phiên
                 </Link>
               </li>
               <li>
@@ -77,7 +77,7 @@ const Footer = () => {
                   to="/inspector"
                   className="hover:text-orange-500 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs">›</span> Đội ngũ thẩm định
+                  <span className="text-xs">›</span> Đội ngũ Inspector
                 </Link>
               </li>
             </ul>
@@ -94,7 +94,7 @@ const Footer = () => {
                   href="#"
                   className="hover:text-orange-500 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs">›</span> Trung tâm trợ giúp
+                  <span className="text-xs">›</span> Hệ thống trạm VeloX TP.HCM
                 </a>
               </li>
               <li>
@@ -102,7 +102,7 @@ const Footer = () => {
                   href="#"
                   className="hover:text-orange-500 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs">›</span> Chính sách bảo mật
+                  <span className="text-xs">›</span> Quy trình kiểm định xe
                 </a>
               </li>
               <li>
@@ -110,7 +110,7 @@ const Footer = () => {
                   href="#"
                   className="hover:text-orange-500 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs">›</span> Quy chế hoạt động
+                  <span className="text-xs">›</span> Phí dịch vụ & Nạp rút tiền
                 </a>
               </li>
               <li>
@@ -127,7 +127,7 @@ const Footer = () => {
           {/* Cột 4: Liên hệ */}
           <div>
             <h4 className="text-white font-bold text-lg mb-6 relative inline-block after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-12 after:h-1 after:bg-orange-500 after:rounded-full">
-              Liên hệ
+              Trụ sở chính
             </h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
@@ -135,15 +135,18 @@ const Footer = () => {
                   className="text-orange-500 mt-1 shrink-0"
                   size={20}
                 />
-                <span>Hồ Chí Minh: 123 Đường ABC, Phường XYZ, Quận 1</span>
+                <span className="leading-relaxed">
+                  Văn phòng VeloX Hub, 24 Đường D1, Khu Công Nghệ Cao, Tp. Thủ
+                  Đức, TP.HCM
+                </span>
               </li>
               <li className="flex items-center gap-3">
                 <MdEmail className="text-orange-500 shrink-0" size={20} />
                 <a
-                  href="mailto:support@veloX.vn"
+                  href="mailto:support@velox.vn"
                   className="hover:text-white transition-colors"
                 >
-                  support@veloX.vn
+                  support@velox.vn
                 </a>
               </li>
               <li className="flex items-center gap-3">
@@ -152,7 +155,7 @@ const Footer = () => {
                   href="tel:1900123456"
                   className="text-lg font-bold text-white hover:text-orange-500 transition-colors"
                 >
-                  1900 123 456
+                  1900 888 888
                 </a>
               </li>
             </ul>
@@ -162,18 +165,18 @@ const Footer = () => {
         {/* Phần 3: Bottom Footer */}
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm">
           <p>
-            &copy; 2026 VeloX Market. Bản quyền thuộc về Công ty TechBike
-            Vietnam.
+            &copy; {new Date().getFullYear()} VeloX Sài Gòn. Nền tảng thuộc Công
+            ty TNHH VeloX Việt Nam.
           </p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <a href="#" className="hover:text-white transition-colors">
-              Điều khoản
+              Điều khoản sử dụng
             </a>
             <a href="#" className="hover:text-white transition-colors">
-              Bảo mật
+              Bảo mật thông tin
             </a>
             <a href="#" className="hover:text-white transition-colors">
-              Sitemap
+              Trạm giao dịch
             </a>
           </div>
         </div>
