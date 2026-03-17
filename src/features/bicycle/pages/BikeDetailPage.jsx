@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { bikeService } from "../../../services/bikeService";
 import { depositService } from "../../../services/depositService";
 import { reservationService } from "../../../services/reservationService";
+import { systemConfigService } from "../../../services/systemConfigService"; // Thêm dòng này
 import formatCurrency from "../../../utils/formatCurrency";
 import { useAuth } from "../../../hooks/useAuth";
 import { useWishlist } from "../../../context/WishlistContext";
@@ -23,20 +24,14 @@ import {
   MdCalendarToday,
   MdErrorOutline,
   MdBlock,
-  MdCancel,
   MdColorLens,
   MdPrecisionManufacturing,
   MdHardware,
   MdEdit,
-  MdEventSeat,
-  MdSettings,
-  MdLink,
-  MdLinearScale,
-  MdRadioButtonUnchecked,
-  MdCompress,
   MdFavoriteBorder,
   MdFavorite,
   MdWarning,
+  MdShoppingCartCheckout, // Thêm icon này
 } from "react-icons/md";
 
 const BikeDetailPage = () => {
@@ -47,6 +42,8 @@ const BikeDetailPage = () => {
 
   const [bike, setBike] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // State cọc
   const [isDepositing, setIsDepositing] = useState(false);
   const [hasDeposited, setHasDeposited] = useState(false);
   const [depositReservationId, setDepositReservationId] = useState(null);
@@ -54,22 +51,35 @@ const BikeDetailPage = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
+  // State quản lý Popup xác nhận tiền cọc
+  const [showDepositFeeModal, setShowDepositFeeModal] = useState(false);
+  const [depositPercent, setDepositPercent] = useState(10); // Mặc định 10%
+
   const [timestamp] = useState(new Date().getTime());
 
+  // Lấy chi tiết xe và phần trăm cọc
   useEffect(() => {
-    const fetchBikeDetail = async () => {
+    const fetchBikeDetailAndConfig = async () => {
       try {
-        const response = await bikeService.getBikeListingById(id);
+        const [response, configRes] = await Promise.all([
+          bikeService.getBikeListingById(id),
+          systemConfigService.getConfigValue("Phí_Cọc").catch(() => null),
+        ]);
+
         if (response && response.result) {
           setBike(response.result);
         }
+
+        if (configRes?.result?.value) {
+          setDepositPercent(configRes.result.value);
+        }
       } catch (error) {
-        console.error("Lỗi tải chi tiết xe:", error);
+        console.error("Lỗi tải dữ liệu:", error);
       } finally {
         setLoading(false);
       }
     };
-    if (id) fetchBikeDetail();
+    if (id) fetchBikeDetailAndConfig();
   }, [id]);
 
   useEffect(() => {
@@ -113,20 +123,29 @@ const BikeDetailPage = () => {
     bike &&
     (user.username === bike.sellerName || user.userId === bike.sellerId);
 
-  const handleDeposit = async () => {
+  // BƯỚC 1: BẤM ĐẶT CỌC -> HIỆN POPUP
+  const handlePreDeposit = () => {
     if (!user) {
       toast.error("Vui lòng đăng nhập để đặt cọc xe!");
       navigate("/login");
       return;
     }
+    setShowDepositFeeModal(true);
+  };
 
+  // BƯỚC 2: XÁC NHẬN THANH TOÁN -> GỌI API
+  const handleConfirmDeposit = async () => {
     setIsDepositing(true);
     try {
       const res = await depositService.createDepositViaVNPay(bike.listingId);
       if (res.result?.paymentUrl) {
+        toast.loading("Đang chuyển hướng sang VNPay...");
         window.location.href = res.result.paymentUrl;
       } else if (res.result?.deposit) {
         toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
+        setShowDepositFeeModal(false);
+        setHasDeposited(true);
+        setDepositStatus("Deposited");
         navigate("/profile?tab=transaction-manage");
       } else {
         toast.success(res.message || "Tạo yêu cầu thành công");
@@ -431,8 +450,9 @@ const BikeDetailPage = () => {
                     </>
                   ) : (
                     <>
+                      {/* ĐỔI THÀNH GỌI handlePreDeposit */}
                       <button
-                        onClick={handleDeposit}
+                        onClick={handlePreDeposit}
                         disabled={isDepositing}
                         className="w-full bg-zinc-900 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-gray-200 hover:shadow-orange-200 flex items-center justify-center gap-2 group animate-in fade-in disabled:opacity-70 disabled:cursor-wait"
                       >
@@ -464,8 +484,8 @@ const BikeDetailPage = () => {
                       </button>
 
                       <p className="text-xs text-gray-500 text-center px-2 leading-relaxed mt-2">
-                        *Hệ thống sẽ yêu cầu thanh toán cọc (10%). Sau đó Admin
-                        sẽ xếp lịch hẹn kiểm định xe với người bán.
+                        *Hệ thống sẽ yêu cầu thanh toán cọc ({depositPercent}%).
+                        Sau đó Admin sẽ xếp lịch hẹn kiểm định xe với người bán.
                       </p>
                     </>
                   )}
@@ -494,6 +514,7 @@ const BikeDetailPage = () => {
         </div>
       </div>
 
+      {/* --- MODAL XÁC NHẬN HỦY CỌC --- */}
       <Modal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
@@ -532,6 +553,85 @@ const BikeDetailPage = () => {
           </p>
         </div>
       </Modal>
+
+      {/* --- POPUP XÁC NHẬN TIỀN CỌC TRƯỚC KHI VNPAY --- */}
+      {showDepositFeeModal &&
+        bike &&
+        (() => {
+          const bikePrice = bike.price || 0;
+          const depositAmount = (bikePrice * depositPercent) / 100;
+
+          return (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
+              <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-6 md:p-8 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-4">
+                    <MdShoppingCartCheckout size={32} />
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 mb-2">
+                    Xác nhận đặt cọc
+                  </h3>
+                  <p className="text-gray-500 text-sm mb-6">
+                    Hệ thống yêu cầu thanh toán cọc{" "}
+                    <span className="font-bold text-orange-600">
+                      {depositPercent}%
+                    </span>{" "}
+                    để giữ xe. Số tiền này sẽ được hoàn trừ vào tổng giá trị xe
+                    lúc giao dịch.
+                  </p>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl w-full p-4 mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-600 font-medium">
+                        Giá niêm yết:
+                      </span>
+                      <span className="font-bold text-gray-900">
+                        {bikePrice.toLocaleString()} đ
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                      <span className="text-gray-800 font-bold">
+                        Số tiền cọc ({depositPercent}%):
+                      </span>
+                      <span className="font-black text-xl text-orange-600">
+                        {depositAmount.toLocaleString()} đ
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={() => setShowDepositFeeModal(false)}
+                      disabled={isDepositing}
+                      className="flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      onClick={handleConfirmDeposit}
+                      disabled={isDepositing}
+                      className="flex-1 px-4 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 shadow-lg shadow-orange-200 transition-all disabled:opacity-70 flex justify-center items-center gap-2"
+                    >
+                      {isDepositing ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Đang xử lý
+                        </>
+                      ) : (
+                        "Đồng ý thanh toán"
+                      )}
+                    </button>
+                  </div>
+                  {isDepositing && (
+                    <p className="text-xs text-orange-500 font-medium mt-4 animate-pulse">
+                      Vui lòng không đóng trình duyệt...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 };

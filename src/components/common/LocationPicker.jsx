@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -18,11 +18,33 @@ L.Icon.Default.mergeOptions({
 // Tọa độ mặc định (Hồ Chí Minh)
 const defaultCenter = [10.762622, 106.660172];
 
-const LocationPicker = ({ onLocationSelect, initialAddress }) => {
-  const [position, setPosition] = useState(defaultCenter);
+const LocationPicker = ({
+  onLocationSelect,
+  initialAddress,
+  initialPosition,
+}) => {
+  const [position, setPosition] = useState(
+    initialPosition?.lat && initialPosition?.lng
+      ? [initialPosition.lat, initialPosition.lng]
+      : defaultCenter,
+  );
   const [address, setAddress] = useState(initialAddress || "");
   const [searchText, setSearchText] = useState("");
   const mapRef = useRef(null);
+
+  // Lắng nghe sự thay đổi của initialPosition (khi Admin mở Modal của 1 giao dịch đã có tọa độ)
+  useEffect(() => {
+    if (initialPosition?.lat && initialPosition?.lng) {
+      const newPos = [initialPosition.lat, initialPosition.lng];
+      setPosition(newPos);
+      if (mapRef.current) {
+        mapRef.current.flyTo(newPos, 15); // Tự động dời tâm bản đồ tới vị trí cũ
+      }
+    }
+    if (initialAddress) {
+      setAddress(initialAddress);
+    }
+  }, [initialPosition, initialAddress]);
 
   // Gọi API miễn phí của Nominatim để lấy tên đường từ Tọa độ
   const getAddressFromCoords = async (lat, lng) => {
@@ -42,8 +64,8 @@ const LocationPicker = ({ onLocationSelect, initialAddress }) => {
     }
   };
 
-  // Click trên bản đồ
-  const MapClickHandler = () => {
+  // Click trên bản đồ để chọn tọa độ mới
+  const MapEvents = () => {
     useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng;
@@ -51,7 +73,7 @@ const LocationPicker = ({ onLocationSelect, initialAddress }) => {
         getAddressFromCoords(lat, lng);
       },
     });
-    return position === null ? null : <Marker position={position}></Marker>;
+    return null;
   };
 
   // Tìm kiếm địa chỉ bằng Text
@@ -120,7 +142,8 @@ const LocationPicker = ({ onLocationSelect, initialAddress }) => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <MapClickHandler />
+          <MapEvents />
+          {position && <Marker position={position}></Marker>}
         </MapContainer>
       </div>
 
