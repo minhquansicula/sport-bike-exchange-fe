@@ -13,9 +13,18 @@ export const inspectorService = {
     return response.data;
   },
 
-  // Tạo báo cáo kiểm định
-  createReport: async (taskId, data) => {
-    const response = await api.post(`/inspector/tasks/${taskId}/report`, data);
+  // Tạo báo cáo kiểm định — gọi đúng endpoint backend
+  createInspectionReport: async (reservationId, data) => {
+    const response = await api.post(
+      `/inspection-reports/reservation/${reservationId}/create`,
+      data
+    );
+    return response.data;
+  },
+
+  // Lấy báo cáo kiểm định theo ID
+  getInspectionReport: async (reportId) => {
+    const response = await api.get(`/inspection-reports/${reportId}`);
     return response.data;
   },
 
