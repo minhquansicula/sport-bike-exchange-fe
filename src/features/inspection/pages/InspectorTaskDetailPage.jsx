@@ -14,6 +14,7 @@ import {
   MdWarning,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
+import InspectionReportPanel from "../../user/components/InspectionReportPanel";
 
 const InspectorTaskDetailPage = () => {
   const { id } = useParams();
@@ -62,7 +63,22 @@ const InspectorTaskDetailPage = () => {
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
             Chi tiết nhiệm vụ
           </h1>
-          <p className="text-gray-500 text-sm mt-1">Mã nhiệm vụ: #{task.id}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-gray-500 text-sm">Mã nhiệm vụ: #{task.id}</p>
+            {task.status === "Scheduled" || task.status === "pending" ? (
+              <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full uppercase tracking-wider">
+                Chờ kiểm định
+              </span>
+            ) : task.status === "Completed" || task.status === "completed" ? (
+              <span className="px-2.5 py-1 bg-green-100 text-green-700 text-[11px] font-bold rounded-full uppercase tracking-wider">
+                Hoàn thành
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[11px] font-bold rounded-full uppercase tracking-wider">
+                {task.status}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -135,14 +151,29 @@ const InspectorTaskDetailPage = () => {
         </div>
       </div>
 
+      {["Completed", "completed", "Waiting_Payment", "Inspection_Failed"].includes(task.status) && (
+        <div className="mt-8 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+          <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 flex items-center gap-2">
+            <MdCheckCircle className="text-emerald-500" /> Kết quả kiểm định đã lưu
+          </div>
+          <InspectionReportPanel reservationId={task.id} />
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex gap-4">
-        <Link
-          to={`/inspector/create-report?taskId=${task.id}`}
-          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-center transition-colors shadow-lg"
-        >
-          Bắt đầu kiểm định
-        </Link>
+        {["Scheduled", "pending"].includes(task.status) ? (
+          <Link
+            to={`/inspector/create-report?taskId=${task.id}`}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-center transition-colors shadow-lg"
+          >
+            Bắt đầu kiểm định
+          </Link>
+        ) : ["Completed", "completed", "Waiting_Payment", "Inspection_Failed"].includes(task.status) ? (
+          <div className="flex-1 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold text-center border border-gray-200">
+            Nhiệm vụ đã hoàn thành
+          </div>
+        ) : null}
         <button
           onClick={() => navigate(-1)}
           className="px-6 py-4 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"

@@ -28,6 +28,14 @@ export const inspectorService = {
     return response.data;
   },
 
+  // Lấy báo cáo kiểm định theo reservationId (dành cho buyer/seller xem)
+  getReservationInspectionReport: async (reservationId) => {
+    const response = await api.get(
+      `/inspection-reports/reservation/${reservationId}/report`
+    );
+    return response.data;
+  },
+
   // Cập nhật thông tin cá nhân inspector
   updateProfile: async (data) => {
     const response = await api.put("/inspector/profile", data);

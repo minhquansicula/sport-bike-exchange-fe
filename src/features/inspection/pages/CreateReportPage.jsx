@@ -89,26 +89,32 @@ const CreateReportPage = () => {
 
   const [newIssue, setNewIssue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingTasks, setPendingTasks] = useState([]);
 
-  // Fetch task details
+  // Fetch task details or list of pending tasks
   useEffect(() => {
-    if (taskId) {
-      const fetchTask = async () => {
-        try {
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        if (taskId) {
           const res = await inspectorService.getTaskById(taskId);
           setTask(res.result);
-        } catch (error) {
-          toast.error("Không thể tải thông tin nhiệm vụ");
-          navigate("/inspector/tasks");
-        } finally {
-          setLoading(false);
+        } else {
+          // Lấy danh sách task chưa kiểm định để chọn
+          const res = await inspectorService.getTasks();
+          const tasks = res.result || [];
+          const pending = tasks.filter(t => ["Scheduled", "pending"].includes(t.status));
+          setPendingTasks(pending);
         }
-      };
-      fetchTask();
-    } else {
-      setLoading(false);
-    }
-  }, [taskId, navigate]);
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu:", error);
+        toast.error("Không thể tải thông tin");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, [taskId]);
 
   // Cleanup image URLs khi unmount
   useEffect(() => {
@@ -231,6 +237,76 @@ const CreateReportPage = () => {
     }
   };
 
+  // --- View: Selection List (if no taskId) ---
+  if (!taskId) {
+    return (
+      <div className="max-w-4xl mx-auto pb-10">
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate("/inspector/tasks")}
+            className="p-2 bg-white rounded-full shadow-sm hover:bg-emerald-50 transition-colors"
+          >
+            <MdArrowBack size={24} className="text-gray-700" />
+          </button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
+              Chọn xe cần kiểm định
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">Danh sách các yêu cầu đang chờ xử lý</p>
+          </div>
+        </div>
+
+        {pendingTasks.length > 0 ? (
+          <div className="grid gap-4">
+            {pendingTasks.map((t) => (
+              <div
+                key={t.id}
+                className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between hover:border-emerald-200 transition-all shadow-sm"
+              >
+                <div className="flex items-center gap-4">
+                  <img
+                    src={t.bikeImage || "https://via.placeholder.com/150"}
+                    alt="bike"
+                    className="w-20 h-20 rounded-xl object-cover border border-gray-100"
+                  />
+                  <div>
+                    <h3 className="font-bold text-gray-900">{t.bikeName}</h3>
+                    <p className="text-sm text-gray-500">Mã GD: #{t.id}</p>
+                    <p className="text-xs text-blue-600 mt-1 uppercase font-bold tracking-wider">
+                      {new Date(t.scheduledTime).toLocaleString("vi-VN")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate(`/inspector/create-report?taskId=${t.id}`)}
+                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm"
+                >
+                  Kiểm định ngay
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center shadow-sm">
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MdPedalBike className="text-emerald-500" size={40} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có xe nào cần báo cáo</h3>
+            <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+              Tất cả các nhiệm vụ hiện tại đã được hoàn thành hoặc chưa đến giờ kiểm định.
+            </p>
+            <button
+              onClick={() => navigate("/inspector/tasks")}
+              className="px-8 py-3 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-colors"
+            >
+              Xem nhiệm vụ khác
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -274,13 +350,13 @@ const CreateReportPage = () => {
           </h2>
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
             <img
-              src={task?.bikeImage || "https://fxbike.vn/wp-content/uploads/2022/02/Trek-Marlin-7-2022-1-600x450.jpeg"}
+              src={task?.bikeImage || "https://via.placeholder.com/400"}
               alt="Bike"
               className="w-full sm:w-32 h-32 rounded-xl object-cover border-2 border-white shadow-sm"
             />
             <div className="w-full">
               <h3 className="font-black text-xl text-gray-900 mb-2">
-                {task?.bikeName || "Trek Marlin 7 Gen 2"}
+                {task?.bikeName || "Đang tải tên xe..."}
               </h3>
               <div className="grid grid-cols-2 gap-y-1 text-sm">
                 <span className="text-gray-500">Mã GD:</span>{" "}

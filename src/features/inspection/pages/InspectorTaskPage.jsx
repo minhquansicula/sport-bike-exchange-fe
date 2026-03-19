@@ -50,18 +50,23 @@ const InspectorTaskPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
+      case "Scheduled":
       case "pending":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
             <MdPending size={14} /> Chờ kiểm định
           </span>
         );
+      case "Completed":
       case "completed":
+      case "Waiting_Payment":
+      case "Inspection_Failed":
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
             <MdCheckCircle size={14} /> Hoàn thành
           </span>
         );
+      case "Cancelled":
       case "cancelled":
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
@@ -69,15 +74,19 @@ const InspectorTaskPage = () => {
           </span>
         );
       default:
-        return null;
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+            {status}
+          </span>
+        );
     }
   };
 
   // Thống kê
   const stats = {
-    pending: tasks.filter((t) => t.status === "pending").length,
-    completed: tasks.filter((t) => t.status === "completed").length,
-    cancelled: tasks.filter((t) => t.status === "cancelled").length,
+    pending: tasks.filter((t) => ["Scheduled", "pending"].includes(t.status)).length,
+    completed: tasks.filter((t) => ["Completed", "completed", "Waiting_Payment", "Inspection_Failed"].includes(t.status)).length,
+    cancelled: tasks.filter((t) => ["Cancelled", "cancelled"].includes(t.status)).length,
   };
 
   if (loading) {
@@ -142,9 +151,9 @@ const InspectorTaskPage = () => {
               className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-300 text-sm bg-white"
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="pending">Chờ kiểm định</option>
-              <option value="completed">Hoàn thành</option>
-              <option value="cancelled">Đã hủy</option>
+              <option value="Scheduled">Chờ kiểm định</option>
+              <option value="Completed">Hoàn thành</option>
+              <option value="Cancelled">Đã hủy</option>
             </select>
           </div>
         </div>
@@ -227,12 +236,12 @@ const InspectorTaskPage = () => {
 
               {/* Action */}
               <div className="flex md:flex-col gap-2 md:justify-center">
-                {task.status === "pending" && (
+                {["Scheduled", "pending"].includes(task.status) && (
                   <Link
                     to={`/inspector/create-report?taskId=${task.id}`}
-                    className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium text-center hover:bg-emerald-700 transition-colors"
+                    className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold text-center hover:bg-emerald-700 transition-colors shadow-sm"
                   >
-                    Kiểm định
+                    Bắt đầu Kiểm định
                   </Link>
                 )}
                 <Link

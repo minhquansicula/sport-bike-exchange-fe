@@ -20,6 +20,7 @@ import {
   MdCancel,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
+import InspectionReportPanel from "./InspectionReportPanel";
 
 const BikeImage = ({ src, alt, className }) => {
   const [imgSrc, setImgSrc] = useState(src);
@@ -185,7 +186,12 @@ const TransactionManagementTab = () => {
   const renderStatusBadge = (status) => {
     const statusMap = {
       Waiting_Payment: {
-        label: "Chờ thanh toán",
+        label: "Kiểm định PASSED — Chờ thanh toán",
+        icon: MdCheckCircle,
+        color: "emerald",
+      },
+      Inspection_Failed: {
+        label: "Kiểm định thất bại",
         icon: MdWarning,
         color: "red",
       },
@@ -226,9 +232,11 @@ const TransactionManagementTab = () => {
             ? "bg-red-50 text-red-600"
             : config.color === "blue"
               ? "bg-blue-50 text-blue-600"
-              : config.color === "green"
-                ? "bg-green-50 text-green-600"
-                : "bg-gray-50 text-gray-600"
+              : config.color === "emerald"
+                ? "bg-emerald-50 text-emerald-700"
+                : config.color === "green"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-gray-50 text-gray-600"
         }`}
       >
         <Icon size={14} />
@@ -238,7 +246,7 @@ const TransactionManagementTab = () => {
   };
 
   const activeTransactions = mergedTransactions.filter((t) =>
-    ["Waiting_Payment", "Deposited", "Scheduled", "Pending", "Paid", "Pending_Cancel"].includes(
+    ["Waiting_Payment", "Inspection_Failed", "Deposited", "Scheduled", "Pending", "Paid", "Pending_Cancel"].includes(
       t.status,
     ),
   );
@@ -262,19 +270,19 @@ const TransactionManagementTab = () => {
     }
   };
 
-  const handleCancelReservation = async (reservationId) => {
-    setCancelTarget(reservationId);
+  const handleCancelReservation = async (transaction) => {
+    setCancelTarget(transaction);
   };
 
   const confirmCancelReservation = async () => {
     if (!cancelTarget) return;
     setIsProcessing(true);
     try {
-      await reservationService.cancelReservation(cancelTarget);
-      toast.success("Đã hủy đặt cọc thành công!");
+      await reservationService.cancelReservation(cancelTarget.reservationId);
+      toast.success("Đã hủy giao dịch thành công!");
       fetchAllTransactions();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể hủy đặt cọc.");
+      toast.error(error.response?.data?.message || "Không thể hủy giao dịch.");
     } finally {
       setIsProcessing(false);
       setCancelTarget(null);
@@ -397,53 +405,51 @@ const TransactionManagementTab = () => {
                     {renderStatusBadge(t.status)}
 
                     <div className="flex items-center gap-2">
+                      {/* Nút hủy cho buyer (chỉ hiện ở trạng thái chưa inspection) */}
                       {t.userRole === "buyer" &&
-                        [
-                          "Waiting_Payment",
-                          "Deposited",
-                          "Pending",
-                          "Paid",
-                        ].includes(t.status) && (
+                        ["Deposited", "Pending", "Paid"].includes(t.status) && (
                           <button
                             disabled={isProcessing}
-                            onClick={() =>
-                              handleCancelReservation(t.reservationId)
-                            }
+                            onClick={() => handleCancelReservation(t)}
                             className="px-4 py-2 bg-transparent hover:bg-red-50 text-gray-500 hover:text-red-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             Hủy đặt cọc
                           </button>
                         )}
 
+                      {/* Nút yêu cầu hủy cho seller (chỉ hiện ở trạng thái chưa inspection) */}
                       {t.userRole === "seller" &&
-                        [
-                          "Waiting_Payment",
-                          "Deposited",
-                          "Pending",
-                          "Paid",
-                          "Scheduled",
-                        ].includes(t.status) && (
+                        ["Deposited", "Pending", "Paid", "Scheduled"].includes(t.status) && (
                           <button
                             disabled={isProcessing}
-                            onClick={() =>
-                              setSellerCancelTarget(t.reservationId)
-                            }
+                            onClick={() => setSellerCancelTarget(t.reservationId)}
                             className="px-4 py-2 bg-transparent hover:bg-red-50 text-gray-500 hover:text-red-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             Yêu cầu hủy
                           </button>
                         )}
 
-                      {t.status === "Waiting_Payment" &&
-                        t.userRole === "buyer" && (
-                          <button
-                            disabled={isProcessing}
-                            onClick={() => handleContinuePayment(t.listingId)}
-                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
-                          >
-                            <MdPayment size={16} /> Thanh toán
-                          </button>
-                        )}
+                      {/* PASSED: Buyer thanh toán full */}
+                      {t.status === "Waiting_Payment" && t.userRole === "buyer" && (
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => handleContinuePayment(t.listingId)}
+                          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
+                        >
+                          <MdPayment size={16} /> Thanh toán ngay
+                        </button>
+                      )}
+
+                      {/* FAILED: Buyer hoặc Seller hủy + hoàn tiền */}
+                      {t.status === "Inspection_Failed" && (
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => handleCancelReservation(t)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                        >
+                          <MdCancel size={16} /> Hủy & Hoàn tiền
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -452,10 +458,7 @@ const TransactionManagementTab = () => {
               {(t.status === "Scheduled" || t.meetingTime) && (
                 <div className="border-t border-gray-100 bg-gray-50/50 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center gap-2.5 text-sm">
-                    <MdAccessTime
-                      className="text-gray-400 shrink-0"
-                      size={18}
-                    />
+                    <MdAccessTime className="text-gray-400 shrink-0" size={18} />
                     <span className="text-gray-700">
                       {t.meetingTime
                         ? new Date(t.meetingTime).toLocaleString("vi-VN", {
@@ -469,15 +472,10 @@ const TransactionManagementTab = () => {
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 text-sm">
-                    <MdLocationOn
-                      className="text-gray-400 shrink-0"
-                      size={18}
-                    />
+                    <MdLocationOn className="text-gray-400 shrink-0" size={18} />
                     {t.meetingLocation ? (
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                          t.meetingLocation,
-                        )}`}
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.meetingLocation)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 hover:underline truncate"
@@ -486,9 +484,7 @@ const TransactionManagementTab = () => {
                         {t.meetingLocation}
                       </a>
                     ) : (
-                      <span className="text-gray-700 truncate">
-                        Chưa chốt địa điểm
-                      </span>
+                      <span className="text-gray-700 truncate">Chưa chốt địa điểm</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2.5 text-sm">
@@ -511,6 +507,28 @@ const TransactionManagementTab = () => {
                 </div>
               )}
 
+              {/* Panel báo cáo kiểm định — hiện cho Waiting_Payment và Inspection_Failed */}
+              {["Waiting_Payment", "Inspection_Failed"].includes(t.status) && (
+                <InspectionReportPanel reservationId={t.reservationId} />
+              )}
+
+              {/* Banners trạng thái */}
+              {t.status === "Waiting_Payment" && (
+                <div className="border-t border-emerald-100 bg-emerald-50/60 p-3 text-sm text-emerald-800 flex items-center gap-2.5">
+                  <MdCheckCircle size={18} className="text-emerald-500 shrink-0" />
+                  {t.userRole === "buyer" ? (
+                    <span>Xe đã <strong>đạt kiểm định</strong>. Vui lòng thanh toán để hoàn tất giao dịch.</span>
+                  ) : (
+                    <span>Xe đã <strong>đạt kiểm định</strong>. Đang chờ người mua thanh toán.</span>
+                  )}
+                </div>
+              )}
+              {t.status === "Inspection_Failed" && (
+                <div className="border-t border-red-100 bg-red-50/60 p-3 text-sm text-red-800 flex items-center gap-2.5">
+                  <MdWarning size={18} className="text-red-500 shrink-0" />
+                  <span>Xe <strong>không đạt kiểm định</strong>. Giao dịch sẽ được hủy và tiền cọc được hoàn trả.</span>
+                </div>
+              )}
               {t.status === "Deposited" && (
                 <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
                   <MdAdminPanelSettings size={18} className="text-blue-500" />
@@ -520,25 +538,19 @@ const TransactionManagementTab = () => {
               {t.status === "Paid" && t.userRole === "seller" && (
                 <div className="border-t border-gray-50 bg-green-50/50 p-3 text-sm text-green-700 flex items-center gap-2.5">
                   <MdCheckCircle size={18} className="text-green-500" />
-                  <span>
-                    Người mua đã đặt cọc thành công. Admin sẽ sớm liên hệ.
-                  </span>
+                  <span>Người mua đã đặt cọc thành công. Admin sẽ sớm liên hệ.</span>
                 </div>
               )}
               {t.status === "Pending" && t.userRole === "seller" && (
                 <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
                   <MdAdminPanelSettings size={18} className="text-blue-500" />
-                  <span>
-                    Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.
-                  </span>
+                  <span>Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.</span>
                 </div>
               )}
               {t.status === "Pending_Cancel" && (
                 <div className="border-t border-red-50 bg-red-50/50 p-3 text-sm text-red-700 flex items-center gap-2.5">
                   <MdWarning size={18} className="text-red-500" />
-                  <span>
-                    Giao dịch đang chờ Admin duyệt yêu cầu hủy.
-                  </span>
+                  <span>Giao dịch đang chờ Admin duyệt yêu cầu hủy.</span>
                 </div>
               )}
             </div>
@@ -557,12 +569,16 @@ const TransactionManagementTab = () => {
               onClick={() => setCancelTarget(null)}
               className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
             >
-              Hủy qua
+              Quay lại
             </button>
             <button
               onClick={confirmCancelReservation}
               disabled={isProcessing}
-              className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className={`flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
+                cancelTarget?.status === "Inspection_Failed"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-red-500 hover:bg-red-600"
+              }`}
             >
               {isProcessing ? "Đang xử lý..." : "Xác nhận hủy"}
             </button>
@@ -570,19 +586,33 @@ const TransactionManagementTab = () => {
         }
       >
         <div className="flex flex-col items-center text-center pb-4 pt-2">
-          <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-5">
-            <MdWarning className="text-red-500" size={28} />
-          </div>
-          <h4 className="text-xl font-semibold text-gray-900 mb-2">
-            Bạn chắc chắn muốn hủy?
-          </h4>
-          <p className="text-gray-500 text-sm leading-relaxed px-4">
-            Tiền cọc của bạn sẽ{" "}
-            <span className="text-red-500 font-medium">
-              không được hoàn lại
-            </span>
-            . Hành động này không thể thay đổi sau khi xác nhận.
-          </p>
+          {cancelTarget?.status === "Inspection_Failed" ? (
+            <>
+              <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mb-5">
+                <MdCheckCircle className="text-emerald-500" size={28} />
+              </div>
+              <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                Hủy & Hoàn tiền cọc
+              </h4>
+              <p className="text-gray-500 text-sm leading-relaxed px-4">
+                Vì xe <strong>không đạt kiểm định</strong>, giao dịch sẽ được đóng và hệ thống sẽ{" "}
+                <span className="text-emerald-600 font-bold">hoàn trả 100% tiền cọc</span> vào ví của bạn (đối với người mua).
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-5">
+                <MdWarning className="text-red-500" size={28} />
+              </div>
+              <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                Bạn chắc chắn muốn hủy?
+              </h4>
+              <p className="text-gray-500 text-sm leading-relaxed px-4">
+                Tiền cọc của bạn sẽ{" "}
+                <span className="text-red-500 font-medium">không được hoàn lại</span> nếu bạn tự ý hủy giao dịch ở giai đoạn này.
+              </p>
+            </>
+          )}
         </div>
       </Modal>
 
