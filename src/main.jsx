@@ -9,7 +9,7 @@ import { CartProvider } from "./context/CartContext";
 import { TransactionProvider } from "./context/TransactionContext";
 
 const GOOGLE_CLIENT_ID =
-  "86310613290-2cmn550a9glgp4pa5n49svc88kjpm7ba.apps.googleusercontent.com";
+  "339739206284-sse9cv3gs9u2d4vbohc60q0uf4mdg73j.apps.googleusercontent.com";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

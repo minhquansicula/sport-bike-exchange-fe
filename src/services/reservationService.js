@@ -51,7 +51,7 @@ export const reservationService = {
   requestCancelReservationBySeller: async (reservationId, data) => {
     const response = await api.put(
       `/reservations/${reservationId}/request-cancel`,
-      data
+      data,
     );
     return response.data;
   },
@@ -59,7 +59,7 @@ export const reservationService = {
   // Admin duyệt yêu cầu hủy giao dịch
   approveCancelReservationByAdmin: async (reservationId) => {
     const response = await api.put(
-      `/reservations/${reservationId}/approve-cancel`
+      `/reservations/${reservationId}/approve-cancel`,
     );
     return response.data;
   },
@@ -67,7 +67,7 @@ export const reservationService = {
   // Admin từ chối yêu cầu hủy giao dịch
   rejectCancelReservationByAdmin: async (reservationId) => {
     const response = await api.put(
-      `/reservations/${reservationId}/reject-cancel`
+      `/reservations/${reservationId}/reject-cancel`,
     );
     return response.data;
   },

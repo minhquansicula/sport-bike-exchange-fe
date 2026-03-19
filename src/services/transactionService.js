@@ -24,7 +24,8 @@ export const transactionService = {
    */
   getTransactionsByStatus: async (status) => {
     try {
-      const response = await axiosClient.get(`/transactions/status/${status}`);
+      // Đã sửa axiosClient thành api
+      const response = await api.get(`/transactions/status/${status}`);
       return response.data;
     } catch (error) {
       console.error(`Error in getTransactionsByStatus (${status}):`, error);
@@ -35,11 +36,12 @@ export const transactionService = {
   /**
    * Cập nhật trạng thái giao dịch (nếu Backend có hỗ trợ)
    */
-  updateTransactionStatus: async (transactionId, status) => {
+  updateTransactionStatus: async (transactionId, statusData) => {
     try {
-      const response = await axiosClient.put(
-        `/transactions/${transactionId}/status`,
-        { status },
+      // Đã sửa axiosClient thành api
+      const response = await api.put(
+        `/transactions/${transactionId}`,
+        statusData,
       );
       return response.data;
     } catch (error) {
