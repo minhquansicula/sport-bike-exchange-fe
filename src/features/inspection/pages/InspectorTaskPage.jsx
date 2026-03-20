@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   MdSearch,
   MdFilterList,
@@ -9,6 +9,7 @@ import {
   MdCheckCircle,
   MdPending,
   MdCancel,
+  MdClose,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 
@@ -74,9 +75,15 @@ const MOCK_TASKS = [
 ];
 
 const InspectorTaskPage = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
   const [tasks] = useState(MOCK_TASKS);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+
+  const selectedTask = id
+    ? tasks.find((task) => String(task.id) === String(id))
+    : null;
 
   // Lọc tasks
   const filteredTasks = tasks.filter((task) => {
@@ -266,6 +273,97 @@ const InspectorTaskPage = () => {
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
           <MdSearch className="mx-auto text-gray-300" size={48} />
           <p className="mt-4 text-gray-500">Không tìm thấy nhiệm vụ nào</p>
+        </div>
+      )}
+
+      {id && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/45 backdrop-blur-[2px]">
+          <div className="w-full max-w-2xl bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-emerald-50/40">
+              <h2 className="text-lg font-bold text-gray-900">Chi tiết nhiệm vụ</h2>
+              <button
+                onClick={() => navigate("/inspector/tasks")}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                aria-label="Đóng"
+              >
+                <MdClose size={20} />
+              </button>
+            </div>
+
+            {selectedTask ? (
+              <div className="p-6 space-y-5">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <img
+                    src={selectedTask.bikeImage}
+                    alt={selectedTask.bikeName}
+                    className="w-full sm:w-40 h-40 rounded-xl object-cover border border-gray-200"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Mã nhiệm vụ #{selectedTask.id}
+                        </p>
+                        <h3 className="text-xl font-bold text-gray-900 mt-1">
+                          {selectedTask.bikeName}
+                        </h3>
+                      </div>
+                      {getStatusBadge(selectedTask.status)}
+                    </div>
+                    <p className="text-emerald-600 font-bold text-lg mt-2">
+                      {formatCurrency(selectedTask.price)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3 text-sm text-gray-700">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 mb-1">Người mua</p>
+                    <p className="font-semibold">
+                      {selectedTask.buyer.name} ({selectedTask.buyer.phone})
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 mb-1">Người bán</p>
+                    <p className="font-semibold">
+                      {selectedTask.seller.name} ({selectedTask.seller.phone})
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 sm:col-span-2">
+                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <MdLocationOn /> Địa điểm kiểm định
+                    </p>
+                    <p className="font-medium">{selectedTask.location}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 sm:col-span-2">
+                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <MdAccessTime /> Thời gian hẹn
+                    </p>
+                    <p className="font-medium">{selectedTask.scheduledTime}</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => navigate("/inspector/tasks")}
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            ) : (
+              <div className="p-6">
+                <div className="rounded-xl border border-red-100 bg-red-50 text-red-700 px-4 py-3 text-sm">
+                  Không tìm thấy nhiệm vụ với mã #{id}.
+                </div>
+                <button
+                  onClick={() => navigate("/inspector/tasks")}
+                  className="mt-4 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Quay lại danh sách
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
