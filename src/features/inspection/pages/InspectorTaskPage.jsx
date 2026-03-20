@@ -10,6 +10,7 @@ import {
   MdPending,
   MdCancel,
   MdClose,
+  MdDirectionsBike,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 
@@ -343,12 +344,34 @@ const InspectorTaskPage = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => navigate("/inspector/tasks")}
-                  className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Đóng
-                </button>
+                {selectedTask.cancelReason && (
+                  <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
+                    <strong>Lý do hủy:</strong> {selectedTask.cancelReason}
+                  </div>
+                )}
+
+                {selectedTask.completedAt && (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-sm text-emerald-700">
+                    <strong>Đã hoàn thành lúc:</strong> {selectedTask.completedAt}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  {selectedTask.status === "pending" && (
+                    <Link
+                      to={`/inspector/create-report?taskId=${selectedTask.id}`}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                    >
+                      <MdDirectionsBike size={18} /> Bắt đầu kiểm định
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => navigate("/inspector/tasks")}
+                    className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Đóng
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="p-6">
