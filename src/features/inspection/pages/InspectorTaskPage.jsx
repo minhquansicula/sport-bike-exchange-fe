@@ -249,9 +249,12 @@ const InspectorTaskPage = () => {
                     Kiểm định
                   </Link>
                 )}
-                <button className="flex-1 md:flex-none px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                <Link
+                  to={`/inspector/tasks/${task.id}`}
+                  className="flex-1 md:flex-none px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-center"
+                >
                   Chi tiết
-                </button>
+                </Link>
               </div>
             </div>
           </div>
