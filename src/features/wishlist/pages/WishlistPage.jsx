@@ -4,47 +4,46 @@ import {
   MdFavorite,
   MdArrowForward,
   MdSentimentDissatisfied,
+  MdDeleteOutline,
 } from "react-icons/md";
 import { wishlistService } from "../../../services/wishlistService";
 import { useWishlist } from "../../../context/WishlistContext";
-import BikeCard from "../../bicycle/components/BikeCard";
+import formatCurrency from "../../../utils/formatCurrency";
 
 const WishlistPage = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { wishlistIds } = useWishlist();
+  const { wishlistIds, fetchWishlist: refreshContext } = useWishlist();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
+    // ✅ CHỈ FETCH KHI ĐÃ LOGIN
     if (token) {
       fetchWishlist();
     } else {
       setLoading(false);
     }
-  }, [wishlistIds]);
-  // }, []); // Chỉ fetch 1 lần khi mount
+  }, [wishlistIds]); // Re-fetch khi wishlistIds thay đổi (do toggle từ nơi khác)
 
   const fetchWishlist = async () => {
     try {
       const wishlistRes = await wishlistService.getMyWishlist();
-      const wishlistItems = wishlistRes?.result || [];
-
-      // Map trực tiếp từ data API trả về, không cần gọi thêm API
-      const bikes = wishlistItems.map((item) => ({
-        listingId: item.listingId,
-        title: item.listingTitle,
-        imageUrl: item.listingImageUrl,
-        price: item.listingPrice,
-        status: item.listingStatus,
-        condition: item.listingCondition,
-        sellerName: item.sellerName,
-      }));
-
-      setWishlist(bikes);
+      setWishlist(wishlistRes?.result || []);
     } catch (error) {
       console.error("Lỗi tải wishlist:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemove = async (listingId) => {
+    try {
+      await wishlistService.removeFromWishlist(listingId);
+      setWishlist((prev) => prev.filter((item) => item.listingId !== listingId));
+      refreshContext();
+    } catch (error) {
+      console.error("Lỗi xóa khỏi wishlist:", error);
     }
   };
 
@@ -83,10 +82,63 @@ const WishlistPage = () => {
 
         {/* --- CONTENT --- */}
         {wishlist.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {wishlist.map((bike) => (
-              <div key={bike.listingId} className="relative group-item">
-                <BikeCard bike={bike} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {wishlist.map((item) => (
+              <div
+                key={item.wishlistId}
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow"
+              >
+                <Link to={`/bikes/${item.listingId}`} className="block">
+                  <img
+                    src={
+                      item.listingImageUrl ||
+                      "https://placehold.co/600x400/eeeeee/999999?text=No+Image"
+                    }
+                    alt={item.listingTitle}
+                    className="w-full h-48 object-cover"
+                  />
+                </Link>
+
+                <div className="p-5 space-y-2">
+                  <Link to={`/bikes/${item.listingId}`}>
+                    <h3 className="font-bold text-zinc-900 text-lg line-clamp-2 hover:text-orange-600 transition-colors">
+                      {item.listingTitle}
+                    </h3>
+                  </Link>
+
+                  <p className="text-orange-600 text-xl font-black">
+                    {formatCurrency(item.listingPrice || 0)}
+                  </p>
+
+                  <p className="text-sm text-gray-600">
+                    Tình trạng: <span className="font-semibold">{item.listingCondition || "Không rõ"}</span>
+                  </p>
+
+                  <p className="text-sm text-gray-600">
+                    Trạng thái:{" "}
+                    <span
+                      className={`font-semibold ${
+                        item.listingStatus === "Available"
+                          ? "text-green-600"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {item.listingStatus || "Không rõ"}
+                    </span>
+                  </p>
+
+                  <p className="text-sm text-gray-600">
+                    Người bán: <span className="font-semibold">{item.sellerName || "Ẩn danh"}</span>
+                  </p>
+
+                  <button
+                    onClick={() => handleRemove(item.listingId)}
+                    className="w-full mt-3 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MdDeleteOutline size={20} />
+                    Xóa khỏi yêu thích
+                  </button>
+                </div>
               </div>
             ))}
           </div>

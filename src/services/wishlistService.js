@@ -38,7 +38,7 @@ export const wishlistService = {
     return response.data;
   },
 
-  // Đếm số người đã wishlist bài đăng
+  // Đếm số lượt wishlist của 1 listing
   getWishlistCount: async (listingId) => {
     const response = await api.get(`/wishlists/count/${listingId}`);
     return response.data;
