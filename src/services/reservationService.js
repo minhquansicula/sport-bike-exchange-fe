@@ -71,4 +71,20 @@ export const reservationService = {
     );
     return response.data;
   },
+
+  // Thanh toán cuối sau khi kiểm định PASSED
+  finalPayment: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/${reservationId}/final-payment`,
+    );
+    return response.data;
+  },
+
+  // Hoàn tiền đặt cọc khi kiểm định thất bại
+  refundDepositAfterInspectionFail: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/${reservationId}/refund-inspection-fail`,
+    );
+    return response.data;
+  },
 };
