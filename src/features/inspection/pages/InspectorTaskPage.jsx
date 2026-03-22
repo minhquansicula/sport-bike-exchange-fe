@@ -41,8 +41,8 @@ const InspectorTaskPage = () => {
   const filteredTasks = tasks.filter((task) => {
     const matchSearch =
       task.bikeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.buyer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.seller?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.buyer?.fullName || task.buyer?.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.seller?.fullName || task.seller?.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.id.toString().includes(searchTerm);
     const matchStatus = filterStatus === "all" || task.status === filterStatus;
     return matchSearch && matchStatus;
@@ -192,7 +192,7 @@ const InspectorTaskPage = () => {
                   <div className="flex items-start gap-2">
                     <MdPerson className="text-gray-400 mt-0.5 shrink-0" />
                     <div>
-                      <strong>Người mua:</strong> {task.buyer?.name}
+                      <strong>Người mua:</strong> {task.buyer?.fullName || task.buyer?.name}
                       <br />
                       <a
                         href={`tel:${task.buyer?.phone}`}
@@ -205,7 +205,7 @@ const InspectorTaskPage = () => {
                   <div className="flex items-start gap-2">
                     <MdPerson className="text-gray-400 mt-0.5 shrink-0" />
                     <div>
-                      <strong>Người bán:</strong> {task.seller?.name}
+                      <strong>Người bán:</strong> {task.seller?.fullName || task.seller?.name}
                       <br />
                       <a
                         href={`tel:${task.seller?.phone}`}
