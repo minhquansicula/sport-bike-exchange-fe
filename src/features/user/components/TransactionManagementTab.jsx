@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import { depositService } from "../../../services/depositService";
 import { reservationService } from "../../../services/reservationService";
 import { transactionService } from "../../../services/transactionService";
 import Modal from "../../../components/common/Modal";
@@ -108,8 +107,8 @@ const TransactionManagementTab = () => {
       depositAmount: deposit.amount || tx.amount || 0,
       status: reservation.status || tx.status,
       reservedAt: tx.createAt || tx.createdAt,
-      meetingTime: reservation.meetingTime,
-      meetingLocation: reservation.meetingLocation,
+      meetingTime: reservation.meetingTime || tx.meetingTime,
+      meetingLocation: reservation.meetingLocation || tx.meetingLocation,
       inspectorName:
         reservation.inspector?.fullName || tx.inspectorName || "Đang cập nhật",
       inspectorPhone: reservation.inspector?.phone || tx.inspectorPhone,
@@ -251,19 +250,21 @@ const TransactionManagementTab = () => {
     ),
   );
 
-  const handleContinuePayment = async (listingId) => {
+  const handleFinalPayment = async (reservationId) => {
     setIsProcessing(true);
     try {
-      const res = await depositService.createDepositViaVNPay(listingId);
+      const res = await reservationService.finalPayment(reservationId);
       if (res.result?.paymentUrl) {
+        // Ví không đủ → redirect VNPay
         window.location.href = res.result.paymentUrl;
-      } else if (res.result?.deposit) {
-        toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
+      } else {
+        // Ví đủ → đã trừ tiền và hoàn tất
+        toast.success(res.result?.message || "Thanh toán thành công! Giao dịch đã hoàn tất.");
         fetchAllTransactions();
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Không thể khởi tạo thanh toán.",
+        error.response?.data?.message || "Không thể khởi tạo thanh toán cuối.",
       );
     } finally {
       setIsProcessing(false);
@@ -278,8 +279,15 @@ const TransactionManagementTab = () => {
     if (!cancelTarget) return;
     setIsProcessing(true);
     try {
-      await reservationService.cancelReservation(cancelTarget.reservationId);
-      toast.success("Đã hủy giao dịch thành công!");
+      if (cancelTarget.status === "Inspection_Failed") {
+        await reservationService.refundDepositAfterInspectionFail(
+          cancelTarget.reservationId
+        );
+        toast.success("Đã hoàn tiền và hủy giao dịch thành công!");
+      } else {
+        await reservationService.cancelReservation(cancelTarget.reservationId);
+        toast.success("Đã hủy giao dịch thành công!");
+      }
       fetchAllTransactions();
     } catch (error) {
       toast.error(error.response?.data?.message || "Không thể hủy giao dịch.");
@@ -429,14 +437,15 @@ const TransactionManagementTab = () => {
                           </button>
                         )}
 
-                      {/* PASSED: Buyer thanh toán full */}
+                      {/* PASSED: Buyer thanh toán cuối */}
                       {t.status === "Waiting_Payment" && t.userRole === "buyer" && (
                         <button
                           disabled={isProcessing}
-                          onClick={() => handleContinuePayment(t.listingId)}
+                          onClick={() => handleFinalPayment(t.reservationId)}
                           className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
                         >
-                          <MdPayment size={16} /> Thanh toán ngay
+                          <MdPayment size={16} />
+                          {isProcessing ? "Đang xử lý..." : "Thanh toán ngay"}
                         </button>
                       )}
 

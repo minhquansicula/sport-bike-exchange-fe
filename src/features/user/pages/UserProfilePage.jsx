@@ -51,31 +51,34 @@ const UserProfilePage = () => {
       const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
       const depositId = searchParams.get("depositId");
 
-      if (depositId && vnp_ResponseCode) {
-        // Dọn dẹp URL cho gọn gàng sau khi bắt được param
-        const newParams = new URLSearchParams(searchParams);
-        [
-          "vnp_Amount",
-          "vnp_BankCode",
-          "vnp_BankTranNo",
-          "vnp_CardType",
-          "vnp_OrderInfo",
-          "vnp_PayDate",
-          "vnp_ResponseCode",
-          "vnp_TmnCode",
-          "vnp_TransactionNo",
-          "vnp_TransactionStatus",
-          "vnp_TxnRef",
-          "vnp_SecureHash",
-          "depositId",
-        ].forEach((param) => newParams.delete(param));
-        setSearchParams(newParams);
+      if (!vnp_ResponseCode) return;
 
+      // Dọn param VNPay khỏi URL
+      const newParams = new URLSearchParams(searchParams);
+      [
+        "vnp_Amount",
+        "vnp_BankCode",
+        "vnp_BankTranNo",
+        "vnp_CardType",
+        "vnp_OrderInfo",
+        "vnp_PayDate",
+        "vnp_ResponseCode",
+        "vnp_TmnCode",
+        "vnp_TransactionNo",
+        "vnp_TransactionStatus",
+        "vnp_TxnRef",
+        "vnp_SecureHash",
+        "depositId",
+      ].forEach((param) => newParams.delete(param));
+      setSearchParams(newParams);
+
+      if (depositId) {
+        // --- Callback đặt cọc thông thường ---
         if (vnp_ResponseCode === "00") {
           try {
             const res = await depositService.confirmDepositPayment(depositId);
             toast.success(res.result || "Thanh toán đặt cọc thành công!");
-            setTimeout(() => window.location.reload(), 1500); // Reload để cập nhật trạng thái transaction
+            setTimeout(() => window.location.reload(), 1500);
           } catch (error) {
             toast.error(
               error.response?.data?.message || "Lỗi xác nhận thanh toán.",
@@ -84,10 +87,20 @@ const UserProfilePage = () => {
         } else {
           toast.error("Giao dịch thanh toán đã bị hủy.");
         }
+      } else {
+        // --- Callback thanh toán cuối (final-payment) ---
+        // Backend đã xử lý toàn bộ business logic, chỉ cần thông báo UI
+        if (vnp_ResponseCode === "00") {
+          toast.success("Thanh toán cuối thành công! Giao dịch đã hoàn tất.");
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          toast.error("Thanh toán bị hủy. Giao dịch vẫn giữ trạng thái chờ thanh toán.");
+        }
       }
     };
     handleVNPayReturn();
   }, [searchParams, setSearchParams]);
+
 
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
