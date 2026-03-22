@@ -362,9 +362,9 @@ const CreateReportPage = () => {
                 <span className="text-gray-500">Mã GD:</span>{" "}
                 <span className="font-semibold">#{task?.id || taskId}</span>
                 <span className="text-gray-500">Người bán:</span>{" "}
-                <span className="font-medium">{task?.seller?.name || "—"}</span>
+                <span className="font-medium">{task?.seller?.fullName || task?.seller?.name || "—"}</span>
                 <span className="text-gray-500">Người mua:</span>{" "}
-                <span className="font-medium">{task?.buyer?.name || "—"}</span>
+                <span className="font-medium">{task?.buyer?.fullName || task?.buyer?.name || "—"}</span>
                 {task?.price && (
                   <>
                     <span className="text-gray-500">Giá trị:</span>{" "}
@@ -389,11 +389,10 @@ const CreateReportPage = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                attendance.buyerPresent
-                  ? "border-emerald-500 bg-emerald-50/50"
-                  : "border-gray-100 bg-gray-50 hover:border-gray-200"
-              }`}
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${attendance.buyerPresent
+                ? "border-emerald-500 bg-emerald-50/50"
+                : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                }`}
             >
               <input
                 type="checkbox"
@@ -402,23 +401,22 @@ const CreateReportPage = () => {
                 className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <img
-                src={`https://i.pravatar.cc/150?u=${task?.buyer?.name || "buyer"}`}
+                src={`https://i.pravatar.cc/150?u=${task?.buyer?.buyerName || task?.buyer?.buyerName || "buyer"}`}
                 alt="Buyer"
                 className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Người mua</p>
-                <p className="font-bold text-gray-900">{task?.buyer?.name || "Người mua"}</p>
+                <p className="font-bold text-gray-900">{task?.buyer?.fullName || task?.buyer?.name || "Người mua"}</p>
               </div>
               {attendance.buyerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>
 
             <label
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                attendance.sellerPresent
-                  ? "border-emerald-500 bg-emerald-50/50"
-                  : "border-gray-100 bg-gray-50 hover:border-gray-200"
-              }`}
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${attendance.sellerPresent
+                ? "border-emerald-500 bg-emerald-50/50"
+                : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                }`}
             >
               <input
                 type="checkbox"
@@ -427,13 +425,13 @@ const CreateReportPage = () => {
                 className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <img
-                src={`https://i.pravatar.cc/150?u=${task?.seller?.name || "seller"}`}
+                src={`https://i.pravatar.cc/150?u=${task?.seller?.fullName || task?.seller?.name || "seller"}`}
                 alt="Seller"
                 className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Người bán</p>
-                <p className="font-bold text-gray-900">{task?.seller?.name || "Người bán"}</p>
+                <p className="font-bold text-gray-900">{task?.seller?.fullName || task?.seller?.name || "Người bán"}</p>
               </div>
               {attendance.sellerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>
@@ -471,13 +469,12 @@ const CreateReportPage = () => {
             {checklist.map((item, index) => (
               <div
                 key={index}
-                className={`rounded-xl border p-4 transition-all ${
-                  item.status === "PASS"
-                    ? "border-emerald-200 bg-emerald-50/40"
-                    : item.status === "FAIL"
+                className={`rounded-xl border p-4 transition-all ${item.status === "PASS"
+                  ? "border-emerald-200 bg-emerald-50/40"
+                  : item.status === "FAIL"
                     ? "border-red-200 bg-red-50/40"
                     : "border-gray-100 bg-gray-50/60"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   {/* Tên linh kiện */}
@@ -492,11 +489,10 @@ const CreateReportPage = () => {
                         key={statusKey}
                         type="button"
                         onClick={() => handleChecklistStatus(index, statusKey)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-2 ${
-                          item.status === statusKey
-                            ? `${cfg.bg} ${cfg.text} border-transparent ring-2 ${cfg.ring} shadow-sm scale-105`
-                            : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-2 ${item.status === statusKey
+                          ? `${cfg.bg} ${cfg.text} border-transparent ring-2 ${cfg.ring} shadow-sm scale-105`
+                          : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                          }`}
                       >
                         {cfg.icon}
                         {cfg.label}
@@ -516,11 +512,10 @@ const CreateReportPage = () => {
                         ? "Mô tả chi tiết lỗi..."
                         : "Ghi chú (tuỳ chọn)..."
                     }
-                    className={`w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-all ${
-                      item.status === "FAIL"
-                        ? "border-red-300 focus:border-red-400 focus:ring-red-100 bg-white"
-                        : "border-gray-200 focus:border-emerald-400 focus:ring-emerald-50 bg-white/70"
-                    }`}
+                    className={`w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-all ${item.status === "FAIL"
+                      ? "border-red-300 focus:border-red-400 focus:ring-red-100 bg-white"
+                      : "border-gray-200 focus:border-emerald-400 focus:ring-emerald-50 bg-white/70"
+                      }`}
                   />
                 </div>
               </div>
@@ -662,11 +657,10 @@ const CreateReportPage = () => {
             <button
               type="submit"
               disabled={isSubmitting || !isAttendanceComplete}
-              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${
-                isAttendanceComplete && !isSubmitting
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-emerald-300 active:scale-95"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${isAttendanceComplete && !isSubmitting
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-emerald-300 active:scale-95"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
             >
               {isSubmitting ? (
                 <>
