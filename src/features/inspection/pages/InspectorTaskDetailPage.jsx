@@ -104,7 +104,7 @@ const InspectorTaskDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-xs">Người mua</p>
-                  <p className="font-medium">{task.buyer?.name}</p>
+                  <p className="font-medium">{task.buyer?.fullName || task.buyer?.name}</p>
                   <a
                     href={`tel:${task.buyer?.phone}`}
                     className="text-xs text-blue-600 flex items-center gap-1 mt-1"
@@ -119,7 +119,7 @@ const InspectorTaskDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-xs">Người bán</p>
-                  <p className="font-medium">{task.seller?.name}</p>
+                  <p className="font-medium">{task.seller?.fullName || task.seller?.name}</p>
                   <a
                     href={`tel:${task.seller?.phone}`}
                     className="text-xs text-blue-600 flex items-center gap-1 mt-1"
