@@ -4,8 +4,8 @@ import { useAuth } from "../../../hooks/useAuth";
 import { depositService } from "../../../services/depositService";
 import { reservationService } from "../../../services/reservationService";
 import { transactionService } from "../../../services/transactionService";
-import { bikeService } from "../../../services/bikeService"; // Gọi API xe thường
-import { eventBicycleService } from "../../../services/eventBicycleService"; // Gọi API xe sự kiện
+import { bikeService } from "../../../services/bikeService";
+import { eventBicycleService } from "../../../services/eventBicycleService";
 import Modal from "../../../components/common/Modal";
 import { toast } from "react-hot-toast";
 import {
@@ -64,6 +64,7 @@ const TransactionManagementTab = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedTransactions, setMergedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [cancelTarget, setCancelTarget] = useState(null);
   const [sellerCancelTarget, setSellerCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -88,19 +89,6 @@ const TransactionManagementTab = () => {
       return url.split(",")[0].trim();
     }
     return url || null;
-  };
-
-  const determineUserRole = (transaction) => {
-    const buyerId = transaction.buyerId || transaction.buyer?.userId;
-    const sellerId =
-      transaction.sellerId ||
-      transaction.seller?.userId ||
-      transaction.listing?.seller?.userId ||
-      transaction.eventBicycle?.seller?.userId;
-
-    if (buyerId === userId) return "buyer";
-    if (sellerId === userId) return "seller";
-    return null;
   };
 
   const mapTransactionToDisplay = (tx) => {
@@ -174,7 +162,6 @@ const TransactionManagementTab = () => {
   const fetchAllTransactions = async () => {
     setLoading(true);
     try {
-      // GỌI CẢ 3 API: Reservation thường, Reservation Sự kiện, và Transaction (Seller)
       const [regularRes, eventRes, transactionsRes] = await Promise.allSettled([
         reservationService.getMyReservations(),
         reservationService.getMyReservationsWithEventBicycle(),
@@ -183,7 +170,6 @@ const TransactionManagementTab = () => {
 
       let allItems = [];
 
-      // 1. Dữ liệu MUA xe thường
       if (regularRes.status === "fulfilled" && regularRes.value?.result) {
         const items = regularRes.value.result
           .map(mapTransactionToDisplay)
@@ -191,7 +177,6 @@ const TransactionManagementTab = () => {
         allItems.push(...items);
       }
 
-      // 2. Dữ liệu MUA xe sự kiện
       if (eventRes.status === "fulfilled" && eventRes.value?.result) {
         const items = eventRes.value.result
           .map(mapTransactionToDisplay)
@@ -199,7 +184,6 @@ const TransactionManagementTab = () => {
         allItems.push(...items);
       }
 
-      // 3. Dữ liệu BÁN (Transaction trả về cả 2 loại)
       if (
         transactionsRes.status === "fulfilled" &&
         transactionsRes.value?.result
@@ -210,7 +194,6 @@ const TransactionManagementTab = () => {
         allItems.push(...sellerItems);
       }
 
-      // Lọc trùng lặp
       const uniqueMap = new Map();
       allItems.forEach((item) => {
         const key = item.reservationId || item.id;
@@ -222,11 +205,7 @@ const TransactionManagementTab = () => {
           ...item,
           userRole: item.buyerId === userId ? "buyer" : "seller",
         }))
-        .sort((a, b) => {
-          const dateA = a.reservedAt;
-          const dateB = b.reservedAt;
-          return new Date(dateB) - new Date(dateA);
-        });
+        .sort((a, b) => new Date(b.reservedAt) - new Date(a.reservedAt));
 
       setMergedTransactions(merged);
     } catch (error) {
@@ -240,7 +219,7 @@ const TransactionManagementTab = () => {
     if (userId) fetchAllTransactions();
   }, [userId]);
 
-  // MỞ POPUP VÀ LẤY DỮ LIỆU XE
+  // HÀM MỞ POPUP CHI TIẾT
   const handleOpenDetailModal = async (t) => {
     setViewDetailTarget(t);
     setDetailedBikeInfo(null);
@@ -260,6 +239,100 @@ const TransactionManagementTab = () => {
       console.error("Không thể lấy dữ liệu chi tiết xe:", error);
     } finally {
       setLoadingDetail(false);
+    }
+  };
+
+  // HÀM THANH TOÁN CUỐI (KHI XE ĐÃ PASSED KIỂM ĐỊNH)
+  const handleFinalPayment = async (reservationId) => {
+    setIsProcessing(true);
+    try {
+      const res = await reservationService.finalPayment(reservationId);
+      if (res.result?.paymentUrl) {
+        window.location.href = res.result.paymentUrl;
+      } else {
+        toast.success(
+          res.result?.message ||
+            "Thanh toán thành công! Giao dịch đã hoàn tất.",
+        );
+        fetchAllTransactions();
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể khởi tạo thanh toán cuối.",
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // HÀM ĐẶT CỌC (NẾU CẦN THANH TOÁN LẠI CỌC)
+  const handleContinuePayment = async (item) => {
+    setIsProcessing(true);
+    try {
+      let res;
+      if (item.isEventBike && item.eventBikeId) {
+        res = await depositService.createDepositViaVNPayForEvent(
+          item.eventBikeId,
+        );
+      } else {
+        res = await depositService.createDepositViaVNPay(item.listingId);
+      }
+
+      if (res.result?.paymentUrl) {
+        window.location.href = res.result.paymentUrl;
+      } else if (res.result?.deposit) {
+        toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
+        fetchAllTransactions();
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể khởi tạo thanh toán.",
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const confirmCancelReservation = async () => {
+    if (!cancelTarget) return;
+    setIsProcessing(true);
+    try {
+      if (cancelTarget.status === "Inspection_Failed") {
+        await reservationService.refundDepositAfterInspectionFail(
+          cancelTarget.reservationId,
+        );
+        toast.success("Đã hoàn tiền và hủy giao dịch thành công!");
+      } else {
+        await reservationService.cancelReservation(cancelTarget.reservationId);
+        toast.success("Đã hủy giao dịch thành công!");
+      }
+      fetchAllTransactions();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể hủy giao dịch.");
+    } finally {
+      setIsProcessing(false);
+      setCancelTarget(null);
+    }
+  };
+
+  const confirmSellerCancelReservation = async () => {
+    if (!sellerCancelTarget || !cancelReason.trim()) return;
+    setIsProcessing(true);
+    try {
+      await reservationService.requestCancelReservationBySeller(
+        sellerCancelTarget,
+        { cancelDescription: cancelReason },
+      );
+      toast.success("Đã gửi yêu cầu hủy giao dịch thành công!");
+      fetchAllTransactions();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Không thể gửi yêu cầu hủy giao dịch.",
+      );
+    } finally {
+      setIsProcessing(false);
+      setSellerCancelTarget(null);
+      setCancelReason("");
     }
   };
 
@@ -333,73 +406,9 @@ const TransactionManagementTab = () => {
     ].includes(t.status),
   );
 
-  // Lọc theo loại giao dịch được chọn trên tab
   const displayedTransactions = activeTransactions.filter((t) =>
     transactionType === "event" ? t.isEventBike : !t.isEventBike,
   );
-
-  const handleContinuePayment = async (item) => {
-    setIsProcessing(true);
-    try {
-      let res;
-      if (item.isEventBike && item.eventBikeId) {
-        res = await depositService.createDepositViaVNPayForEvent(
-          item.eventBikeId,
-        );
-      } else {
-        res = await depositService.createDepositViaVNPay(item.listingId);
-      }
-
-      if (res.result?.paymentUrl) {
-        window.location.href = res.result.paymentUrl;
-      } else if (res.result?.deposit) {
-        toast.success("Trừ tiền ví thành công! Đã đặt cọc.");
-        fetchAllTransactions();
-      }
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Không thể khởi tạo thanh toán.",
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const confirmCancelReservation = async () => {
-    if (!cancelTarget) return;
-    setIsProcessing(true);
-    try {
-      await reservationService.cancelReservation(cancelTarget.reservationId);
-      toast.success("Đã hủy giao dịch thành công!");
-      fetchAllTransactions();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể hủy giao dịch.");
-    } finally {
-      setIsProcessing(false);
-      setCancelTarget(null);
-    }
-  };
-
-  const confirmSellerCancelReservation = async () => {
-    if (!sellerCancelTarget || !cancelReason.trim()) return;
-    setIsProcessing(true);
-    try {
-      await reservationService.requestCancelReservationBySeller(
-        sellerCancelTarget,
-        { cancelDescription: cancelReason },
-      );
-      toast.success("Đã gửi yêu cầu hủy giao dịch thành công!");
-      fetchAllTransactions();
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Không thể gửi yêu cầu hủy giao dịch.",
-      );
-    } finally {
-      setIsProcessing(false);
-      setSellerCancelTarget(null);
-      setCancelReason("");
-    }
-  };
 
   if (loading) {
     return (
@@ -430,8 +439,7 @@ const TransactionManagementTab = () => {
               : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900"
           }`}
         >
-          <MdStorefront size={18} />
-          Giao dịch xe thông thường
+          <MdStorefront size={18} /> Giao dịch xe thông thường
         </button>
         <button
           onClick={() => setTransactionType("event")}
@@ -441,8 +449,7 @@ const TransactionManagementTab = () => {
               : "bg-orange-50 text-orange-400 hover:bg-orange-100 hover:text-orange-600"
           }`}
         >
-          <MdEventAvailable size={18} />
-          Giao dịch xe sự kiện
+          <MdEventAvailable size={18} /> Giao dịch xe sự kiện
         </button>
       </div>
 
@@ -541,7 +548,9 @@ const TransactionManagementTab = () => {
                       {renderStatusBadge(t.status)}
 
                       <div className="flex items-center gap-2">
+                        {/* ẨN NÚT HỦY ĐỐI VỚI XE SỰ KIỆN */}
                         {t.userRole === "buyer" &&
+                          !t.isEventBike &&
                           ["Deposited", "Pending", "Paid"].includes(
                             t.status,
                           ) && (
@@ -554,7 +563,9 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
+                        {/* ẨN NÚT YÊU CẦU HỦY ĐỐI VỚI XE SỰ KIỆN */}
                         {t.userRole === "seller" &&
+                          !t.isEventBike &&
                           [
                             "Deposited",
                             "Pending",
@@ -572,16 +583,30 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
+                        {/* NÚT THANH TOÁN CUỐI SAU KHI KIỂM ĐỊNH PASS */}
                         {t.status === "Waiting_Payment" &&
                           t.userRole === "buyer" && (
                             <button
                               disabled={isProcessing}
-                              onClick={() => handleContinuePayment(t)}
+                              onClick={() =>
+                                handleFinalPayment(t.reservationId)
+                              }
                               className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
                             >
-                              <MdPayment size={16} /> Thanh toán ngay
+                              <MdPayment size={16} /> Thanh toán giao dịch
                             </button>
                           )}
+
+                        {/* NÚT THANH TOÁN LẠI CỌC NẾU CẦN */}
+                        {t.status === "Pending" && t.userRole === "buyer" && (
+                          <button
+                            disabled={isProcessing}
+                            onClick={() => handleContinuePayment(t)}
+                            className="px-5 py-2 bg-zinc-900 hover:bg-orange-600 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                          >
+                            <MdPayment size={16} /> Thanh toán cọc
+                          </button>
+                        )}
 
                         {t.status === "Inspection_Failed" && (
                           <button
@@ -636,7 +661,6 @@ const TransactionManagementTab = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 hover:underline truncate"
-                            title="Xem trên Google Maps"
                           >
                             {t.meetingLocation}
                           </a>
@@ -657,7 +681,6 @@ const TransactionManagementTab = () => {
                           <a
                             href={`tel:${t.inspectorPhone}`}
                             className="text-blue-600 hover:text-blue-800 ml-auto"
-                            title="Gọi Inspector"
                           >
                             <MdPhone size={16} />
                           </a>
@@ -667,10 +690,12 @@ const TransactionManagementTab = () => {
                   )
                 )}
 
+                {/* Panel báo cáo kiểm định */}
                 {["Waiting_Payment", "Inspection_Failed"].includes(
                   t.status,
                 ) && <InspectionReportPanel reservationId={t.reservationId} />}
 
+                {/* Banners */}
                 {t.status === "Waiting_Payment" && (
                   <div className="border-t border-emerald-100 bg-emerald-50/60 p-3 text-sm text-emerald-800 flex items-center gap-2.5">
                     <MdCheckCircle
@@ -680,7 +705,7 @@ const TransactionManagementTab = () => {
                     {t.userRole === "buyer" ? (
                       <span>
                         Xe đã <strong>đạt kiểm định</strong>. Vui lòng thanh
-                        toán để hoàn tất giao dịch.
+                        toán phần tiền còn lại để hoàn tất giao dịch.
                       </span>
                     ) : (
                       <span>
@@ -712,28 +737,6 @@ const TransactionManagementTab = () => {
                       Vui lòng đến sự kiện để kiểm tra xe và hoàn tất thủ tục
                       giao dịch.
                     </span>
-                  </div>
-                )}
-                {t.status === "Paid" && t.userRole === "seller" && (
-                  <div className="border-t border-gray-50 bg-green-50/50 p-3 text-sm text-green-700 flex items-center gap-2.5">
-                    <MdCheckCircle size={18} className="text-green-500" />
-                    <span>
-                      Người mua đã đặt cọc thành công. Admin sẽ sớm liên hệ.
-                    </span>
-                  </div>
-                )}
-                {t.status === "Pending" && t.userRole === "seller" && (
-                  <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
-                    <MdAdminPanelSettings size={18} className="text-blue-500" />
-                    <span>
-                      Người mua đã tạo yêu cầu đặt cọc. Chờ Admin xử lý.
-                    </span>
-                  </div>
-                )}
-                {t.status === "Pending_Cancel" && (
-                  <div className="border-t border-red-50 bg-red-50/50 p-3 text-sm text-red-700 flex items-center gap-2.5">
-                    <MdWarning size={18} className="text-red-500" />
-                    <span>Giao dịch đang chờ Admin duyệt yêu cầu hủy.</span>
                   </div>
                 )}
               </div>
@@ -866,11 +869,10 @@ const TransactionManagementTab = () => {
           setDetailedBikeInfo(null);
         }}
         title=""
-        footer={null} // Tắt footer để dùng custom button bên trong
+        footer={null}
       >
         {viewDetailTarget && (
           <div className="relative -mx-6 -mt-6 rounded-t-2xl overflow-hidden">
-            {/* Hero Image */}
             <div className="relative h-64 md:h-80 w-full bg-zinc-900 group">
               <img
                 src={
@@ -908,7 +910,6 @@ const TransactionManagementTab = () => {
               </div>
             </div>
 
-            {/* Detail Content */}
             <div className="p-6 max-h-[50vh] overflow-y-auto custom-scrollbar bg-white">
               {loadingDetail ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -919,7 +920,6 @@ const TransactionManagementTab = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Grid 4 cục */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                       <p className="text-xs text-gray-400 font-medium flex items-center gap-1 mb-1">
@@ -959,7 +959,6 @@ const TransactionManagementTab = () => {
                     </div>
                   </div>
 
-                  {/* Chi tiết thêm về Bicycle nếu có */}
                   {(detailedBikeInfo?.bicycle ||
                     detailedBikeInfo?.frameSize) && (
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 border-t border-gray-100 pt-4">
@@ -998,7 +997,6 @@ const TransactionManagementTab = () => {
                     </div>
                   )}
 
-                  {/* Mô tả */}
                   <div>
                     <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
                       <MdInfoOutline className="text-orange-500" /> Mô tả chi

@@ -124,14 +124,11 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <InspectorHomePage /> },
           { path: "tasks", element: <InspectorTaskPage /> },
-          { path: "tasks/:id", element: <InspectorTaskPage /> },
+          { path: "tasks/:id", element: <InspectorTaskDetailPage /> },
           { path: "create-report", element: <CreateReportPage /> },
           { path: "history", element: <InspectorTaskPage /> },
           { path: "profile", element: <InspectorProfilePage /> },
-          {
-            path: "tasks/:id",
-            element: <InspectorTaskDetailPage />,
-          },
+
         ],
       },
     ],
