@@ -25,6 +25,13 @@ export const reservationService = {
     return response.data;
   },
 
+  getMyReservationsWithEventBicycle: async () => {
+    const response = await api.get(
+      "/reservations/eventBicycle/my-reservations",
+    );
+    return response.data;
+  },
+
   updateReservationStatus: async (reservationId, statusData) => {
     const response = await api.put(
       `/reservations/${reservationId}/status`,
