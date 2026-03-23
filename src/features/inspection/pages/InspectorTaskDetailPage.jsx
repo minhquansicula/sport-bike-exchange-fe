@@ -22,6 +22,47 @@ const InspectorTaskDetailPage = () => {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const getFirstAvailableValue = (values) => {
+    for (const value of values) {
+      if (typeof value === "string" && value.trim()) return value.trim();
+      if (typeof value === "number") return String(value);
+    }
+    return "";
+  };
+
+  const getPartyInfo = (taskData, role) => {
+    const party = taskData?.[role];
+    const isBuyer = role === "buyer";
+
+    const name = getFirstAvailableValue([
+      typeof party === "string" ? party : "",
+      party?.fullName,
+      party?.name,
+      party?.username,
+      party?.buyerName,
+      party?.sellerName,
+      taskData?.[`${role}Name`],
+      taskData?.[`${role}FullName`],
+      isBuyer ? taskData?.buyerName : taskData?.sellerName,
+      isBuyer ? taskData?.buyerFullName : taskData?.sellerFullName,
+    ]);
+
+    const phone = getFirstAvailableValue([
+      party?.phone,
+      party?.phoneNumber,
+      party?.phoneNum,
+      party?.mobile,
+      taskData?.[`${role}Phone`],
+      taskData?.[`${role}PhoneNumber`],
+      taskData?.[`${role}PhoneNum`],
+      isBuyer ? taskData?.buyerPhone : taskData?.sellerPhone,
+      isBuyer ? taskData?.buyerPhoneNumber : taskData?.sellerPhoneNumber,
+      isBuyer ? taskData?.buyerPhoneNum : taskData?.sellerPhoneNum,
+    ]);
+
+    return { name, phone };
+  };
+
   useEffect(() => {
     const fetchTask = async () => {
       try {
@@ -49,6 +90,9 @@ const InspectorTaskDetailPage = () => {
 
   if (!task) return null;
 
+  const buyer = getPartyInfo(task, "buyer");
+  const seller = getPartyInfo(task, "seller");
+  
   return (
     <div className="max-w-4xl mx-auto pb-10">
       {/* Header */}
@@ -104,13 +148,17 @@ const InspectorTaskDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-xs">Người mua</p>
-                  <p className="font-medium">{task.buyer?.fullName || task.buyer?.name}</p>
-                  <a
-                    href={`tel:${task.buyer?.phone}`}
-                    className="text-xs text-blue-600 flex items-center gap-1 mt-1"
-                  >
-                    <MdPhone size={14} /> {task.buyer?.phone}
-                  </a>
+                  <p className="font-medium">{buyer.name || "Đang cập nhật"}</p>
+                  {buyer.phone ? (
+                    <a
+                      href={`tel:${buyer.phone}`}
+                      className="text-xs text-blue-600 flex items-center gap-1 mt-1"
+                    >
+                      <MdPhone size={14} /> {buyer.phone}
+                    </a>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-1">Chưa có số điện thoại</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -119,13 +167,17 @@ const InspectorTaskDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-xs">Người bán</p>
-                  <p className="font-medium">{task.seller?.fullName || task.seller?.name}</p>
-                  <a
-                    href={`tel:${task.seller?.phone}`}
-                    className="text-xs text-blue-600 flex items-center gap-1 mt-1"
-                  >
-                    <MdPhone size={14} /> {task.seller?.phone}
-                  </a>
+                  <p className="font-medium">{seller.name || "Đang cập nhật"}</p>
+                  {seller.phone ? (
+                    <a
+                      href={`tel:${seller.phone}`}
+                      className="text-xs text-blue-600 flex items-center gap-1 mt-1"
+                    >
+                      <MdPhone size={14} /> {seller.phone}
+                    </a>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-1">Chưa có số điện thoại</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-2">
