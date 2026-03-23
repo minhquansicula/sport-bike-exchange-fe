@@ -94,4 +94,12 @@ export const reservationService = {
     );
     return response.data;
   },
+
+  // Admin chuyển tiền cho seller sau khi buyer hoàn tất thanh toán
+  payoutToSeller: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/${reservationId}/payout-seller`,
+    );
+    return response.data;
+  },
 };

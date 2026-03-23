@@ -362,9 +362,9 @@ const CreateReportPage = () => {
                 <span className="text-gray-500">Mã GD:</span>{" "}
                 <span className="font-semibold">#{task?.id || taskId}</span>
                 <span className="text-gray-500">Người bán:</span>{" "}
-                <span className="font-medium">{task?.seller?.fullName || task?.seller?.name || "—"}</span>
+                <span className="font-medium">{task?.sellerName || task?.seller?.fullName || task?.seller?.name || "—"}</span>
                 <span className="text-gray-500">Người mua:</span>{" "}
-                <span className="font-medium">{task?.buyer?.fullName || task?.buyer?.name || "—"}</span>
+                <span className="font-medium">{task?.buyerName || task?.buyer?.fullName || task?.buyer?.name || "—"}</span>
                 {task?.price && (
                   <>
                     <span className="text-gray-500">Giá trị:</span>{" "}
@@ -401,13 +401,13 @@ const CreateReportPage = () => {
                 className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <img
-                src={`https://i.pravatar.cc/150?u=${task?.buyer?.buyerName || task?.buyer?.buyerName || "buyer"}`}
+                src={task?.buyerAvatar || `https://i.pravatar.cc/150?u=${task?.buyerName || task?.buyer?.fullName || "buyer"}`}
                 alt="Buyer"
                 className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Người mua</p>
-                <p className="font-bold text-gray-900">{task?.buyer?.fullName || task?.buyer?.name || "Người mua"}</p>
+                <p className="font-bold text-gray-900">{task?.buyerName || task?.buyer?.fullName || task?.buyer?.name || "Người mua"}</p>
               </div>
               {attendance.buyerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>
@@ -425,13 +425,13 @@ const CreateReportPage = () => {
                 className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <img
-                src={`https://i.pravatar.cc/150?u=${task?.seller?.fullName || task?.seller?.name || "seller"}`}
+                src={task?.sellerAvatar || `https://i.pravatar.cc/150?u=${task?.sellerName || task?.seller?.fullName || "seller"}`}
                 alt="Seller"
                 className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
               />
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Người bán</p>
-                <p className="font-bold text-gray-900">{task?.seller?.fullName || task?.seller?.name || "Người bán"}</p>
+                <p className="font-bold text-gray-900">{task?.sellerName || task?.seller?.fullName || task?.seller?.name || "Người bán"}</p>
               </div>
               {attendance.sellerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>

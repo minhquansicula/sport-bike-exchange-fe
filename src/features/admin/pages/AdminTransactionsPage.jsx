@@ -16,6 +16,8 @@ import {
   MdLocationOn,
   MdPhone,
   MdInfoOutline,
+  MdAccountBalanceWallet,
+  MdPayment,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 import { reservationService } from "../../../services/reservationService";
@@ -41,6 +43,7 @@ const AdminTransactionsPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingCancel, setIsProcessingCancel] = useState(false);
+  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   const [showPostModal, setShowPostModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
@@ -181,6 +184,29 @@ const AdminTransactionsPage = () => {
     }
   };
 
+  const handlePayoutToSeller = async (reservationId) => {
+    if (
+      !window.confirm(
+        "Bạn có chắc chắn muốn CHUYỂN TIỀN cho người bán của giao dịch này? Hành động này không thể hoàn tác.",
+      )
+    )
+      return;
+    setIsProcessingPayout(true);
+    try {
+      const res = await reservationService.payoutToSeller(reservationId);
+      toast.success(
+        res?.message || "Đã chuyển tiền cho người bán thành công!",
+      );
+      fetchReservations();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Lỗi khi chuyển tiền cho người bán!",
+      );
+    } finally {
+      setIsProcessingPayout(false);
+    }
+  };
+
   const handleViewPost = async (listingId) => {
     setLoadingPost(true);
     try {
@@ -214,6 +240,7 @@ const AdminTransactionsPage = () => {
       Waiting_Payment: 4,
       Completed: 5,
       Cancelled: 6,
+      Paid_Out: 7,
     };
 
     const priorityA = statusPriority[a.status] || 99;
@@ -267,6 +294,14 @@ const AdminTransactionsPage = () => {
           text: "text-green-800",
           border: "border-green-200",
         };
+      case "Paid_Out":
+        return {
+          label: "Đã trả seller",
+          icon: MdAccountBalanceWallet,
+          bg: "bg-purple-100",
+          text: "text-purple-800",
+          border: "border-purple-200",
+        };
       case "Cancelled":
         return {
           label: "Đã hủy",
@@ -291,6 +326,7 @@ const AdminTransactionsPage = () => {
     deposited: reservations.filter((t) => t.status === "Deposited").length,
     scheduled: reservations.filter((t) => t.status === "Scheduled").length,
     completed: reservations.filter((t) => t.status === "Completed").length,
+    paidOut: reservations.filter((t) => t.status === "Paid_Out").length,
   };
 
   return (
@@ -351,6 +387,17 @@ const AdminTransactionsPage = () => {
               {stats.completed}
             </p>
           </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+                <MdAccountBalanceWallet size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500">Đã trả seller</p>
+            </div>
+            <p className="text-2xl font-black text-gray-900">
+              {stats.paidOut}
+            </p>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex flex-col md:flex-row gap-4">
@@ -383,6 +430,7 @@ const AdminTransactionsPage = () => {
               <option value="Scheduled">Đã xếp lịch</option>
               <option value="Pending_Cancel">Yêu cầu hủy</option>
               <option value="Completed">Hoàn thành</option>
+              <option value="Paid_Out">Đã trả seller</option>
               <option value="Cancelled">Đã hủy</option>
             </select>
           </div>
@@ -548,6 +596,16 @@ const AdminTransactionsPage = () => {
                           className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors"
                         >
                           <MdEdit size={16} /> Đổi lịch
+                        </button>
+                      )}
+                      {r.status === "Completed" && (
+                        <button
+                          disabled={isProcessingPayout}
+                          onClick={() => handlePayoutToSeller(r.reservationId)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                          <MdAccountBalanceWallet size={16} />
+                          {isProcessingPayout ? "Đang xử lý..." : "Trả tiền cho Seller"}
                         </button>
                       )}
                     </div>
