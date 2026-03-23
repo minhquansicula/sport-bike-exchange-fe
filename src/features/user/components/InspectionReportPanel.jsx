@@ -148,6 +148,24 @@ const InspectionReportPanel = ({ reservationId }) => {
             </div>
           )}
 
+          {/* Nguoi mua, nguoi ban */}
+          {(report.buyerName || report.sellerName) && (
+            <div className="grid grid-cols-2 gap-4 text-sm mt-3 bg-white rounded-lg border border-gray-100 p-3">
+              {report.buyerName && (
+                <div>
+                  <span className="text-gray-500 font-medium text-xs block mb-0.5">Người mua:</span>
+                  <span className="font-semibold text-gray-800">{report.buyerName}</span>
+                </div>
+              )}
+              {report.sellerName && (
+                <div>
+                  <span className="text-gray-500 font-medium text-xs block mb-0.5">Người bán:</span>
+                  <span className="font-semibold text-gray-800">{report.sellerName}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Reason / Note */}
           {report.reason && (
             <div className="text-sm text-gray-600 bg-white rounded-lg border border-gray-100 px-4 py-2.5">

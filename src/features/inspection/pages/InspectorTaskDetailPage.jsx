@@ -21,6 +21,7 @@ const InspectorTaskDetailPage = () => {
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getFirstAvailableValue = (values) => {
     for (const value of values) {
@@ -79,6 +80,35 @@ const InspectorTaskDetailPage = () => {
     };
     fetchTask();
   }, [id, navigate]);
+
+  const handleNoShow = async (type) => { // type: 'SELLER' or 'BUYER'
+    const isSeller = type === 'SELLER';
+    const confirmMsg = isSeller 
+      ? "Xác nhận báo cáo: NGƯỜI BÁN KHÔNG ĐẾN? Giao dịch sẽ bị hủy và xe sẽ bị khóa."
+      : "Xác nhận báo cáo: NGƯỜI MUA KHÔNG ĐẾN? Giao dịch sẽ bị hủy và xe sẽ trở lại khả dụng.";
+      
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        result: isSeller ? "SELLER_NO_SHOW" : "BUYER_NO_SHOW",
+        reason: isSeller ? "Người bán không đến" : "Người mua không đến",
+        note: "",
+        checklistItems: [],
+      };
+      await inspectorService.createInspectionReport(id, payload);
+      toast.success(isSeller ? "Đã báo cáo người bán không đến thành công!" : "Đã báo cáo người mua không đến thành công!");
+      // Reload task info
+      const res = await inspectorService.getTaskById(id);
+      setTask(res.result);
+    } catch (error) {
+      console.error("Lỗi khi gửi báo cáo vắng mặt:", error);
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi báo cáo vắng mặt.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -220,22 +250,38 @@ const InspectorTaskDetailPage = () => {
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
         {["Scheduled", "pending"].includes(task.status) ? (
-          <Link
-            to={`/inspector/create-report?taskId=${task.id}`}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-center transition-colors shadow-lg"
-          >
-            Bắt đầu kiểm định
-          </Link>
-        ) : ["Completed", "completed", "Waiting_Payment", "Inspection_Failed"].includes(task.status) ? (
-          <div className="flex-1 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold text-center border border-gray-200">
-            Nhiệm vụ đã hoàn thành
+          <>
+            <Link
+              to={`/inspector/create-report?taskId=${task.id}`}
+              className="flex-1 min-w-[200px] bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-center transition-colors shadow-lg"
+            >
+              Bắt đầu kiểm định
+            </Link>
+            <button
+              onClick={() => handleNoShow('BUYER')}
+              disabled={isSubmitting}
+              className="flex-1 min-w-[200px] bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-4 rounded-xl font-bold text-center transition-colors"
+            >
+              {isSubmitting ? "Đang xử lý..." : "Người mua không đến"}
+            </button>
+            <button
+              onClick={() => handleNoShow('SELLER')}
+              disabled={isSubmitting}
+              className="flex-1 min-w-[200px] bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 py-4 rounded-xl font-bold text-center transition-colors"
+            >
+              {isSubmitting ? "Đang xử lý..." : "Người bán không đến"}
+            </button>
+          </>
+        ) : ["Completed", "completed", "Waiting_Payment", "Inspection_Failed", "Cancelled"].includes(task.status) ? (
+          <div className="flex-1 min-w-[200px] bg-gray-100 text-gray-400 py-4 rounded-xl font-bold text-center border border-gray-200">
+            Nhiệm vụ ở trạng thái: {task.status}
           </div>
         ) : null}
         <button
           onClick={() => navigate(-1)}
-          className="px-6 py-4 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-6 min-w-[120px] py-4 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
         >
           Quay lại
         </button>
