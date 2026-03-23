@@ -92,7 +92,14 @@ const InspectorTaskDetailPage = () => {
 
   const buyer = getPartyInfo(task, "buyer");
   const seller = getPartyInfo(task, "seller");
-  
+  const parsedScheduledTime = task?.scheduledTime
+    ? new Date(task.scheduledTime)
+    : null;
+  const scheduledTimeText =
+    parsedScheduledTime && !Number.isNaN(parsedScheduledTime.getTime())
+      ? parsedScheduledTime.toLocaleString("vi-VN")
+      : task?.scheduledTime || "Đang cập nhật";
+
   return (
     <div className="max-w-4xl mx-auto pb-10">
       {/* Header */}
@@ -195,7 +202,7 @@ const InspectorTaskDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-xs">Thời gian</p>
-                  <p className="font-medium">{task.scheduledTime}</p>
+                  <p className="font-medium">{scheduledTimeText}</p>
                 </div>
               </div>
             </div>
@@ -238,3 +245,5 @@ const InspectorTaskDetailPage = () => {
 };
 
 export default InspectorTaskDetailPage;
+
+
