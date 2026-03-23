@@ -22,6 +22,47 @@ const InspectorTaskPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
+  const getFirstAvailableValue = (values) => {
+    for (const value of values) {
+      if (typeof value === "string" && value.trim()) return value.trim();
+      if (typeof value === "number") return String(value);
+    }
+    return "";
+  };
+
+  const getPartyInfo = (task, role) => {
+    const party = task?.[role];
+    const isBuyer = role === "buyer";
+
+    const name = getFirstAvailableValue([
+      typeof party === "string" ? party : "",
+      party?.fullName,
+      party?.name,
+      party?.username,
+      party?.buyerName,
+      party?.sellerName,
+      task?.[`${role}Name`],
+      task?.[`${role}FullName`],
+      isBuyer ? task?.buyerName : task?.sellerName,
+      isBuyer ? task?.buyerFullName : task?.sellerFullName,
+    ]);
+
+    const phone = getFirstAvailableValue([
+      party?.phone,
+      party?.phoneNumber,
+      party?.phoneNum,
+      party?.mobile,
+      task?.[`${role}Phone`],
+      task?.[`${role}PhoneNumber`],
+      task?.[`${role}PhoneNum`],
+      isBuyer ? task?.buyerPhone : task?.sellerPhone,
+      isBuyer ? task?.buyerPhoneNumber : task?.sellerPhoneNumber,
+      isBuyer ? task?.buyerPhoneNum : task?.sellerPhoneNum,
+    ]);
+
+    return { name, phone };
+  };
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -39,10 +80,13 @@ const InspectorTaskPage = () => {
 
   // Lọc tasks
   const filteredTasks = tasks.filter((task) => {
+    const buyer = getPartyInfo(task, "buyer");
+    const seller = getPartyInfo(task, "seller");
+
     const matchSearch =
       task.bikeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.buyer?.fullName || task.buyer?.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.seller?.fullName || task.seller?.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      buyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      seller.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.id.toString().includes(searchTerm);
     const matchStatus = filterStatus === "all" || task.status === filterStatus;
     return matchSearch && matchStatus;
@@ -161,99 +205,112 @@ const InspectorTaskPage = () => {
 
       {/* Tasks List */}
       <div className="space-y-4">
-        {filteredTasks.map((task) => (
-          <div
-            key={task.id}
-            className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg hover:border-emerald-200 transition-all duration-300"
-          >
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Bike Image */}
-              <img
-                src={task.bikeImage || "https://via.placeholder.com/150"}
-                alt={task.bikeName}
-                className="w-full md:w-32 h-32 rounded-lg object-cover border border-gray-200"
-              />
+        {filteredTasks.map((task) => {
+          const buyer = getPartyInfo(task, "buyer");
+          const seller = getPartyInfo(task, "seller");
 
-              {/* Info */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-lg">
-                      {task.bikeName}
-                    </h3>
-                    <p className="text-emerald-600 font-semibold">
-                      {formatCurrency(task.price)}
+          return (
+            <div
+              key={task.id}
+              className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg hover:border-emerald-200 transition-all duration-300"
+            >
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Bike Image */}
+                <img
+                  src={task.bikeImage || "https://via.placeholder.com/150"}
+                  alt={task.bikeName}
+                  className="w-full md:w-32 h-32 rounded-lg object-cover border border-gray-200"
+                />
+
+                {/* Info */}
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-lg">
+                        {task.bikeName}
+                      </h3>
+                      <p className="text-emerald-600 font-semibold">
+                        {formatCurrency(task.price)}
+                      </p>
+                    </div>
+                    {getStatusBadge(task.status)}
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-3 text-sm text-gray-600">
+                    <div className="flex items-start gap-2">
+                      <MdPerson className="text-gray-400 mt-0.5 shrink-0" />
+                      <div>
+                        <strong>Người mua:</strong> {buyer.name || "Đang cập nhật"}
+                        <br />
+                        {buyer.phone ? (
+                          <a
+                            href={`tel:${buyer.phone}`}
+                            className="text-xs text-blue-600 flex items-center gap-1"
+                          >
+                            <MdPhone size={12} /> {buyer.phone}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">Chưa có số điện thoại</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MdPerson className="text-gray-400 mt-0.5 shrink-0" />
+                      <div>
+                        <strong>Người bán:</strong> {seller.name || "Đang cập nhật"}
+                        <br />
+                        {seller.phone ? (
+                          <a
+                            href={`tel:${seller.phone}`}
+                            className="text-xs text-blue-600 flex items-center gap-1"
+                          >
+                            <MdPhone size={12} /> {seller.phone}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">Chưa có số điện thoại</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MdLocationOn className="text-gray-400 shrink-0" />
+                      <span>{task.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MdAccessTime className="text-gray-400 shrink-0" />
+                      <span>
+                        {new Date(task.scheduledTime).toLocaleString("vi-VN")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {task.cancelReason && (
+                    <p className="mt-2 text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                      <MdInfoOutline size={16} /> Lý do hủy: {task.cancelReason}
                     </p>
-                  </div>
-                  {getStatusBadge(task.status)}
+                  )}
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-3 text-sm text-gray-600">
-                  <div className="flex items-start gap-2">
-                    <MdPerson className="text-gray-400 mt-0.5 shrink-0" />
-                    <div>
-                      <strong>Người mua:</strong> {task.buyer?.fullName || task.buyer?.name}
-                      <br />
-                      <a
-                        href={`tel:${task.buyer?.phone}`}
-                        className="text-xs text-blue-600 flex items-center gap-1"
-                      >
-                        <MdPhone size={12} /> {task.buyer?.phone}
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MdPerson className="text-gray-400 mt-0.5 shrink-0" />
-                    <div>
-                      <strong>Người bán:</strong> {task.seller?.fullName || task.seller?.name}
-                      <br />
-                      <a
-                        href={`tel:${task.seller?.phone}`}
-                        className="text-xs text-blue-600 flex items-center gap-1"
-                      >
-                        <MdPhone size={12} /> {task.seller?.phone}
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MdLocationOn className="text-gray-400 shrink-0" />
-                    <span>{task.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MdAccessTime className="text-gray-400 shrink-0" />
-                    <span>
-                      {new Date(task.scheduledTime).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                </div>
-
-                {task.cancelReason && (
-                  <p className="mt-2 text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-lg flex items-center gap-1">
-                    <MdInfoOutline size={16} /> Lý do hủy: {task.cancelReason}
-                  </p>
-                )}
-              </div>
-
-              {/* Action */}
-              <div className="flex md:flex-col gap-2 md:justify-center">
-                {["Scheduled", "pending"].includes(task.status) && (
+                {/* Action */}
+                <div className="flex md:flex-col gap-2 md:justify-center">
+                  {["Scheduled", "pending"].includes(task.status) && (
+                    <Link
+                      to={`/inspector/create-report?taskId=${task.id}`}
+                      className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold text-center hover:bg-emerald-700 transition-colors shadow-sm"
+                    >
+                      Bắt đầu Kiểm định
+                    </Link>
+                  )}
                   <Link
-                    to={`/inspector/create-report?taskId=${task.id}`}
-                    className="flex-1 md:flex-none px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold text-center hover:bg-emerald-700 transition-colors shadow-sm"
+                    to={`/inspector/tasks/${task.id}`}
+                    className="flex-1 md:flex-none px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-center"
                   >
-                    Bắt đầu Kiểm định
+                    Chi tiết
                   </Link>
-                )}
-                <Link
-                  to={`/inspector/tasks/${task.id}`}
-                  className="flex-1 md:flex-none px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors text-center"
-                >
-                  Chi tiết
-                </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Empty State */}
