@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { inspectorService } from "../../../services/inspectorService";
+import { getPartyInfo } from "../../../utils/getPartyInfo";
 import { toast } from "react-hot-toast";
+import { useInspectorTasks } from "../hooks/useInspectorTasks";
 import {
   MdSearch,
   MdFilterList,
@@ -17,66 +18,15 @@ import {
 import formatCurrency from "../../../utils/formatCurrency";
 
 const InspectorTaskPage = () => {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { tasks, loading, error } = useInspectorTasks();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const getFirstAvailableValue = (values) => {
-    for (const value of values) {
-      if (typeof value === "string" && value.trim()) return value.trim();
-      if (typeof value === "number") return String(value);
-    }
-    return "";
-  };
-
-  const getPartyInfo = (task, role) => {
-    const party = task?.[role];
-    const isBuyer = role === "buyer";
-
-    const name = getFirstAvailableValue([
-      typeof party === "string" ? party : "",
-      party?.fullName,
-      party?.name,
-      party?.username,
-      party?.buyerName,
-      party?.sellerName,
-      task?.[`${role}Name`],
-      task?.[`${role}FullName`],
-      isBuyer ? task?.buyerName : task?.sellerName,
-      isBuyer ? task?.buyerFullName : task?.sellerFullName,
-    ]);
-
-    const phone = getFirstAvailableValue([
-      party?.phone,
-      party?.phoneNumber,
-      party?.phoneNum,
-      party?.mobile,
-      task?.[`${role}Phone`],
-      task?.[`${role}PhoneNumber`],
-      task?.[`${role}PhoneNum`],
-      isBuyer ? task?.buyerPhone : task?.sellerPhone,
-      isBuyer ? task?.buyerPhoneNumber : task?.sellerPhoneNumber,
-      isBuyer ? task?.buyerPhoneNum : task?.sellerPhoneNum,
-    ]);
-
-    return { name, phone };
-  };
-
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        const res = await inspectorService.getTasks();
-        setTasks(res.result || []);
-      } catch (error) {
-        toast.error("Không thể tải danh sách nhiệm vụ");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTasks();
-  }, []);
+    if (error) {
+      toast.error("Không thể tải danh sách nhiệm vụ");
+    }
+  }, [error]);
 
   // Lọc tasks
   const filteredTasks = tasks.filter((task) => {
