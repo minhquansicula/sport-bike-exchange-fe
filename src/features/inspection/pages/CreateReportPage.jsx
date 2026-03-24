@@ -142,6 +142,7 @@ const CreateReportPage = () => {
   };
 
   const isAttendanceComplete = attendance.buyerPresent && attendance.sellerPresent;
+  const isSomeonePresent = attendance.buyerPresent || attendance.sellerPresent;
 
   // --- Image upload ---
   const handleImageUpload = async (e) => {
@@ -191,8 +192,8 @@ const CreateReportPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isAttendanceComplete) {
-      toast.error("Vui lòng xác nhận điểm danh 2 bên trước khi lưu báo cáo!");
+    if (!isSomeonePresent) {
+      toast.error("Vui lòng xác nhận sự có mặt của ít nhất một bên!");
       return;
     }
     if (!taskId) {
@@ -224,6 +225,8 @@ const CreateReportPage = () => {
         reason,
         note: formData.notes,
         checklistItems: checklist,
+        buyerCheckin: attendance.buyerPresent,
+        sellerCheckin: attendance.sellerPresent,
       };
 
       await inspectorService.createInspectionReport(taskId, payload);
@@ -436,10 +439,16 @@ const CreateReportPage = () => {
               {attendance.sellerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>
           </div>
-          {!isAttendanceComplete && (
-            <p className="mt-4 text-sm text-yellow-600 flex items-center gap-2 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+          {!isAttendanceComplete && isSomeonePresent && (
+            <p className="mt-4 text-sm text-orange-600 flex items-center gap-2 bg-orange-50 p-3 rounded-lg border border-orange-100">
               <MdWarning size={18} />
-              Vui lòng điểm danh đủ cả hai bên trước khi ban hành báo cáo kiểm định!
+              Lưu ý: Báo cáo vắng mặt 1 bên sẽ hủy giao dịch và tự động xử lý tiền cọc theo quy định!
+            </p>
+          )}
+          {!isSomeonePresent && (
+            <p className="mt-4 text-sm text-red-600 flex items-center gap-2 bg-red-50 p-3 rounded-lg border border-red-100">
+              <MdWarning size={18} />
+              Vui lòng xác nhận sự có mặt của ít nhất một bên để tạo báo cáo!
             </p>
           )}
         </div>
@@ -656,8 +665,8 @@ const CreateReportPage = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !isAttendanceComplete}
-              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${isAttendanceComplete && !isSubmitting
+              disabled={isSubmitting || !isSomeonePresent}
+              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${isSomeonePresent && !isSubmitting
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-emerald-300 active:scale-95"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}

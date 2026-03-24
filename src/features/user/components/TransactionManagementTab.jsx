@@ -693,7 +693,7 @@ const TransactionManagementTab = () => {
                 {/* Panel báo cáo kiểm định */}
                 {["Waiting_Payment", "Inspection_Failed"].includes(
                   t.status,
-                ) && <InspectionReportPanel reservationId={t.reservationId} />}
+                ) && <InspectionReportPanel reservationId={t.reservationId} currentUserRole={t.userRole} />}
 
                 {/* Banners */}
                 {t.status === "Waiting_Payment" && (
