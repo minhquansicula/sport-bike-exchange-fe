@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import { inspectorService } from "../../../services/inspectorService";
+import { useInspectorTasks } from "../hooks/useInspectorTasks";
 import {
   MdHome,
   MdAssignment,
@@ -17,19 +17,9 @@ import {
 const InspectorSidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [pendingCount, setPendingCount] = useState(0);
-
-  useEffect(() => {
-    const fetchPendingCount = async () => {
-      try {
-        const res = await inspectorService.getTasks({ status: "pending" });
-        setPendingCount(res.result?.length || 0);
-      } catch (error) {
-        console.error("Không thể lấy số lượng pending");
-      }
-    };
-    fetchPendingCount();
-  }, []);
+  const pendingParams = useMemo(() => ({ status: "pending" }), []);
+  const { tasks: pendingTasks } = useInspectorTasks(pendingParams);
+  const pendingCount = pendingTasks.length;
 
   const menuSections = [
     {

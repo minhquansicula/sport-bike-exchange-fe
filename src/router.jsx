@@ -49,6 +49,7 @@ import AdminPostDetailPage from "./features/admin/pages/AdminPostDetailPage";
 import AdminPricingPage from "./features/admin/pages/AdminPricingPage";
 import AdminLocationsPage from "./features/admin/pages/AdminLocationsPage";
 import AdminSettingsPage from "./features/admin/pages/AdminSettingsPage";
+import AdminEventTransactionsPage from "./features/admin/pages/AdminEventTransactionsPage"; // Thay đổi đường dẫn cho khớp với cấu trúc thư mục của bạn
 // Đã xóa import AdminEventFormPage
 
 // Các trang Inspector
@@ -57,6 +58,7 @@ import InspectorTaskPage from "./features/inspection/pages/InspectorTaskPage";
 import CreateReportPage from "./features/inspection/pages/CreateReportPage";
 import InspectorProfilePage from "./features/inspection/pages/InspectorProfilePage";
 import InspectorTaskDetailPage from "./features/inspection/pages/InspectorTaskDetailPage";
+import InspectorHistoryPage from "./features/inspection/pages/InspectorHistoryPage";
 
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 
@@ -104,6 +106,10 @@ const router = createBrowserRouter([
           { path: "users", element: <AdminUsersPage /> },
           { path: "transactions", element: <AdminTransactionsPage /> },
           { path: "events", element: <AdminEventsPage /> },
+          {
+            path: "event-transactions",
+            element: <AdminEventTransactionsPage />,
+          },
           // Đã xóa routes "events/create" và "events/:id/edit"
           { path: "event-bicycles", element: <AdminEventBicyclesPage /> },
           { path: "posts", element: <AdminPostsPage /> },
@@ -126,9 +132,8 @@ const router = createBrowserRouter([
           { path: "tasks", element: <InspectorTaskPage /> },
           { path: "tasks/:id", element: <InspectorTaskDetailPage /> },
           { path: "create-report", element: <CreateReportPage /> },
-          { path: "history", element: <InspectorTaskPage /> },
+          { path: "history", element: <InspectorHistoryPage /> },
           { path: "profile", element: <InspectorProfilePage /> },
-
         ],
       },
     ],
