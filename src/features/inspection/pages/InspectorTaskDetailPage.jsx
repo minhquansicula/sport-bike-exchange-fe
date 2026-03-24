@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { inspectorService } from "../../../services/inspectorService";
+import { getPartyInfo } from "../../../utils/getPartyInfo";
 import { toast } from "react-hot-toast";
+import { useInspectorTaskDetail } from "../hooks/useInspectorTaskDetail";
 import {
   MdArrowBack,
   MdLocationOn,
@@ -19,67 +21,16 @@ import InspectionReportPanel from "../../user/components/InspectionReportPanel";
 const InspectorTaskDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { task, loading, error, refetch } = useInspectorTaskDetail(id);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getFirstAvailableValue = (values) => {
-    for (const value of values) {
-      if (typeof value === "string" && value.trim()) return value.trim();
-      if (typeof value === "number") return String(value);
-    }
-    return "";
-  };
-
-  const getPartyInfo = (taskData, role) => {
-    const party = taskData?.[role];
-    const isBuyer = role === "buyer";
-
-    const name = getFirstAvailableValue([
-      typeof party === "string" ? party : "",
-      party?.fullName,
-      party?.name,
-      party?.username,
-      party?.buyerName,
-      party?.sellerName,
-      taskData?.[`${role}Name`],
-      taskData?.[`${role}FullName`],
-      isBuyer ? taskData?.buyerName : taskData?.sellerName,
-      isBuyer ? taskData?.buyerFullName : taskData?.sellerFullName,
-    ]);
-
-    const phone = getFirstAvailableValue([
-      party?.phone,
-      party?.phoneNumber,
-      party?.phoneNum,
-      party?.mobile,
-      taskData?.[`${role}Phone`],
-      taskData?.[`${role}PhoneNumber`],
-      taskData?.[`${role}PhoneNum`],
-      isBuyer ? taskData?.buyerPhone : taskData?.sellerPhone,
-      isBuyer ? taskData?.buyerPhoneNumber : taskData?.sellerPhoneNumber,
-      isBuyer ? taskData?.buyerPhoneNum : taskData?.sellerPhoneNum,
-    ]);
-
-    return { name, phone };
-  };
-
   useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        setLoading(true);
-        const res = await inspectorService.getTaskById(id);
-        setTask(res.result);
-      } catch (error) {
-        console.error("Lỗi tải nhiệm vụ:", error);
-        toast.error("Không thể tải thông tin nhiệm vụ");
-        navigate("/inspector/tasks");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTask();
-  }, [id, navigate]);
+    if (error) {
+      console.error("Lỗi tải nhiệm vụ:", error);
+      toast.error("Không thể tải thông tin nhiệm vụ");
+      navigate("/inspector/tasks");
+    }
+  }, [error, navigate]);
 
   const handleNoShow = async (type) => { // type: 'SELLER' or 'BUYER'
     const isSeller = type === 'SELLER';
@@ -100,8 +51,7 @@ const InspectorTaskDetailPage = () => {
       await inspectorService.createInspectionReport(id, payload);
       toast.success(isSeller ? "Đã báo cáo người bán không đến thành công!" : "Đã báo cáo người mua không đến thành công!");
       // Reload task info
-      const res = await inspectorService.getTaskById(id);
-      setTask(res.result);
+      await refetch();
     } catch (error) {
       console.error("Lỗi khi gửi báo cáo vắng mặt:", error);
       toast.error(error.response?.data?.message || "Có lỗi xảy ra khi báo cáo vắng mặt.");
