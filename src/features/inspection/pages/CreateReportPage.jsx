@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { inspectorService } from "../../../services/inspectorService";
 import { uploadService } from "../../../services/uploadService";
 import { toast } from "react-hot-toast";
+import { useInspectorTaskDetail } from "../hooks/useInspectorTaskDetail";
+import { useInspectorTasks } from "../hooks/useInspectorTasks";
 import {
   MdArrowBack,
   MdSave,
@@ -64,8 +66,23 @@ const CreateReportPage = () => {
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get("taskId");
   const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    task,
+    loading: taskLoading,
+    error: taskError,
+  } = useInspectorTaskDetail(taskId, {
+    enabled: Boolean(taskId),
+  });
+  const {
+    tasks: allTasks,
+    loading: listLoading,
+    error: listError,
+  } = useInspectorTasks({}, { enabled: !taskId });
+  const loading = taskId ? taskLoading : listLoading;
+  const pendingTasks = useMemo(
+    () => allTasks.filter((t) => ["Scheduled", "pending"].includes(t.status)),
+    [allTasks]
+  );
 
   // Danh sách checklist linh kiện
   const [checklist, setChecklist] = useState(
@@ -89,32 +106,13 @@ const CreateReportPage = () => {
 
   const [newIssue, setNewIssue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingTasks, setPendingTasks] = useState([]);
 
-  // Fetch task details or list of pending tasks
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoading(true);
-        if (taskId) {
-          const res = await inspectorService.getTaskById(taskId);
-          setTask(res.result);
-        } else {
-          // Lấy danh sách task chưa kiểm định để chọn
-          const res = await inspectorService.getTasks();
-          const tasks = res.result || [];
-          const pending = tasks.filter(t => ["Scheduled", "pending"].includes(t.status));
-          setPendingTasks(pending);
-        }
-      } catch (error) {
-        console.error("Lỗi tải dữ liệu:", error);
-        toast.error("Không thể tải thông tin");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInitialData();
-  }, [taskId]);
+    if (taskError || listError) {
+      console.error("Lỗi tải dữ liệu:", taskError || listError);
+      toast.error("Không thể tải thông tin");
+    }
+  }, [taskError, listError]);
 
   // Cleanup image URLs khi unmount
   useEffect(() => {
