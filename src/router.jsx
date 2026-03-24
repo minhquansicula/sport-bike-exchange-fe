@@ -49,6 +49,7 @@ import AdminPostDetailPage from "./features/admin/pages/AdminPostDetailPage";
 import AdminPricingPage from "./features/admin/pages/AdminPricingPage";
 import AdminLocationsPage from "./features/admin/pages/AdminLocationsPage";
 import AdminSettingsPage from "./features/admin/pages/AdminSettingsPage";
+import AdminEventTransactionsPage from "./features/admin/pages/AdminEventTransactionsPage"; // Thay đổi đường dẫn cho khớp với cấu trúc thư mục của bạn
 // Đã xóa import AdminEventFormPage
 
 // Các trang Inspector
@@ -104,6 +105,10 @@ const router = createBrowserRouter([
           { path: "users", element: <AdminUsersPage /> },
           { path: "transactions", element: <AdminTransactionsPage /> },
           { path: "events", element: <AdminEventsPage /> },
+          {
+            path: "event-transactions",
+            element: <AdminEventTransactionsPage />,
+          },
           // Đã xóa routes "events/create" và "events/:id/edit"
           { path: "event-bicycles", element: <AdminEventBicyclesPage /> },
           { path: "posts", element: <AdminPostsPage /> },
@@ -128,7 +133,6 @@ const router = createBrowserRouter([
           { path: "create-report", element: <CreateReportPage /> },
           { path: "history", element: <InspectorTaskPage /> },
           { path: "profile", element: <InspectorProfilePage /> },
-
         ],
       },
     ],

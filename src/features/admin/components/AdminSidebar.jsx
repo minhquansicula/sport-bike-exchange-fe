@@ -16,6 +16,7 @@ import {
   MdEvent,
   MdClose,
   MdOutlineDirectionsBike,
+  MdEventAvailable,
 } from "react-icons/md";
 
 const AdminSidebar = ({ isOpen, setIsOpen }) => {
@@ -52,7 +53,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
       title: "Quản lý tin đăng",
       items: [
         {
-          label: "Duyệt tin đăng",
+          label: "Duyệt tin đăng (Sàn)",
           path: "/admin/posts",
           icon: <MdArticle size={20} />,
         },
@@ -62,9 +63,14 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
       title: "Điều phối giao dịch",
       items: [
         {
-          label: "Giao dịch chờ xử lý",
+          label: "Giao dịch xe thường",
           path: "/admin/transactions",
           icon: <MdSwapHoriz size={20} />,
+        },
+        {
+          label: "Giao dịch xe sự kiện",
+          path: "/admin/event-transactions",
+          icon: <MdEventAvailable size={20} />,
         },
       ],
     },
@@ -105,21 +111,21 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
     },
   ];
 
+  // Logic xác định tab đang active (Fix lỗi sáng nhầm tab)
   const isActive = (path) => {
+    // Nếu là trang chủ
     if (path === "/admin") return location.pathname === "/admin";
-    // Check match chính xác đường dẫn dài hơn trước
-    if (
-      location.pathname.startsWith("/admin/event-bicycles") &&
-      path === "/admin/event-bicycles"
-    )
-      return true;
-    if (
-      location.pathname.startsWith("/admin/events") &&
-      path === "/admin/events" &&
-      !location.pathname.startsWith("/admin/event-bicycles")
-    )
-      return true;
 
+    // Xử lý riêng cho /admin/events để không bị nhầm với /admin/event-bicycles hay /admin/event-transactions
+    if (path === "/admin/events") {
+      return (
+        location.pathname.startsWith("/admin/events") &&
+        !location.pathname.startsWith("/admin/event-bicycles") &&
+        !location.pathname.startsWith("/admin/event-transactions")
+      );
+    }
+
+    // Nếu không thuộc các trường hợp đặc biệt trên, dùng startsWith
     return location.pathname.startsWith(path);
   };
 
@@ -143,7 +149,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
           </div>
         </Link>
         <button
-          className="md:hidden text-gray-400 hover:text-white"
+          className="md:hidden text-gray-400 hover:text-white transition-colors"
           onClick={() => setIsOpen(false)}
         >
           <MdClose size={24} />
@@ -182,31 +188,34 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
               {section.title}
             </h3>
             <ul className="space-y-1">
-              {section.items.map((item) => (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                      isActive(item.path)
-                        ? "bg-orange-600 text-white shadow-lg shadow-orange-900/20"
-                        : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
-                    }`}
-                  >
-                    <span
-                      className={
-                        isActive(item.path)
-                          ? "text-white"
-                          : "text-zinc-500 group-hover:text-orange-400 transition-colors"
-                      }
+              {section.items.map((item) => {
+                const active = isActive(item.path);
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                        active
+                          ? "bg-orange-600 text-white shadow-lg shadow-orange-900/20"
+                          : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
+                      }`}
                     >
-                      {item.icon}
-                    </span>
-                    <span className="text-sm font-medium flex-1">
-                      {item.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                      <span
+                        className={
+                          active
+                            ? "text-white"
+                            : "text-zinc-500 group-hover:text-orange-400 transition-colors"
+                        }
+                      >
+                        {item.icon}
+                      </span>
+                      <span className="text-sm font-medium flex-1">
+                        {item.label}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
