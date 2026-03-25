@@ -40,14 +40,6 @@ export const reservationService = {
     return response.data;
   },
 
-  scheduleReservation: async (reservationId, scheduleData) => {
-    const response = await api.put(
-      `/reservations/${reservationId}/schedule`,
-      scheduleData,
-    );
-    return response.data;
-  },
-
   // Hủy đặt cọc
   cancelReservation: async (reservationId) => {
     const response = await api.put(`/reservations/cancel/${reservationId}`);

@@ -50,8 +50,15 @@ const UserProfilePage = () => {
     const handleVNPayReturn = async () => {
       const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
       const depositId = searchParams.get("depositId");
+      const vnp_OrderInfo = searchParams.get("vnp_OrderInfo") || "";
 
       if (!vnp_ResponseCode) return;
+
+      // Hỗ trợ nạp tiền Ví: Tự động chuyển qua tab wallet để xử lý verify
+      if (vnp_OrderInfo.includes("Nap tien") || vnp_OrderInfo.includes("Wallet")) {
+        setActiveTab("wallet");
+        return;
+      }
 
       // Dọn param VNPay khỏi URL
       const newParams = new URLSearchParams(searchParams);

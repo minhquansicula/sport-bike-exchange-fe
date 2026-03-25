@@ -5,6 +5,10 @@ const StickySubmitBar = ({
   expectedResult,
   isSubmitting,
   isSomeonePresent,
+  canSubmit,
+  isChecklistComplete,
+  notCheckedCount,
+  isAttendanceComplete,
   onCancel,
 }) => {
   return (
@@ -28,9 +32,10 @@ const StickySubmitBar = ({
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || !isSomeonePresent}
+          disabled={isSubmitting || !canSubmit}
+          title={!isSomeonePresent ? "Cần xác nhận sự có mặt trước" : isAttendanceComplete && !isChecklistComplete ? `Còn ${notCheckedCount} hạng mục chưa được kiểm tra` : ""}
           className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${
-            isSomeonePresent && !isSubmitting
+            canSubmit && !isSubmitting
               ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-emerald-300 active:scale-95"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
@@ -43,6 +48,9 @@ const StickySubmitBar = ({
           ) : (
             <>
               <MdSave size={20} /> Ban hành chứng nhận
+              {isAttendanceComplete && !isChecklistComplete && (
+                <span className="text-xs font-normal opacity-80 pl-1">({notCheckedCount} chưa KT)</span>
+              )}
             </>
           )}
         </button>

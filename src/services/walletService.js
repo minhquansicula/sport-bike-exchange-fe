@@ -8,8 +8,8 @@ export const walletService = {
   },
 
   createVNPayUrl: async (amount) => {
-    const currentOrigin = window.location.origin; // Sẽ tự động lấy 'http://localhost:5173' hoặc 'https://myweb.vercel.app'
-    const dynamicReturnUrl = `${currentOrigin}/profile?tab=wallet`;
+    const currentOrigin = window.location.origin;
+    const dynamicReturnUrl = `${currentOrigin}/profile`;
 
     const response = await api.post("/payments/submitOrder", {
       amount: amount,

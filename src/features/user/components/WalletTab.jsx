@@ -48,29 +48,26 @@ const WalletTab = () => {
 
     if (vnp_ResponseCode) {
       if (vnp_ResponseCode === "00") {
-        // 3. Nếu cờ đã bật (API đang gọi rồi), thì RETURN NGAY LẬP TỨC, không gọi nữa
         if (isProcessingVNPay.current) return;
-        isProcessingVNPay.current = true; // Bật cờ lên
+        isProcessingVNPay.current = true;
 
         try {
-          // Bỏ chữ tab=wallet để tránh lỗi 500 (như đã nói ở trước)
-          const rawQuery = window.location.search;
-          const cleanQuery = rawQuery
-            .replace("?tab=wallet&", "?")
-            .replace("&tab=wallet", "");
+          // Gửi toàn bộ query string gốc để Backend verify chữ ký (không sửa đổi để tránh Invalid Signature)
+          const cleanQuery = window.location.search;
 
           await walletService.verifyVNPayReturn(cleanQuery);
 
           toast.success("Giao dịch VNPay thành công! Đã nạp tiền vào ví.");
           fetchWallet();
         } catch (error) {
+          console.error("Lỗi xác thực VNPay:", error);
           toast.error("Xác thực giao dịch thất bại.");
         }
       } else {
         toast.error("Bạn đã hủy giao dịch hoặc giao dịch thất bại.");
       }
 
-      // Xóa params khỏi URL để dọn dẹp
+      // Xóa params giao dịch khỏi URL, chỉ giữ lại tab=wallet
       setSearchParams({ tab: "wallet" });
     }
   };
@@ -86,14 +83,19 @@ const WalletTab = () => {
 
     try {
       setIsAdding(true);
-      // Gọi BE để lấy URL thanh toán VNPay
       const response = await walletService.createVNPayUrl(amount);
 
-      // Đã sửa lại thành response.redirectUrl cho khớp với DTO của bạn
-      if (response && response.redirectUrl) {
-        window.location.href = response.redirectUrl;
+      // Thử lấy URL từ các key phổ biến (thường là result.paymentUrl hoặc result.redirectUrl)
+      const url =
+        response?.result?.paymentUrl ||
+        response?.result?.redirectUrl ||
+        response?.redirectUrl;
+
+      if (url) {
+        window.location.href = url;
       } else {
         toast.error("Lỗi lấy thông tin thanh toán từ hệ thống.");
+        console.error("Response BE không có URL:", response);
       }
     } catch (error) {
       console.error("Lỗi tạo giao dịch:", error);
