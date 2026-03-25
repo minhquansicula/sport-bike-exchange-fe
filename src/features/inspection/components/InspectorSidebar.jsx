@@ -37,11 +37,11 @@ const InspectorSidebar = ({ isOpen, setIsOpen }) => {
           icon: <MdAssignment size={22} />,
           badge: pendingCount > 0 ? pendingCount : null,
         },
-        {
-          label: "Tạo báo cáo",
-          path: "/inspector/create-report",
-          icon: <MdFactCheck size={22} />,
-        },
+        // {
+        //   label: "Tạo báo cáo",
+        //   path: "/inspector/create-report",
+        //   icon: <MdFactCheck size={22} />,
+        // },
         {
           label: "Lịch sử kiểm định",
           path: "/inspector/history",
@@ -68,9 +68,8 @@ const InspectorSidebar = ({ isOpen, setIsOpen }) => {
 
   return (
     <aside
-      className={`fixed top-0 left-0 bottom-0 w-[260px] bg-emerald-950 text-white flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out md:translate-x-0 ${
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      }`}
+      className={`fixed top-0 left-0 bottom-0 w-[260px] bg-emerald-950 text-white flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
     >
       {/* Logo Section */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-emerald-800/50 bg-emerald-950/50">
@@ -129,11 +128,10 @@ const InspectorSidebar = ({ isOpen, setIsOpen }) => {
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                      isActive(item.path)
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive(item.path)
                         ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/20"
                         : "text-emerald-100 hover:bg-emerald-900/50 hover:text-white"
-                    }`}
+                      }`}
                   >
                     <span
                       className={
@@ -149,11 +147,10 @@ const InspectorSidebar = ({ isOpen, setIsOpen }) => {
                     </span>
                     {item.badge && (
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isActive(item.path)
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive(item.path)
                             ? "bg-white text-emerald-600"
                             : "bg-emerald-600 text-white"
-                        }`}
+                          }`}
                       >
                         {item.badge}
                       </span>

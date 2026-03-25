@@ -34,10 +34,10 @@ const InspectorTaskDetailPage = () => {
 
   const handleNoShow = async (type) => { // type: 'SELLER' or 'BUYER'
     const isSeller = type === 'SELLER';
-    const confirmMsg = isSeller 
+    const confirmMsg = isSeller
       ? "Xác nhận báo cáo: NGƯỜI BÁN KHÔNG ĐẾN? Giao dịch sẽ bị hủy và xe sẽ bị khóa."
       : "Xác nhận báo cáo: NGƯỜI MUA KHÔNG ĐẾN? Giao dịch sẽ bị hủy và xe sẽ trở lại khả dụng.";
-      
+
     if (!window.confirm(confirmMsg)) return;
 
     setIsSubmitting(true);
@@ -190,7 +190,7 @@ const InspectorTaskDetailPage = () => {
         </div>
       </div>
 
-      {["Completed", "completed", "Waiting_Payment", "Inspection_Failed"].includes(task.status) && (
+      {["Completed", "completed", "Waiting_Payment", "Inspection_Failed", "Cancelled", "cancelled"].includes(task.status) && (
         <div className="mt-8 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
           <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 flex items-center gap-2">
             <MdCheckCircle className="text-emerald-500" /> Kết quả kiểm định đã lưu

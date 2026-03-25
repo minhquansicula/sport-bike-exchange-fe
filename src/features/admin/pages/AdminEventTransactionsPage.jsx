@@ -201,11 +201,13 @@ const AdminEventTransactionsPage = () => {
       Pending_Cancel: 1,
       Disputed: 2,
       Inspection_Failed: 3,
-      Deposited: 4,
-      Waiting_Payment: 5,
+      Waiting_Payment: 4,
+      Deposited: 5,
       Completed: 6,
       Paid_Out: 7,
       Cancelled: 8,
+      Refunded: 9,
+      Compensated: 10,
     };
     const priorityA = statusPriority[a.status] || 99;
     const priorityB = statusPriority[b.status] || 99;
@@ -279,6 +281,22 @@ const AdminEventTransactionsPage = () => {
           bg: "bg-red-100",
           text: "text-red-800",
           border: "border-red-200",
+        };
+      case "Refunded":
+        return {
+          label: "Đã hoàn tiền",
+          icon: MdCheckCircle,
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          border: "border-blue-200",
+        };
+      case "Compensated":
+        return {
+          label: "Đã đền bù",
+          icon: MdCheckCircle,
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          border: "border-blue-200",
         };
       default:
         return {
@@ -526,23 +544,23 @@ const AdminEventTransactionsPage = () => {
                   <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex flex-wrap justify-end gap-2">
                     {(r.status === "Pending_Cancel" ||
                       (r.cancelDescription && r.status !== "Cancelled")) && (
-                      <>
-                        <button
-                          disabled={isProcessingCancel}
-                          onClick={() => handleApproveCancel(r.reservationId)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
-                        >
-                          <MdCheckCircle size={16} /> Duyệt hủy
-                        </button>
-                        <button
-                          disabled={isProcessingCancel}
-                          onClick={() => handleRejectCancel(r.reservationId)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
-                        >
-                          <MdClose size={16} /> Từ chối
-                        </button>
-                      </>
-                    )}
+                        <>
+                          <button
+                            disabled={isProcessingCancel}
+                            onClick={() => handleApproveCancel(r.reservationId)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                          >
+                            <MdCheckCircle size={16} /> Duyệt hủy
+                          </button>
+                          <button
+                            disabled={isProcessingCancel}
+                            onClick={() => handleRejectCancel(r.reservationId)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          >
+                            <MdClose size={16} /> Từ chối
+                          </button>
+                        </>
+                      )}
 
                     {[
                       "Deposited",
@@ -551,13 +569,13 @@ const AdminEventTransactionsPage = () => {
                       "Pending_Cancel",
                       "Disputed",
                     ].includes(r.status) && (
-                      <button
-                        onClick={() => handleOpenViolationModal(r)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-sm font-bold hover:bg-orange-200 transition-colors"
-                      >
-                        <MdGavel size={16} /> Phân xử / Phạt
-                      </button>
-                    )}
+                        <button
+                          onClick={() => handleOpenViolationModal(r)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-sm font-bold hover:bg-orange-200 transition-colors"
+                        >
+                          <MdGavel size={16} /> Phân xử / Phạt
+                        </button>
+                      )}
 
                     {r.status === "Completed" && (
                       <button

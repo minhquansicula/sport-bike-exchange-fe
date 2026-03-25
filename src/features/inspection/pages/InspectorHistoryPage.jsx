@@ -101,7 +101,7 @@ const InspectorHistoryPage = () => {
         const hasReport =
           task.status === "Completed" || task.status === "Waiting_Payment";
         const isFailed =
-          task.status === "Inspection_Failed" || task.status === "Cancelled";
+          ["Inspection_Failed", "Cancelled", "Refunded", "Compensated"].includes(task.status);
         if (filterResult === "passed" && !hasReport) return false;
         if (filterResult === "failed" && !isFailed) return false;
       }
@@ -145,7 +145,7 @@ const InspectorHistoryPage = () => {
       ["Completed", "Waiting_Payment"].includes(t.status)
     ).length;
     const failed = filteredTasks.filter((t) =>
-      ["Inspection_Failed", "Cancelled"].includes(t.status)
+      ["Inspection_Failed", "Cancelled", "Refunded", "Compensated"].includes(t.status)
     ).length;
     const rate = total > 0 ? Math.round((passed / total) * 100) : 0;
     return { total, passed, failed, rate };
@@ -175,6 +175,18 @@ const InspectorHistoryPage = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
             <MdCancel size={14} /> Cancelled
+          </span>
+        );
+      case "Refunded":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+            <MdCheckCircle size={14} /> Refunded
+          </span>
+        );
+      case "Compensated":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+            <MdCheckCircle size={14} /> Compensated
           </span>
         );
       default:

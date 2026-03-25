@@ -5,6 +5,7 @@ import { uploadService } from "../../../services/uploadService";
 import { toast } from "react-hot-toast";
 import { useInspectorTaskDetail } from "../hooks/useInspectorTaskDetail";
 import { useInspectorTasks } from "../hooks/useInspectorTasks";
+import { getPartyInfo } from "../../../utils/getPartyInfo";
 import {
   MdArrowBack,
   MdSave,
@@ -141,6 +142,10 @@ const CreateReportPage = () => {
 
   const isAttendanceComplete = attendance.buyerPresent && attendance.sellerPresent;
   const isSomeonePresent = attendance.buyerPresent || attendance.sellerPresent;
+  // Checklist phải được kiểm tra đầy đủ khi cả 2 bên đều có mặt
+  const isChecklistComplete = checklist.every((item) => item.status !== "NOT_CHECKED");
+  // Chỉ yêu cầu checklist đầy đủ khi cả hai bên có mặt (trường hợp 1 bên vắng sẽ tự động hủy)
+  const canSubmit = isSomeonePresent && (isAttendanceComplete ? isChecklistComplete : true);
 
   // --- Image upload ---
   const handleImageUpload = async (e) => {
@@ -196,6 +201,11 @@ const CreateReportPage = () => {
     }
     if (!taskId) {
       toast.error("Thiếu thông tin nhiệm vụ!");
+      return;
+    }
+    // Nếu cả 2 bên có mặt, bắt buộc phải kiểm định đầy đủ tất cả hạng mục
+    if (isAttendanceComplete && !isChecklistComplete) {
+      toast.error(`Vui lòng hoàn thành kiểm định tất cả ${notCheckedCount} hạng mục còn lại trước khi lưu báo cáo!`);
       return;
     }
 
@@ -321,6 +331,14 @@ const CreateReportPage = () => {
   const failCount = checklist.filter((i) => i.status === "FAIL").length;
   const notCheckedCount = checklist.filter((i) => i.status === "NOT_CHECKED").length;
 
+  // Thông tin buyer/seller và avatar từ task
+  const buyerInfo = getPartyInfo(task, "buyer");
+  const sellerInfo = getPartyInfo(task, "seller");
+  const buyerName = buyerInfo.name || task?.buyerName || task?.buyer?.fullName || "Người mua";
+  const sellerName = sellerInfo.name || task?.sellerName || task?.seller?.fullName || "Người bán";
+  const buyerAvatarUrl = task?.buyerUrlImage || buyerInfo.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(buyerName)}&background=3B82F6&color=fff&size=128`;
+  const sellerAvatarUrl = task?.sellerUrlImage || sellerInfo.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerName)}&background=F97316&color=fff&size=128`;
+
   return (
     <div className="max-w-4xl mx-auto pb-10">
       {/* Header */}
@@ -402,13 +420,13 @@ const CreateReportPage = () => {
                 className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <img
-                src={task?.buyerAvatar || `https://i.pravatar.cc/150?u=${task?.buyerName || task?.buyer?.fullName || "buyer"}`}
+                src={task?.buyerAvatar || buyerAvatarUrl}
                 alt="Buyer"
-                className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+                className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
               />
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Người mua</p>
-                <p className="font-bold text-gray-900">{task?.buyerName || task?.buyer?.fullName || task?.buyer?.name || "Người mua"}</p>
+                <p className="font-bold text-gray-900">{buyerName}</p>
               </div>
               {attendance.buyerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>
@@ -426,13 +444,13 @@ const CreateReportPage = () => {
                 className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <img
-                src={task?.sellerAvatar || `https://i.pravatar.cc/150?u=${task?.sellerName || task?.seller?.fullName || "seller"}`}
+                src={task?.sellerAvatar || sellerAvatarUrl}
                 alt="Seller"
-                className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+                className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
               />
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Người bán</p>
-                <p className="font-bold text-gray-900">{task?.sellerName || task?.seller?.fullName || task?.seller?.name || "Người bán"}</p>
+                <p className="font-bold text-gray-900">{sellerName}</p>
               </div>
               {attendance.sellerPresent && <MdCheckCircle className="text-emerald-500" size={24} />}
             </label>
@@ -531,9 +549,12 @@ const CreateReportPage = () => {
 
           {/* Cảnh báo nếu còn hạng mục chưa kiểm tra */}
           {notCheckedCount > 0 && (
-            <p className="mt-4 text-sm text-amber-600 flex items-center gap-2 bg-amber-50 p-3 rounded-lg border border-amber-100">
+            <p className={`mt-4 text-sm flex items-center gap-2 p-3 rounded-lg border ${isAttendanceComplete ? "text-red-600 bg-red-50 border-red-200" : "text-amber-600 bg-amber-50 border-amber-100"}`}>
               <MdWarning size={18} />
-              Còn <strong>{notCheckedCount}</strong> hạng mục chưa được kiểm tra. Kết quả sẽ bị tính là FAILED.
+              Còn <strong>{notCheckedCount}</strong> hạng mục chưa được kiểm tra.
+              {isAttendanceComplete
+                ? " Bắt buộc phải kiểm tra hết trước khi lưu báo cáo!"
+                : " Kết quả sẽ bị tính là FAILED."}
             </p>
           )}
         </div>
@@ -663,8 +684,9 @@ const CreateReportPage = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !isSomeonePresent}
-              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${isSomeonePresent && !isSubmitting
+              disabled={isSubmitting || !canSubmit}
+              title={!isSomeonePresent ? "Cần xác nhận sự có mặt trước" : isAttendanceComplete && !isChecklistComplete ? `Còn ${notCheckedCount} hạng mục chưa được kiểm tra` : ""}
+              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${canSubmit && !isSubmitting
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-emerald-300 active:scale-95"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
@@ -677,6 +699,9 @@ const CreateReportPage = () => {
               ) : (
                 <>
                   <MdSave size={20} /> Ban hành chứng nhận
+                  {isAttendanceComplete && !isChecklistComplete && (
+                    <span className="text-xs font-normal opacity-80">({notCheckedCount} chưa KT)</span>
+                  )}
                 </>
               )}
             </button>

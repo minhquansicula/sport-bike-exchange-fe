@@ -41,5 +41,22 @@ export const getPartyInfo = (taskData, role) => {
     isBuyer ? taskData?.buyerPhoneNum : taskData?.sellerPhoneNum,
   ]);
 
-  return { name, phone };
+  const avatar = getFirstAvailableValue([
+    party?.avatar,
+    party?.avatarUrl,
+    party?.avatar_url,
+    party?.profileImage,
+    party?.photo,
+    party?.photoUrl,
+    taskData?.[`${role}Avatar`],
+    taskData?.[`${role}AvatarUrl`],
+    taskData?.[`${role}Image`],
+    taskData?.[`${role}UrlImage`],
+    isBuyer ? taskData?.buyerAvatar : taskData?.sellerAvatar,
+    isBuyer ? taskData?.buyerAvatarUrl : taskData?.sellerAvatarUrl,
+    isBuyer ? taskData?.buyerImage : taskData?.sellerImage,
+    isBuyer ? taskData?.buyerUrlImage : taskData?.sellerUrlImage,
+  ]);
+
+  return { name, phone, avatar };
 };

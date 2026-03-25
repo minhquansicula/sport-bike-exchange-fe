@@ -57,6 +57,8 @@ const AdminTransactionsPage = () => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [loadingPost, setLoadingPost] = useState(false);
 
+  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+
   const fetchReservations = async () => {
     try {
       setLoading(true);
@@ -227,6 +229,27 @@ const AdminTransactionsPage = () => {
     }
   };
 
+  const handlePayout = async (reservationId) => {
+    if (
+      !window.confirm(
+        "Xác nhận chuyển tiền cho người bán? Bạn có chắc chắn giao dịch này đã hoàn thành thỏa đáng?",
+      )
+    )
+      return;
+    setIsProcessingPayout(true);
+    try {
+      await reservationService.payoutToSeller(reservationId);
+      toast.success("Thanh toán cho Seller thành công!");
+      fetchReservations();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Lỗi khi thanh toán cho Seller!",
+      );
+    } finally {
+      setIsProcessingPayout(false);
+    }
+  };
+
   const handleViewPost = async (listingId) => {
     setLoadingPost(true);
     try {
@@ -257,11 +280,14 @@ const AdminTransactionsPage = () => {
       Pending_Cancel: 1,
       Disputed: 2,
       Inspection_Failed: 3,
-      Deposited: 4,
+      Waiting_Payment: 4,
       Scheduled: 5,
-      Waiting_Payment: 6,
+      Deposited: 6,
       Completed: 7,
-      Cancelled: 8,
+      Paid_Out: 8,
+      Cancelled: 9,
+      Refunded: 10,
+      Compensated: 11,
     };
 
     const priorityA = statusPriority[a.status] || 99;
@@ -338,6 +364,30 @@ const AdminTransactionsPage = () => {
           bg: "bg-red-100",
           text: "text-red-800",
           border: "border-red-200",
+        };
+      case "Paid_Out":
+        return {
+          label: "Đã thanh toán (Seller)",
+          icon: MdCheckCircle,
+          bg: "bg-indigo-100",
+          text: "text-indigo-800",
+          border: "border-indigo-200",
+        };
+      case "Refunded":
+        return {
+          label: "Đã hoàn tiền",
+          icon: MdCheckCircle,
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          border: "border-blue-200",
+        };
+      case "Compensated":
+        return {
+          label: "Đã đền bù",
+          icon: MdCheckCircle,
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          border: "border-blue-200",
         };
       default:
         return {
@@ -449,6 +499,7 @@ const AdminTransactionsPage = () => {
               <option value="Inspection_Failed">Kiểm định thất bại</option>
               <option value="Disputed">Đang tranh chấp</option>
               <option value="Completed">Hoàn thành</option>
+              <option value="Paid_Out">Đã thanh toán (Seller)</option>
               <option value="Cancelled">Đã hủy</option>
             </select>
           </div>
@@ -571,7 +622,7 @@ const AdminTransactionsPage = () => {
                       r.status !== "Cancelled" && (
                         <div className="bg-red-50 p-3 rounded-xl mb-4 text-sm border border-red-100">
                           <p className="font-bold text-red-700 mb-1 flex items-center gap-1">
-                            <MdCancel size={16} /> Lý do yêu cầu hủy:
+                            <MdCancel size={16} /> Lý do yêu cầu / bị hủy:
                           </p>
                           <p className="text-red-600">
                             {r.cancelDescription ||
@@ -582,37 +633,47 @@ const AdminTransactionsPage = () => {
                   </div>
 
                   <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex flex-wrap justify-end gap-2">
-                    {(r.status === "Pending_Cancel" ||
-                      (r.cancelDescription && r.status !== "Cancelled")) && (
-                      <>
-                        <button
-                          disabled={isProcessingCancel}
-                          onClick={() => handleApproveCancel(r.reservationId)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
-                        >
-                          <MdCheckCircle size={16} /> Duyệt hủy
-                        </button>
-                        <button
-                          disabled={isProcessingCancel}
-                          onClick={() => handleRejectCancel(r.reservationId)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
-                        >
-                          <MdClose size={16} /> Từ chối
-                        </button>
-                      </>
+                    {r.status === "Pending_Cancel" && (
+                        <>
+                          <button
+                            disabled={isProcessingCancel}
+                            onClick={() => handleApproveCancel(r.reservationId)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                          >
+                            <MdCheckCircle size={16} /> Duyệt hủy
+                          </button>
+                          <button
+                            disabled={isProcessingCancel}
+                            onClick={() => handleRejectCancel(r.reservationId)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          >
+                            <MdClose size={16} /> Từ chối
+                          </button>
+                        </>
+                      )}
+
+                    {r.status === "Completed" && (
+                      <button
+                        onClick={() => handlePayout(r.reservationId)}
+                        disabled={isProcessingPayout}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                        title="Thanh toán số tiền cho Seller"
+                      >
+                        <MdAttachMoney size={16} /> Thanh toán cho Seller
+                      </button>
                     )}
 
                     {["Deposited", "Scheduled", "Waiting_Payment"].includes(
                       r.status,
                     ) && (
-                      <button
-                        onClick={() => handleOpenViolationModal(r)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-sm font-bold hover:bg-orange-200 transition-colors"
-                        title="Xử lý nếu người mua/bán không đến hoặc xe lỗi"
-                      >
-                        <MdGavel size={16} /> Phân xử
-                      </button>
-                    )}
+                        <button
+                          onClick={() => handleOpenViolationModal(r)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-sm font-bold hover:bg-orange-200 transition-colors"
+                          title="Xử lý nếu người mua/bán không đến hoặc xe lỗi"
+                        >
+                          <MdGavel size={16} /> Phân xử
+                        </button>
+                      )}
 
                     {r.status === "Deposited" && (
                       <button
@@ -789,9 +850,9 @@ const AdminTransactionsPage = () => {
                     initialPosition={
                       scheduleData.latitude && scheduleData.longitude
                         ? {
-                            lat: scheduleData.latitude,
-                            lng: scheduleData.longitude,
-                          }
+                          lat: scheduleData.latitude,
+                          lng: scheduleData.longitude,
+                        }
                         : null
                     }
                   />
