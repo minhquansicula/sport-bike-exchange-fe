@@ -53,6 +53,7 @@ const InspectorHistoryPage = () => {
   const [reportModal, setReportModal] = useState({
     isOpen: false,
     reservationId: null,
+    taskData: null,
   });
 
   // Filters from query string
@@ -475,7 +476,11 @@ const InspectorHistoryPage = () => {
                 <div className="flex lg:flex-col gap-2 lg:justify-center shrink-0">
                   <button
                     onClick={() =>
-                      setReportModal({ isOpen: true, reservationId: task.id })
+                      setReportModal({
+                        isOpen: true,
+                        reservationId: task.id,
+                        taskData: task,
+                      })
                     }
                     className="flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm"
                   >
@@ -517,7 +522,10 @@ const InspectorHistoryPage = () => {
       <ReportViewerModal
         reservationId={reportModal.reservationId}
         isOpen={reportModal.isOpen}
-        onClose={() => setReportModal({ isOpen: false, reservationId: null })}
+        taskData={reportModal.taskData}
+        onClose={() =>
+          setReportModal({ isOpen: false, reservationId: null, taskData: null })
+        }
       />
     </div>
   );
