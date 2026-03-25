@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { inspectorService } from "../../../services/inspectorService";
 import { uploadService } from "../../../services/uploadService";
 import { toast } from "react-hot-toast";
 import { useInspectorTaskDetail } from "../hooks/useInspectorTaskDetail";
 import { useInspectorTasks } from "../hooks/useInspectorTasks";
+<<<<<<< HEAD
 import { getPartyInfo } from "../../../utils/getPartyInfo";
 import {
   MdArrowBack,
@@ -20,53 +21,23 @@ import {
   MdRemoveCircle,
   MdHelp,
 } from "react-icons/md";
+=======
+import { MdArrowBack, MdPedalBike } from "react-icons/md";
+>>>>>>> b82d124dcdc72f3d14468d7a859d4c6d31af20c6
 import formatCurrency from "../../../utils/formatCurrency";
-
-// Danh sách linh kiện mặc định cho xe máy thể thao
-const DEFAULT_CHECKLIST = [
-  { name: "Khung xe" },
-  { name: "Phanh trước" },
-  { name: "Phanh sau" },
-  { name: "Lốp xe trước" },
-  { name: "Lốp xe sau" },
-  { name: "Động cơ" },
-  { name: "Hộp số" },
-  { name: "Đèn pha / đèn hậu" },
-  { name: "Ly hợp" },
-  { name: "Dầu nhớt / nhiên liệu" },
-  { name: "Giảm xóc trước" },
-  { name: "Giảm xóc sau" },
-  { name: "Hệ thống điện" },
-];
-
-const STATUS_CONFIG = {
-  PASS: {
-    label: "PASS",
-    bg: "bg-emerald-500",
-    text: "text-white",
-    ring: "ring-emerald-400",
-    icon: <MdCheckCircle size={16} />,
-  },
-  FAIL: {
-    label: "FAIL",
-    bg: "bg-red-500",
-    text: "text-white",
-    ring: "ring-red-400",
-    icon: <MdRemoveCircle size={16} />,
-  },
-  NOT_CHECKED: {
-    label: "Chưa KT",
-    bg: "bg-gray-200",
-    text: "text-gray-600",
-    ring: "ring-gray-300",
-    icon: <MdHelp size={16} />,
-  },
-};
+import { useCreateReportForm } from "../hooks/useCreateReportForm";
+import TaskSelectorList from "../components/create-report/TaskSelectorList";
+import AttendanceSection from "../components/create-report/AttendanceSection";
+import ChecklistSection from "../components/create-report/ChecklistSection";
+import IssuesSection from "../components/create-report/IssuesSection";
+import ImageUploadSection from "../components/create-report/ImageUploadSection";
+import StickySubmitBar from "../components/create-report/StickySubmitBar";
 
 const CreateReportPage = () => {
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get("taskId");
   const navigate = useNavigate();
+
   const {
     task,
     loading: taskLoading,
@@ -84,29 +55,29 @@ const CreateReportPage = () => {
     () => allTasks.filter((t) => ["Scheduled", "pending"].includes(t.status)),
     [allTasks]
   );
-
-  // Danh sách checklist linh kiện
-  const [checklist, setChecklist] = useState(
-    DEFAULT_CHECKLIST.map((item) => ({
-      name: item.name,
-      status: "NOT_CHECKED",
-      note: "",
-    }))
-  );
-
-  const [formData, setFormData] = useState({
-    notes: "",
-    issues: [],
-    images: [],
-  });
-
-  const [attendance, setAttendance] = useState({
-    buyerPresent: false,
-    sellerPresent: false,
-  });
-
-  const [newIssue, setNewIssue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    checklist,
+    formData,
+    attendance,
+    newIssue,
+    setNewIssue,
+    handleChecklistStatus,
+    handleChecklistNote,
+    handleAttendanceChange,
+    handleImageUpload,
+    removeImage,
+    setNotes,
+    addIssue,
+    removeIssue,
+    isAttendanceComplete,
+    isSomeonePresent,
+    expectedResult,
+    passCount,
+    failCount,
+    notCheckedCount,
+  } = useCreateReportForm();
 
   useEffect(() => {
     if (taskError || listError) {
@@ -115,6 +86,7 @@ const CreateReportPage = () => {
     }
   }, [taskError, listError]);
 
+<<<<<<< HEAD
   // Cleanup image URLs khi unmount
   useEffect(() => {
     return () => {
@@ -152,43 +124,13 @@ const CreateReportPage = () => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter((file) => file.size <= 10 * 1024 * 1024);
     if (validFiles.length !== files.length) {
+=======
+  const onImageUpload = (event) => {
+    const { skippedCount } = handleImageUpload(event);
+    if (skippedCount > 0) {
+>>>>>>> b82d124dcdc72f3d14468d7a859d4c6d31af20c6
       toast.error("Một số ảnh vượt quá 10MB, đã bỏ qua");
     }
-    const newImages = validFiles.map((file) => ({
-      id: Date.now() + Math.random(),
-      file,
-      preview: URL.createObjectURL(file),
-      name: file.name,
-    }));
-    setFormData((prev) => ({ ...prev, images: [...prev.images, ...newImages] }));
-  };
-
-  const removeImage = (imageId) => {
-    const img = formData.images.find((i) => i.id === imageId);
-    if (img) URL.revokeObjectURL(img.preview);
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((i) => i.id !== imageId),
-    }));
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const addIssue = () => {
-    if (newIssue.trim()) {
-      setFormData((prev) => ({ ...prev, issues: [...prev.issues, newIssue.trim()] }));
-      setNewIssue("");
-    }
-  };
-
-  const removeIssue = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      issues: prev.issues.filter((_, i) => i !== index),
-    }));
   };
 
   // --- Submit ---
@@ -209,10 +151,7 @@ const CreateReportPage = () => {
       return;
     }
 
-    // Tự động xác định result
-    const hasAnyFail = checklist.some((item) => item.status === "FAIL");
-    const allPassed = checklist.every((item) => item.status === "PASS");
-    const result = allPassed ? "SUCCESS" : hasAnyFail ? "FAILED" : "FAILED";
+    const result = expectedResult;
 
     // Ghi chú tổng hợp các issues vào reason
     const reason = formData.issues.length > 0 ? formData.issues.join("; ") : "";
@@ -248,76 +187,6 @@ const CreateReportPage = () => {
     }
   };
 
-  // --- View: Selection List (if no taskId) ---
-  if (!taskId) {
-    return (
-      <div className="max-w-4xl mx-auto pb-10">
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => navigate("/inspector/tasks")}
-            className="p-2 bg-white rounded-full shadow-sm hover:bg-emerald-50 transition-colors"
-          >
-            <MdArrowBack size={24} className="text-gray-700" />
-          </button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-              Chọn xe cần kiểm định
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">Danh sách các yêu cầu đang chờ xử lý</p>
-          </div>
-        </div>
-
-        {pendingTasks.length > 0 ? (
-          <div className="grid gap-4">
-            {pendingTasks.map((t) => (
-              <div
-                key={t.id}
-                className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between hover:border-emerald-200 transition-all shadow-sm"
-              >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={t.bikeImage || "https://via.placeholder.com/150"}
-                    alt="bike"
-                    className="w-20 h-20 rounded-xl object-cover border border-gray-100"
-                  />
-                  <div>
-                    <h3 className="font-bold text-gray-900">{t.bikeName}</h3>
-                    <p className="text-sm text-gray-500">Mã GD: #{t.id}</p>
-                    <p className="text-xs text-blue-600 mt-1 uppercase font-bold tracking-wider">
-                      {new Date(t.scheduledTime).toLocaleString("vi-VN")}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate(`/inspector/create-report?taskId=${t.id}`)}
-                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm"
-                >
-                  Kiểm định ngay
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center shadow-sm">
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <MdPedalBike className="text-emerald-500" size={40} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có xe nào cần báo cáo</h3>
-            <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-              Tất cả các nhiệm vụ hiện tại đã được hoàn thành hoặc chưa đến giờ kiểm định.
-            </p>
-            <button
-              onClick={() => navigate("/inspector/tasks")}
-              className="px-8 py-3 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-colors"
-            >
-              Xem nhiệm vụ khác
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -326,10 +195,15 @@ const CreateReportPage = () => {
     );
   }
 
-  // Summary stats
-  const passCount = checklist.filter((i) => i.status === "PASS").length;
-  const failCount = checklist.filter((i) => i.status === "FAIL").length;
-  const notCheckedCount = checklist.filter((i) => i.status === "NOT_CHECKED").length;
+  if (!taskId) {
+    return (
+      <TaskSelectorList
+        pendingTasks={pendingTasks}
+        onBack={() => navigate("/inspector/tasks")}
+        onSelectTask={(id) => navigate(`/inspector/create-report?taskId=${id}`)}
+      />
+    );
+  }
 
   // Thông tin buyer/seller và avatar từ task
   const buyerInfo = getPartyInfo(task, "buyer");
@@ -395,6 +269,7 @@ const CreateReportPage = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Điểm danh */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -468,28 +343,34 @@ const CreateReportPage = () => {
             </p>
           )}
         </div>
+=======
+        <AttendanceSection
+          task={task}
+          attendance={attendance}
+          onToggle={handleAttendanceChange}
+          isAttendanceComplete={isAttendanceComplete}
+          isSomeonePresent={isSomeonePresent}
+        />
 
-        {/* ===== CHECKLIST LINH KIỆN ===== */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <MdCheckCircle className="text-emerald-500" />
-              Checklist linh kiện
-            </h2>
-            {/* Summary badges */}
-            <div className="flex items-center gap-2 text-xs font-bold">
-              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                ✓ {passCount} PASS
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700">
-                ✗ {failCount} FAIL
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">
-                ? {notCheckedCount} Chưa KT
-              </span>
-            </div>
-          </div>
+        <ChecklistSection
+          checklist={checklist}
+          passCount={passCount}
+          failCount={failCount}
+          notCheckedCount={notCheckedCount}
+          onStatusChange={handleChecklistStatus}
+          onNoteChange={handleChecklistNote}
+        />
+>>>>>>> b82d124dcdc72f3d14468d7a859d4c6d31af20c6
 
+        <IssuesSection
+          newIssue={newIssue}
+          setNewIssue={setNewIssue}
+          issues={formData.issues}
+          onAddIssue={addIssue}
+          onRemoveIssue={removeIssue}
+        />
+
+<<<<<<< HEAD
           <div className="space-y-3">
             {checklist.map((item, index) => (
               <div
@@ -649,6 +530,13 @@ const CreateReportPage = () => {
             </div>
           )}
         </div>
+=======
+        <ImageUploadSection
+          images={formData.images}
+          onUpload={onImageUpload}
+          onRemove={removeImage}
+        />
+>>>>>>> b82d124dcdc72f3d14468d7a859d4c6d31af20c6
 
         {/* Ghi chú inspector */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
@@ -656,13 +544,14 @@ const CreateReportPage = () => {
           <textarea
             name="notes"
             value={formData.notes}
-            onChange={handleChange}
+            onChange={(e) => setNotes(e.target.value)}
             rows={4}
             placeholder="Nhập ghi chú ẩn rủi ro, nhận xét chuyên môn về xe (Người dùng sẽ không thấy phần này)..."
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 resize-none bg-gray-50"
           />
         </div>
 
+<<<<<<< HEAD
         {/* Sticky Footer */}
         <div className="flex items-center justify-between gap-3 pt-4 sticky bottom-0 bg-gray-50 py-4 border-t border-gray-200 z-10 -mx-4 px-4 md:mx-0 md:px-0">
           {/* Result preview */}
@@ -707,6 +596,14 @@ const CreateReportPage = () => {
             </button>
           </div>
         </div>
+=======
+        <StickySubmitBar
+          expectedResult={expectedResult}
+          isSubmitting={isSubmitting}
+          isSomeonePresent={isSomeonePresent}
+          onCancel={() => navigate(-1)}
+        />
+>>>>>>> b82d124dcdc72f3d14468d7a859d4c6d31af20c6
       </form>
     </div>
   );

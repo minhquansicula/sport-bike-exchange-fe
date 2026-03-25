@@ -295,7 +295,7 @@ const TransactionHistoryTab = () => {
                     <><strong className="text-indigo-700">Thông báo:</strong> Đã chuyển khoản tiền giao dịch thành công cho người bán.</>
                   )}
                   {t.status === "Refunded" && (
-                    <><strong className="text-blue-700">Thông báo:</strong> Kiểm định thất bại hoặc hủy. Đã hoàn trả tiền đặt cọc cho người mua vào ví.</>
+                    <><strong className="text-blue-700">Thông báo:</strong> Giao dịch thất bại hoặc hủy. Người mua được hoàn trả 100% tiền cọc và nhận thêm 200k bồi thường.</>
                   )}
                   {t.status === "Compensated" && (
                     <><strong className="text-purple-700">Thông báo:</strong> Người mua không đến kiểm định. Đã chuyển khoản tiền đền bù đặt cọc cho người bán.</>

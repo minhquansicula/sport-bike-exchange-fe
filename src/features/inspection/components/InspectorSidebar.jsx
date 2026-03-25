@@ -17,9 +17,11 @@ import {
 const InspectorSidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const pendingParams = useMemo(() => ({ status: "pending" }), []);
-  const { tasks: pendingTasks } = useInspectorTasks(pendingParams);
-  const pendingCount = pendingTasks.length;
+  const { tasks } = useInspectorTasks();
+  const pendingCount = useMemo(
+    () => tasks.filter((task) => ["Scheduled", "pending"].includes(task.status)).length,
+    [tasks]
+  );
 
   const menuSections = [
     {

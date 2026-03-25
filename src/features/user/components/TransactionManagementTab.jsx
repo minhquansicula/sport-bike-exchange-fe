@@ -850,9 +850,9 @@ const TransactionManagementTab = () => {
                         <div>
                           <p className="font-bold mb-1">Giao dịch đã bị hủy — Người bán không đến</p>
                           {t.status === "Refunded" ? (
-                            <p><strong>Thành công!</strong> Tiền cọc đã được hoàn trả 100% vào ví của bạn.</p>
+                            <p><strong>Thành công!</strong> Tiền cọc đã được hoàn trả 100% + thêm 200,000 VND tiền bồi thường vào ví của bạn.</p>
                           ) : (
-                            <p>Hãy ấn nút <strong>Hủy & Yêu cầu hoàn tiền cọc</strong> bên dưới để được hoàn 100% tiền cọc vì người bán đã không đến.</p>
+                            <p>Hãy ấn nút <strong>Hủy & Yêu cầu hoàn tiền cọc</strong> bên dưới để được hoàn 100% tiền cọc + thêm <strong>200,000 VND</strong> tiền bồi thường vì người bán đã không đến.</p>
                           )}
                           {t.cancelDescription && (
                             <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
@@ -866,7 +866,7 @@ const TransactionManagementTab = () => {
                         <MdWarning size={20} className="text-red-500 shrink-0 mt-0.5" />
                         <div>
                           <p className="font-bold mb-1">Giao dịch đã thất bại — Bạn đã không đến</p>
-                          <p>Giao dịch bị hủy vì <strong>bạn (người bán) không đến</strong> đúng giờ. Tiền cọc sẽ được hoàn lại cho người mua. Liên hệ hỗ trợ nếu có khiếu nại.</p>
+                          <p>Giao dịch bị hủy vì <strong>bạn (người bán) không đến</strong> đúng giờ. Tiền cọc sẽ được hoàn lại cho người mua kèm 200,000 VND bồi thường. Liên hệ hỗ trợ nếu có khiếu nại.</p>
                           {t.cancelDescription && (
                             <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
                               <span className="font-semibold">Lý do ghi nhận:</span> {t.cancelDescription}
@@ -887,9 +887,9 @@ const TransactionManagementTab = () => {
                         <div>
                           <p className="font-bold mb-1">Giao dịch đã bị hủy — Người mua không đến</p>
                           {t.status === "Compensated" ? (
-                            <p><strong>Thành công!</strong> Bạn đã nhận được tiền đền bù từ tiền cọc của người mua. Vui lòng kiểm tra ví.</p>
+                            <p><strong>Thành công!</strong> Bạn đã nhận được <strong>50% tiền cọc</strong> từ người mua. Vui lòng kiểm tra ví.</p>
                           ) : (
-                            <p>Hãy ấn nút <strong>Yêu cầu nhận tiền đền bù</strong> bên dưới để nhận bồi thường tiền cọc vì người mua đã không đến.</p>
+                            <p>Hãy ấn nút <strong>Yêu cầu nhận tiền đền bù</strong> bên dưới để nhận <strong>50% tiền cọc</strong> vì người mua đã không đến. Hệ thống sẽ giữ lại 50% còn lại.</p>
                           )}
                           {t.cancelDescription && (
                             <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
@@ -903,7 +903,7 @@ const TransactionManagementTab = () => {
                         <MdWarning size={20} className="text-red-500 shrink-0 mt-0.5" />
                         <div>
                           <p className="font-bold mb-1">Giao dịch đã thất bại — Bạn đã không đến</p>
-                          <p>Giao dịch bị hủy vì <strong>bạn (người mua) đã không đến</strong> đúng giờ hẹn kiểm định. <span className="font-bold underline">Tiền cọc của bạn đã bị mất</span> và chuyển cho người bán theo quy định.</p>
+                          <p>Giao dịch bị hủy vì <strong>bạn (người mua) đã không đến</strong> đúng giờ hẹn kiểm định. <span className="font-bold underline">50% tiền cọc đã chuyển cho người bán</span>, 50% còn lại hệ thống giữ lại theo quy định.</p>
                           {t.cancelDescription && (
                             <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
                               <span className="font-semibold">Lý do ghi nhận:</span> {t.cancelDescription}

@@ -95,6 +95,14 @@ export const reservationService = {
     return response.data;
   },
 
+  // Người bán nhận tiền đền bù khi người mua không đến kiểm định
+  transferDepositToSellerAfterBuyerNoShow: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/${reservationId}/compensation-buyer-no-show`,
+    );
+    return response.data;
+  },
+
   // Admin chuyển tiền cho seller sau khi buyer hoàn tất thanh toán
   payoutToSeller: async (reservationId) => {
     const response = await api.post(
