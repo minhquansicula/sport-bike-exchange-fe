@@ -9,7 +9,7 @@ export const walletService = {
 
   createVNPayUrl: async (amount) => {
     const currentOrigin = window.location.origin;
-    const dynamicReturnUrl = `${currentOrigin}/profile`;
+    const dynamicReturnUrl = `${currentOrigin}/profile?tab=wallet`;
 
     const response = await api.post("/payments/submitOrder", {
       amount: amount,

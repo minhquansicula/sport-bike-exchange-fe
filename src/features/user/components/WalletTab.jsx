@@ -52,8 +52,15 @@ const WalletTab = () => {
         isProcessingVNPay.current = true;
 
         try {
-          // Gửi toàn bộ query string gốc để Backend verify chữ ký (không sửa đổi để tránh Invalid Signature)
-          const cleanQuery = window.location.search;
+          // Lọc các tham số VNPay và sắp xếp Alphabet (theo đúng quy chuẩn checksum của VNPay)
+          const vnpParams = new URLSearchParams();
+          searchParams.forEach((value, key) => {
+            if (key.startsWith("vnp_")) {
+              vnpParams.append(key, value);
+            }
+          });
+          vnpParams.sort();
+          const cleanQuery = `?${vnpParams.toString()}`;
 
           await walletService.verifyVNPayReturn(cleanQuery);
 
@@ -98,8 +105,12 @@ const WalletTab = () => {
         console.error("Response BE không có URL:", response);
       }
     } catch (error) {
-      console.error("Lỗi tạo giao dịch:", error);
-      toast.error("Hệ thống đang bận, vui lòng thử lại sau.");
+      console.error("Lỗi tạo giao dịch VNPay:", error);
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Hệ thống đang bận, vui lòng thử lại sau.";
+      toast.error(`Lỗi: ${errorMsg}`);
     } finally {
       setIsAdding(false);
     }
