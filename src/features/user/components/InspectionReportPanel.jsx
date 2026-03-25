@@ -26,7 +26,7 @@ const StatusIcon = ({ status }) => {
  * - Hiển thị kết quả báo cáo kiểm định theo reservationId
  * - Tự fetch từ API, collapse/expand được
  */
-const InspectionReportPanel = ({ reservationId }) => {
+const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -66,6 +66,27 @@ const InspectionReportPanel = ({ reservationId }) => {
   const failCount = checklist.filter((i) => i.status === "FAIL").length;
   const totalCount = checklist.length;
 
+  const getBadgeContent = () => {
+    if (report.result === "SUCCESS") {
+      return { text: "✓ PASSED", cls: "bg-emerald-600" };
+    }
+    if (report.result === "SELLER_NO_SHOW") {
+      if (currentUserRole === "seller") {
+        return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
+      }
+      return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI BÁN KHÔNG CÓ MẶT", cls: "bg-red-500" };
+    }
+    if (report.result === "BUYER_NO_SHOW") {
+      if (currentUserRole === "buyer") {
+        return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
+      }
+      return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI MUA KHÔNG CÓ MẶT", cls: "bg-red-500" };
+    }
+    return { text: "✗ FAILED", cls: "bg-red-500" };
+  };
+
+  const badgeConfig = getBadgeContent();
+
   return (
     <div
       className={`border-t ${
@@ -86,15 +107,9 @@ const InspectionReportPanel = ({ reservationId }) => {
           <span className="font-semibold text-sm text-gray-800">
             Kết quả kiểm định:&nbsp;
           </span>
-          {isPassed ? (
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-xs font-bold uppercase tracking-wide">
-              ✓ PASSED
-            </span>
-          ) : (
-            <span className="px-2.5 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold uppercase tracking-wide">
-              ✗ FAILED
-            </span>
-          )}
+          <span className={`px-2.5 py-0.5 rounded-full ${badgeConfig.cls} text-white text-xs font-bold uppercase tracking-wide`}>
+            {badgeConfig.text}
+          </span>
           {checklist.length > 0 && (
             <span className="text-xs text-gray-500 ml-1">
               ({passCount}/{totalCount} hạng mục đạt)
@@ -111,6 +126,11 @@ const InspectionReportPanel = ({ reservationId }) => {
       {/* Expanded detail */}
       {expanded && (
         <div className="px-5 pb-4 space-y-3">
+          {report.result === "BUYER_NO_SHOW" && currentUserRole === "buyer" && (
+            <div className="text-sm text-red-700 bg-red-50 rounded-lg border border-red-100 px-4 py-3 mt-2 font-medium">
+              Vì bạn không tới nên tiền cọc đã bị tịch thu.
+            </div>
+          )}
           {/* Summary */}
           <div className="flex flex-wrap gap-2 mb-2">
             <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
