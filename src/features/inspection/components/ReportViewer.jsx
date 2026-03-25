@@ -30,7 +30,7 @@ const StatusIcon = ({ status }) => {
  * - Shows loading, error, empty states
  * - Displays full checklist, result, reason, note
  */
-const ReportViewerModal = ({ reservationId, isOpen, onClose }) => {
+const ReportViewerModal = ({ reservationId, isOpen, onClose, taskData }) => {
   const {
     report,
     loading,
@@ -63,8 +63,19 @@ const ReportViewerModal = ({ reservationId, isOpen, onClose }) => {
   const passCount = checklist.filter((i) => i.status === "PASS").length;
   const failCount = checklist.filter((i) => i.status === "FAIL").length;
   const totalCount = checklist.length;
-  const buyer = getPartyInfo(report, "buyer");
-  const seller = getPartyInfo(report, "seller");
+  const reportBuyer = getPartyInfo(report, "buyer");
+  const reportSeller = getPartyInfo(report, "seller");
+  const taskBuyer = getPartyInfo(taskData, "buyer");
+  const taskSeller = getPartyInfo(taskData, "seller");
+
+  const buyer = {
+    name: reportBuyer.name || taskBuyer.name,
+    phone: reportBuyer.phone || taskBuyer.phone,
+  };
+  const seller = {
+    name: reportSeller.name || taskSeller.name,
+    phone: reportSeller.phone || taskSeller.phone,
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
