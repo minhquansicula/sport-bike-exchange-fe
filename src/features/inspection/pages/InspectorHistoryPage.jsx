@@ -87,7 +87,15 @@ const InspectorHistoryPage = () => {
   }, [error]);
 
   const tasks = useMemo(
-    () => allTasks.filter((t) => DONE_STATUSES.includes(t.status)),
+    () => allTasks.filter((t) => {
+      const status = t.status?.toLowerCase();
+      return [
+        "completed",
+        "waiting_payment",
+        "inspection_failed",
+        "cancelled"
+      ].includes(status);
+    }),
     [allTasks]
   );
 

@@ -96,11 +96,11 @@ const InspectorTaskDetailPage = () => {
           </h1>
           <div className="flex items-center gap-3">
             <p className="text-gray-500 text-sm">Mã nhiệm vụ: #{task.id}</p>
-            {task.status === "Scheduled" || task.status === "pending" ? (
+            {(task.status?.toLowerCase() === "scheduled" || task.status?.toLowerCase() === "pending" || task.status?.toLowerCase() === "deposited") ? (
               <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full uppercase tracking-wider">
                 Chờ kiểm định
               </span>
-            ) : task.status === "Completed" || task.status === "completed" ? (
+            ) : (task.status?.toLowerCase() === "completed") ? (
               <span className="px-2.5 py-1 bg-green-100 text-green-700 text-[11px] font-bold rounded-full uppercase tracking-wider">
                 Hoàn thành
               </span>
@@ -123,10 +123,10 @@ const InspectorTaskDetailPage = () => {
           />
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              {task.bikeName}
+              {task.bikeName || task.bicycleName || "Xe đạp VeloX"}
             </h2>
             <p className="text-emerald-600 font-bold text-2xl mb-4">
-              {formatCurrency(task.price)}
+              {formatCurrency(task.price || task.amount || 0)}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="flex items-start gap-2">
@@ -201,7 +201,7 @@ const InspectorTaskDetailPage = () => {
 
       {/* Action Buttons */}
       <div className="flex gap-4 flex-wrap">
-        {["Scheduled", "pending"].includes(task.status) ? (
+        {["scheduled", "pending", "deposited"].includes(task.status?.toLowerCase()) ? (
           <>
             <Link
               to={`/inspector/create-report?taskId=${task.id}`}

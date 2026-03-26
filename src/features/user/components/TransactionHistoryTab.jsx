@@ -106,27 +106,23 @@ const TransactionHistoryTab = () => {
   const fetchAllTransactions = async () => {
     setLoading(true);
     try {
-      const [regularRes, eventRes, transactionsRes] = await Promise.allSettled([
+      const [regularRes, transactionsRes] = await Promise.allSettled([
         reservationService.getMyReservations(),
-        reservationService.getMyReservationsWithEventBicycle(),
         transactionService.getMyTransactions(),
       ]);
 
       const buyerMap = new Map();
       if (regularRes.status === "fulfilled" && regularRes.value?.result) {
         regularRes.value.result.map(mapTransactionToDisplay)
-          .filter((r) => r.buyerId === userId)
           .forEach((item) => {
             const key = item.reservationId || item.id;
-            if (key) buyerMap.set(key, item);
-          });
-      }
-      if (eventRes.status === "fulfilled" && eventRes.value?.result) {
-        eventRes.value.result.map(mapTransactionToDisplay)
-          .filter((r) => r.buyerId === userId)
-          .forEach((item) => {
-            const key = item.reservationId || item.id;
-            if (key) buyerMap.set(key, item);
+            if (key) {
+               if (item.buyerId === userId) {
+                 buyerMap.set(key, item);
+               } else {
+                 otherMap.set(key, item);
+               }
+            }
           });
       }
 

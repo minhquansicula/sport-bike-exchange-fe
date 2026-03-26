@@ -24,9 +24,10 @@ const InspectorTaskPage = () => {
     }
   }, [error]);
 
-  const pendingTasks = tasks.filter((task) =>
-    ["Scheduled", "pending"].includes(task.status),
-  );
+  const pendingTasks = tasks.filter((task) => {
+    const status = task.status?.toLowerCase();
+    return ["scheduled", "pending", "deposited"].includes(status);
+  });
 
   // Lọc tasks chờ kiểm định theo từ khóa
   const filteredTasks = pendingTasks.filter((task) => {
@@ -134,10 +135,10 @@ const InspectorTaskPage = () => {
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="pr-12">
                       <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
-                        {task.bikeName}
+                        {task.bikeName || task.bicycleName || "Xe đạp VeloX"}
                       </h3>
                       <p className="text-emerald-600 font-semibold">
-                        {formatCurrency(task.price)}
+                        {formatCurrency(task.price || task.amount || 0)}
                       </p>
                     </div>
                   </div>
