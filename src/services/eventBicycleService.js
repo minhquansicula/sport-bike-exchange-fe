@@ -17,6 +17,11 @@ export const eventBicycleService = {
     return response.data;
   },
 
+  getMyEventPostings: async () => {
+    const response = await api.get("/events/my-posts");
+    return response.data;
+  },
+
   // Đăng ký xe vào sự kiện (dành cho Xe mới tạo)
   registerBicycleToEventWithoutPosting: async (
     eventId,

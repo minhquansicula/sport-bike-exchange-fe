@@ -83,12 +83,48 @@ const RegisterBikeModal = ({
 
   useEffect(() => {
     if (showRegisterModal && user) {
-      bikeService
-        .getMyBikeListings()
-        .then((res) => {
-          if (res?.result) setMyListings(res.result);
-        })
-        .catch(console.error);
+      // 1. TẢI DANH SÁCH XE VÀ LỌC XE ĐÃ ĐĂNG KÝ
+      const fetchListingsData = async () => {
+        try {
+          const [listingsRes, eventPostingsRes] = await Promise.all([
+            bikeService.getMyBikeListings(),
+            eventBicycleService
+              .getMyEventPostings()
+              .catch(() => ({ result: [] })), // Bỏ qua lỗi nếu API chưa sẵn sàng
+          ]);
+
+          const allListings = listingsRes?.result || [];
+          const eventPostings = eventPostingsRes?.result || [];
+
+          // 1. Lấy ID của các xe đã đăng ký từ API my-posts (xử lý cả trường hợp object lồng nhau)
+          const registeredListingIds = eventPostings
+            .map((post) => post.listingId || post.listing?.listingId)
+            .filter(Boolean);
+
+          // 2. Lấy thêm ID của các xe đã nằm sẵn trong sự kiện HIỆN TẠI (từ props eventBikes)
+          const currentEventListingIds = (eventBikes || [])
+            .map((bike) => bike.listingId || bike.listing?.listingId)
+            .filter(Boolean);
+
+          // Gộp chung 2 danh sách ID lại và loại bỏ trùng lặp
+          const allInvalidIds = [
+            ...new Set([...registeredListingIds, ...currentEventListingIds]),
+          ];
+
+          // Lọc ra các xe CHƯA tham gia sự kiện và đang ở trạng thái Available (nếu cần)
+          const availableListings = allListings.filter(
+            (listing) => !allInvalidIds.includes(listing.listingId),
+          );
+
+          setMyListings(availableListings);
+        } catch (error) {
+          console.error("Lỗi lấy dữ liệu xe:", error);
+        }
+      };
+
+      fetchListingsData();
+
+      // 2. TẢI THƯ VIỆN DỮ LIỆU TỰ ĐỘNG ĐIỀN
       if (availableBrands.length === 0) {
         bikeService
           .getBicycleLibrary()
@@ -443,7 +479,8 @@ const RegisterBikeModal = ({
                   </label>
                   {myListings.length === 0 ? (
                     <p className="text-slate-500 text-sm italic p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                      Bạn chưa có bài đăng nào. Vui lòng chọn "Tạo xe mới".
+                      Bạn không có bài đăng xe hợp lệ nào. Vui lòng chọn "Tạo xe
+                      mới".
                     </p>
                   ) : (
                     <>

@@ -51,7 +51,9 @@ const EventDetailPage = () => {
       const approvedBikes = (bikesRes?.result || []).filter((b) => {
         const bikeEventId = b.eventId ?? b.event?.eventId;
         const bikeStatus = b.status?.toLowerCase();
-        return bikeEventId === eventIdNum && bikeStatus === "available";
+        return (
+          bikeEventId === eventIdNum && bikeStatus === "available_in_event"
+        );
       });
       setEventBikes(approvedBikes);
     } catch (error) {
