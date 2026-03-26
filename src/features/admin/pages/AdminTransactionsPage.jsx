@@ -596,25 +596,6 @@ const AdminTransactionsPage = () => {
                   </div>
 
                   <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex flex-wrap justify-end gap-2">
-                    {r.status === "Pending_Cancel" && (
-                        <>
-                          <button
-                            disabled={isProcessingCancel}
-                            onClick={() => handleApproveCancel(r.reservationId)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
-                          >
-                            <MdCheckCircle size={16} /> Duyệt hủy
-                          </button>
-                          <button
-                            disabled={isProcessingCancel}
-                            onClick={() => handleRejectCancel(r.reservationId)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
-                          >
-                            <MdClose size={16} /> Từ chối
-                          </button>
-                        </>
-                      )}
-
                     {r.status === "Completed" && (
                       <button
                         onClick={() => handlePayout(r.reservationId)}
@@ -625,7 +606,6 @@ const AdminTransactionsPage = () => {
                         <MdAttachMoney size={16} /> Thanh toán cho Seller
                       </button>
                     )}
-
 
                     {r.status === "Deposited" && (
                       <button

@@ -36,6 +36,7 @@ const AdminEventTransactionsPage = () => {
 
   const [isProcessingCancel, setIsProcessingCancel] = useState(false);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+  const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // States cho Schedule Modal (Giờ chỉ dùng để gán Inspector)
@@ -168,17 +169,16 @@ const AdminEventTransactionsPage = () => {
     }
   };
 
-  const handlePayoutToSeller = async (reservationId) => {
+  const handlePayout = async (reservationId) => {
     if (
       !window.confirm(
-        "Bạn có chắc chắn muốn CHUYỂN TIỀN cho người bán của giao dịch này?",
+        "Xác nhận chuyển tiền cho người bán? Bạn có chắc chắn giao dịch này đã hoàn thành thỏa đáng?",
       )
     )
       return;
     setIsProcessingPayout(true);
     try {
-      // API Payout nội bộ
-      // await reservationService.payoutToSeller(reservationId);
+      await reservationService.payoutToSeller(reservationId);
       toast.success("Đã chuyển tiền cho người bán thành công!");
       fetchReservations();
     } catch (error) {
@@ -187,6 +187,29 @@ const AdminEventTransactionsPage = () => {
       );
     } finally {
       setIsProcessingPayout(false);
+    }
+  };
+
+  const handleRefundBuyer = async (reservationId) => {
+    if (
+      !window.confirm(
+        "Xác nhận HOÀN TIỀN cho người mua? (Chỉ thực hiện khi kiểm định thất bại)",
+      )
+    )
+      return;
+    setIsProcessingRefund(true);
+    try {
+      await reservationService.refundDepositAfterInspectionFailEvent(
+        reservationId,
+      );
+      toast.success("Đã hoàn tiền cho người mua thành công!");
+      fetchReservations();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Lỗi khi hoàn tiền cho người mua!",
+      );
+    } finally {
+      setIsProcessingRefund(false);
     }
   };
 
@@ -555,25 +578,6 @@ const AdminEventTransactionsPage = () => {
 
                   {/* ACTION BUTTONS */}
                   <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex flex-wrap justify-end gap-2">
-                    {(r.status === "Pending_Cancel" ||
-                      (r.cancelDescription && r.status !== "Cancelled")) && (
-                        <>
-                          <button
-                            disabled={isProcessingCancel}
-                            onClick={() => handleApproveCancel(r.reservationId)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
-                          >
-                            <MdCheckCircle size={16} /> Duyệt hủy
-                          </button>
-                          <button
-                            disabled={isProcessingCancel}
-                            onClick={() => handleRejectCancel(r.reservationId)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
-                          >
-                            <MdClose size={16} /> Từ chối
-                          </button>
-                        </>
-                      )}
 
                     {/* Nút Phân công (Chỉ hiện khi Deposited hoặc Scheduled) */}
                     {r.status === "Deposited" && (
@@ -593,16 +597,29 @@ const AdminEventTransactionsPage = () => {
                       </button>
                     )}
 
-                    {r.status === "Completed" && (
+                    {r.status === "Inspection_Failed" && (
+                      <button
+                        disabled={isProcessingRefund}
+                        onClick={() => handleRefundBuyer(r.reservationId)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-bold hover:bg-orange-700 transition-colors shadow-sm disabled:opacity-50"
+                      >
+                        <MdAttachMoney size={16} />
+                        {isProcessingRefund
+                          ? "Đang hoàn tiền..."
+                          : "Hoàn tiền cho Buyer"}
+                      </button>
+                    )}
+
+                    {(r.status === "Completed" || r.status === "Waiting_Payment") && (
                       <button
                         disabled={isProcessingPayout}
-                        onClick={() => handlePayoutToSeller(r.reservationId)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition-colors shadow-sm disabled:opacity-50"
+                        onClick={() => handlePayout(r.reservationId)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
                       >
-                        <MdAccountBalanceWallet size={16} />
+                        <MdAttachMoney size={16} />
                         {isProcessingPayout
                           ? "Đang xử lý..."
-                          : "Trả tiền cho Seller"}
+                          : "Thanh toán cho Seller"}
                       </button>
                     )}
                   </div>

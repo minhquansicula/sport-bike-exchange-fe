@@ -70,13 +70,19 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
     if (report.result === "SUCCESS") {
       return { text: "✓ PASSED", cls: "bg-emerald-600" };
     }
-    if (report.result === "SELLER_NO_SHOW") {
+
+    // Kiểm tra chéo với nội dung reason/note để tránh hiển thị sai "Bạn đã không có mặt"
+    const combinedReason = `${report.reason || ""} ${report.note || ""}`.toLowerCase();
+    const isSellerNoShowText = combinedReason.includes("người bán không") || combinedReason.includes("seller_no_show");
+    const isBuyerNoShowText = combinedReason.includes("người mua không") || combinedReason.includes("buyer_no_show");
+
+    if (report.result === "SELLER_NO_SHOW" || isSellerNoShowText) {
       if (currentUserRole === "seller") {
         return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
       }
       return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI BÁN KHÔNG CÓ MẶT", cls: "bg-red-500" };
     }
-    if (report.result === "BUYER_NO_SHOW") {
+    if (report.result === "BUYER_NO_SHOW" || isBuyerNoShowText) {
       if (currentUserRole === "buyer") {
         return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
       }

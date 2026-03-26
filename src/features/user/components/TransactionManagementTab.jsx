@@ -285,10 +285,12 @@ const TransactionManagementTab = () => {
     }
   };
 
-  const handleFinalPayment = async (reservationId) => {
+  const handleFinalPayment = async (t) => {
     setIsProcessing(true);
     try {
-      const res = await reservationService.finalPayment(reservationId);
+      const res = t.isEventBike
+        ? await reservationService.finalPaymentEventBicycle(t.reservationId)
+        : await reservationService.finalPayment(t.reservationId);
       if (res.result?.paymentUrl) {
         window.location.href = res.result.paymentUrl;
       } else {
@@ -299,9 +301,21 @@ const TransactionManagementTab = () => {
         fetchAllTransactions();
       }
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Không thể khởi tạo thanh toán cuối.",
-      );
+      toast.error(error.response?.data?.message || "Lỗi thanh toán.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmOfflinePayment = async (t) => {
+    if (!window.confirm("Xác nhận bạn đã nhận đủ tiền mặt từ người mua tại sự kiện?")) return;
+    setIsProcessing(true);
+    try {
+      await reservationService.confirmOfflinePayment(t.reservationId);
+      toast.success("Xác nhận thanh toán thành công! Giao dịch đã hoàn tất.");
+      fetchAllTransactions();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi xác nhận thanh toán.");
     } finally {
       setIsProcessing(false);
     }
@@ -351,8 +365,14 @@ const TransactionManagementTab = () => {
         }
         toast.success("Đã hoàn tiền và hủy giao dịch thành công!");
       } else {
-        await reservationService.cancelReservation(cancelTarget.reservationId);
-        toast.success("Đã hủy giao dịch thành công!");
+        const desc = cancelTarget.userRole === "seller"
+          ? "Người bán yêu cầu hủy giao dịch"
+          : "Người mua yêu cầu hủy giao dịch";
+        await reservationService.requestCancelReservation(
+          cancelTarget.reservationId,
+          { cancelDescription: desc },
+        );
+        toast.success("Đã hủy giao dịch và hoàn tiền cọc thành công!");
       }
       fetchAllTransactions();
     } catch (error) {
@@ -386,7 +406,7 @@ const TransactionManagementTab = () => {
     if (!sellerCancelTarget || !cancelReason.trim()) return;
     setIsProcessing(true);
     try {
-      await reservationService.requestCancelReservationBySeller(
+      await reservationService.requestCancelReservation(
         sellerCancelTarget,
         { cancelDescription: cancelReason },
       );
@@ -650,9 +670,7 @@ const TransactionManagementTab = () => {
                       {renderStatusBadge(t.status)}
 
                       <div className="flex items-center gap-2">
-                        {/* ẨN NÚT HỦY CHO XE SỰ KIỆN */}
                         {t.userRole === "buyer" &&
-                          !t.isEventBike &&
                           ["Deposited", "Pending", "Paid"].includes(
                             t.status,
                           ) && (
@@ -665,9 +683,7 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
-                        {/* ẨN NÚT YÊU CẦU HỦY CHO XE SỰ KIỆN */}
                         {t.userRole === "seller" &&
-                          !t.isEventBike &&
                           [
                             "Deposited",
                             "Pending",
@@ -686,18 +702,43 @@ const TransactionManagementTab = () => {
                           )}
 
                         {/* NÚT THANH TOÁN CUỐI SAU KHI KIỂM ĐỊNH PASS */}
-                        {t.status === "Waiting_Payment" &&
-                          t.userRole === "buyer" && (
-                            <button
-                              disabled={isProcessing}
-                              onClick={() =>
-                                handleFinalPayment(t.reservationId)
-                              }
-                              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
-                            >
-                              <MdPayment size={16} /> Thanh toán giao dịch
-                            </button>
-                          )}
+                        {t.status === "Waiting_Payment" && (
+                          <>
+                            {t.userRole === "buyer" && !t.isEventBike && (
+                              <button
+                                disabled={isProcessing}
+                                onClick={() => handleFinalPayment(t)}
+                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
+                              >
+                                <MdPayment size={16} /> Thanh toán giao dịch
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {/* NÚT THANH TOÁN TIẾP/ XÁC NHẬN CHO XE SỰ KIỆN SAU KHI ADMIN CHUYỂN TIỀN CHO SELLER */}
+                        {t.status === "Paid_Out" && t.isEventBike && (
+                          <>
+                            {t.userRole === "buyer" && (
+                              <button
+                                disabled={isProcessing}
+                                onClick={() => handleFinalPayment(t)}
+                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
+                              >
+                                <MdPayment size={16} /> Thanh toán tiếp số tiền còn lại
+                              </button>
+                            )}
+                            {t.userRole === "seller" && (
+                              <button
+                                disabled={isProcessing}
+                                onClick={() => handleConfirmOfflinePayment(t)}
+                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
+                              >
+                                <MdCheckCircle size={16} /> Xác nhận đã nhận tiền mặt
+                              </button>
+                            )}
+                          </>
+                        )}
 
                         {/* NÚT THANH TOÁN LẠI CỌC NẾU CẦN */}
                         {t.status === "Pending" && t.userRole === "buyer" && (
@@ -710,30 +751,40 @@ const TransactionManagementTab = () => {
                           </button>
                         )}
 
-                        {t.status === "Inspection_Failed" &&
-                          t.userRole === "buyer" &&
-                          getNoShowType(t) !== "BUYER_NO_SHOW" && (
-                            <button
-                              disabled={isProcessing}
-                              onClick={() => setCancelTarget(t)}
-                              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
-                            >
-                              <MdCancel size={16} /> Hủy & Yêu cầu hoàn tiền cọc
-                            </button>
-                          )}
-
-                        {/* XE SỰ KIỆN SẼ KHÔNG CÓ BUYER/SELLER NO SHOW DO ADMIN KHÔNG PHÂN XỬ - Cứ để logic này chạy ngầm cho xe thường thôi */}
-                        {t.status === "Inspection_Failed" &&
-                          t.userRole === "seller" &&
-                          getNoShowType(t) === "BUYER_NO_SHOW" && (
-                            <button
-                              disabled={isProcessing}
-                              onClick={() => handleSellerCompensation(t)}
-                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
-                            >
-                              <MdPayment size={16} /> Yêu cầu nhận tiền đền bù
-                            </button>
-                          )}
+                        {t.status === "Inspection_Failed" && (
+                          <>
+                            {t.userRole === "buyer" && getNoShowType(t) !== "BUYER_NO_SHOW" && (
+                              <button
+                                disabled={isProcessing}
+                                onClick={() => setCancelTarget(t)}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                              >
+                                <MdCancel size={16} /> Hủy & Yêu cầu hoàn tiền cọc
+                              </button>
+                            )}
+                            {t.userRole === "seller" && (
+                              <>
+                                {getNoShowType(t) === "BUYER_NO_SHOW" ? (
+                                  <button
+                                    disabled={isProcessing}
+                                    onClick={() => handleSellerCompensation(t)}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                                  >
+                                    <MdPayment size={16} /> Yêu cầu nhận tiền đền bù
+                                  </button>
+                                ) : (
+                                  <button
+                                    disabled={isProcessing}
+                                    onClick={() => setCancelTarget(t)}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                                  >
+                                    <MdCancel size={16} /> Hủy & Hoàn cọc cho Buyer
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
