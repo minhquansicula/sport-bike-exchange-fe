@@ -43,12 +43,6 @@ const AdminTransactionsPage = () => {
     longitude: null,
   });
 
-  const [showViolationModal, setShowViolationModal] = useState(false);
-  const [violationTarget, setViolationTarget] = useState(null);
-  const [violationData, setViolationData] = useState({
-    violationType: "BUYER_NO_SHOW",
-    note: "",
-  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingCancel, setIsProcessingCancel] = useState(false);
@@ -151,37 +145,6 @@ const AdminTransactionsPage = () => {
       fetchReservations();
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi khi lên lịch hẹn!");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleOpenViolationModal = (res) => {
-    setViolationTarget(res);
-    setViolationData({
-      violationType: "BUYER_NO_SHOW",
-      note: "",
-    });
-    setShowViolationModal(true);
-  };
-
-  const handleViolationSubmit = async (e) => {
-    e.preventDefault();
-    if (!violationData.note.trim()) {
-      toast.error("Vui lòng nhập ghi chú hoặc lý do phạt vi phạm.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // API xử lý vi phạm Backend
-      // await reservationService.handleViolation(violationTarget.reservationId, violationData);
-
-      toast.success("Đã ghi nhận và xử lý vi phạm thành công!");
-      setShowViolationModal(false);
-      fetchReservations();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi xử lý vi phạm!");
     } finally {
       setIsSubmitting(false);
     }
@@ -413,11 +376,11 @@ const AdminTransactionsPage = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-              Quản lý Đặt chỗ & Phân xử
+              Quản lý Đặt chỗ
             </h1>
             <p className="text-gray-500 text-base mt-2 flex items-center gap-2">
               <MdEventAvailable className="text-orange-500" size={20} />
-              Xếp lịch hẹn, duyệt hủy và xử lý vi phạm giao dịch
+              Xếp lịch hẹn và duyệt hủy giao dịch
             </p>
           </div>
         </div>
@@ -663,17 +626,6 @@ const AdminTransactionsPage = () => {
                       </button>
                     )}
 
-                    {["Deposited", "Scheduled", "Waiting_Payment"].includes(
-                      r.status,
-                    ) && (
-                        <button
-                          onClick={() => handleOpenViolationModal(r)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-sm font-bold hover:bg-orange-200 transition-colors"
-                          title="Xử lý nếu người mua/bán không đến hoặc xe lỗi"
-                        >
-                          <MdGavel size={16} /> Phân xử
-                        </button>
-                      )}
 
                     {r.status === "Deposited" && (
                       <button
@@ -885,113 +837,6 @@ const AdminTransactionsPage = () => {
           </div>
         )}
 
-        {showViolationModal && violationTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
-              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-red-50">
-                <h3 className="font-black text-lg text-red-700 flex items-center gap-2">
-                  <MdGavel size={24} />
-                  Phân xử & Phạt vi phạm
-                </h3>
-                <button
-                  onClick={() => setShowViolationModal(false)}
-                  className="text-red-400 hover:text-red-600 transition-colors"
-                >
-                  <MdClose size={24} />
-                </button>
-              </div>
-
-              <div className="p-6">
-                <div className="mb-5 bg-gray-50 p-4 rounded-xl border border-gray-200 text-sm">
-                  <p className="text-gray-500 mb-1">
-                    Đang phân xử cho giao dịch:
-                  </p>
-                  <p className="font-bold text-gray-900">
-                    Mã: #{violationTarget.reservationId}
-                  </p>
-                  <p className="font-bold text-gray-900 line-clamp-1">
-                    {violationTarget.listingTitle}
-                  </p>
-                </div>
-
-                <form onSubmit={handleViolationSubmit} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Chọn lỗi vi phạm <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={violationData.violationType}
-                      onChange={(e) =>
-                        setViolationData({
-                          ...violationData,
-                          violationType: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none cursor-pointer"
-                    >
-                      <option value="BUYER_NO_SHOW">
-                        Người mua KHÔNG ĐẾN (Phạt mất cọc)
-                      </option>
-                      <option value="SELLER_NO_SHOW">
-                        Người bán KHÔNG ĐẾN (Hoàn cọc Buyer, phạt Seller)
-                      </option>
-                      <option value="INSPECTION_FAILED">
-                        Xe lỗi / Sai mô tả (Hoàn cọc Buyer, phạt Seller)
-                      </option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Ghi chú / Lý do (Bắt buộc){" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      required
-                      value={violationData.note}
-                      onChange={(e) =>
-                        setViolationData({
-                          ...violationData,
-                          note: e.target.value,
-                        })
-                      }
-                      placeholder="Ghi rõ lý do đền bù, số tiền phạt, bằng chứng (nếu có)..."
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none min-h-[120px] resize-none"
-                    ></textarea>
-                    <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
-                      <MdReportProblem className="text-orange-500 mt-0.5 shrink-0" />
-                      Lưu ý: Hành động này sẽ lập tức HỦY giao dịch và kích hoạt
-                      dòng tiền phạt trên hệ thống ví.
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowViolationModal(false)}
-                      className="px-6 py-2.5 rounded-xl font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="px-6 py-2.5 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 shadow-md disabled:opacity-70 flex items-center gap-2 transition-colors"
-                    >
-                      {isSubmitting ? (
-                        "Đang xử lý..."
-                      ) : (
-                        <>
-                          <MdGavel size={18} /> Xác nhận phạt
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
