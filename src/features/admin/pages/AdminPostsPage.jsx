@@ -26,6 +26,7 @@ import {
   MdLinearScale,
   MdRadioButtonUnchecked,
   MdCompress,
+  MdEventAvailable, // Import thêm icon này
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 import { bikeService } from "../../../services/bikeService";
@@ -57,7 +58,10 @@ const AdminPostsPage = () => {
               name: bike.sellerName || "Ẩn danh",
               avatar: `https://ui-avatars.com/api/?name=${bike.sellerName || "User"}&background=random`,
             },
-            status: bike.status ? bike.status.toLowerCase() : "pending",
+            // Đồng bộ trạng thái: chuyển về chữ thường và thay dấu cách bằng dấu gạch dưới (VD: "Available in event" -> "available_in_event")
+            status: bike.status
+              ? bike.status.toLowerCase().replace(/\s+/g, "_")
+              : "pending",
             createdAt: bike.createdAt
               ? new Date(bike.createdAt).toLocaleDateString("vi-VN")
               : "N/A",
@@ -199,7 +203,6 @@ const AdminPostsPage = () => {
           icon: <MdCheckCircle size={14} />,
           style: "bg-gray-100 text-gray-700 border-gray-200",
         };
-      // --- BỔ SUNG 2 TRẠNG THÁI MỚI ---
       case "waiting_payment":
         return {
           label: "Chờ thanh toán",
@@ -212,7 +215,14 @@ const AdminPostsPage = () => {
           icon: <MdCheckCircle size={14} />,
           style: "bg-blue-100 text-blue-700 border-blue-200",
         };
-      // -------------------------------
+      // --- BỔ SUNG TRẠNG THÁI XE SỰ KIỆN ---
+      case "available_in_event":
+        return {
+          label: "Xe sự kiện (Đã duyệt)",
+          icon: <MdEventAvailable size={14} />,
+          style: "bg-orange-100 text-orange-700 border-orange-200",
+        };
+      // -------------------------------------
       default:
         return {
           label: status,
