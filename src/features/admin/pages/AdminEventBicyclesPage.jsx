@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MdSearch,
-  MdFilterList,
   MdCheckCircle,
   MdPedalBike,
   MdEvent,
@@ -12,6 +11,8 @@ import {
   MdInfoOutline,
   MdSettingsSuggest,
   MdPerson,
+  MdCalendarToday,
+  MdAttachMoney,
 } from "react-icons/md";
 import { eventBicycleService } from "../../../services/eventBicycleService";
 
@@ -19,9 +20,8 @@ const AdminEventBicyclesPage = () => {
   const [eventBikes, setEventBikes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("Pending");
-
-  // State quản lý popup xem chi tiết xe
+  // Mặc định hiện xe cần duyệt
+  const [filterStatus, setFilterStatus] = useState("pending");
   const [selectedBike, setSelectedBike] = useState(null);
 
   const fetchEventBikes = async () => {
@@ -48,11 +48,9 @@ const AdminEventBicyclesPage = () => {
     if (window.confirm("Xác nhận duyệt xe này tham gia sự kiện?")) {
       try {
         await eventBicycleService.updateEventBicycleStatus(eventBikeId);
-        alert("Đã duyệt xe thành công!");
-        if (selectedBike) setSelectedBike(null); // Đóng popup nếu đang mở
+        if (selectedBike) setSelectedBike(null);
         fetchEventBikes();
       } catch (error) {
-        console.error("Lỗi khi duyệt xe:", error);
         alert(
           error.response?.data?.message ||
             "Lỗi khi duyệt xe, vui lòng thử lại.",
@@ -61,14 +59,12 @@ const AdminEventBicyclesPage = () => {
     }
   };
 
-  // Trích xuất dữ liệu để hiển thị trong popup (ĐÃ SỬA THEO API MỚI)
   const extractBikeDisplayData = (item) => {
     const source = item.listing?.bicycle || item.bicycle || {};
     const listing = item.listing || {};
     return {
       eventBikeId: item.eventBikeId,
       status: item.status,
-      // Ưu tiên lấy title và price trực tiếp từ item
       title:
         item.title ||
         listing.title ||
@@ -84,29 +80,25 @@ const AdminEventBicyclesPage = () => {
           : [
               "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80",
             ],
-      condition: listing.condition || source.condition || "Không rõ",
-      brand: source.brand?.name || source.brandName || "Không rõ",
-      // Ưu tiên lấy bikeType trực tiếp từ item
-      category: item.bikeType || source.category?.name || "Không rõ",
-
-      // Thông số kỹ thuật
-      year: source.yearManufacture || "Chưa cập nhật",
-      frameSize: source.frameSize || "Chưa cập nhật",
-      frameMaterial: source.frameMaterial || "Chưa cập nhật",
-      color: source.color || "Chưa cập nhật",
-      wheelSize: source.wheelSize || "Chưa cập nhật",
-      rim: source.rim || "Chưa cập nhật",
-      brakeType: source.brakeType || "Chưa cập nhật",
-      forkType: source.forkType || "Chưa cập nhật",
-      shockAbsorber: source.shockAbsorber || "Chưa cập nhật",
-      drivetrain: source.drivetrain || "Chưa cập nhật",
-      numberOfGears: source.numberOfGears || "Chưa cập nhật",
-      chainring: source.chainring || "Chưa cập nhật",
-      chain: source.chain || "Chưa cập nhật",
-      handlebar: source.handlebar || "Chưa cập nhật",
-      saddle: source.saddle || "Chưa cập nhật",
-      weight: source.weight ? `${source.weight} kg` : "Chưa cập nhật",
-
+      condition: listing.condition || source.condition || "N/A",
+      brand: source.brand?.name || source.brandName || "N/A",
+      category: item.bikeType || source.category?.name || "N/A",
+      year: source.yearManufacture || "N/A",
+      frameSize: source.frameSize || "N/A",
+      frameMaterial: source.frameMaterial || "N/A",
+      color: source.color || "N/A",
+      wheelSize: source.wheelSize || "N/A",
+      rim: source.rim || "N/A",
+      brakeType: source.brakeType || "N/A",
+      forkType: source.forkType || "N/A",
+      shockAbsorber: source.shockAbsorber || "N/A",
+      drivetrain: source.drivetrain || "N/A",
+      numberOfGears: source.numberOfGears || "N/A",
+      chainring: source.chainring || "N/A",
+      chain: source.chain || "N/A",
+      handlebar: source.handlebar || "N/A",
+      saddle: source.saddle || "N/A",
+      weight: source.weight ? `${source.weight} kg` : "N/A",
       sellerName: item.sellerName || "Ẩn danh",
       eventName: item.event?.name || "Không rõ",
       eventId: item.event?.eventId,
@@ -115,7 +107,6 @@ const AdminEventBicyclesPage = () => {
   };
 
   const filteredBikes = eventBikes.filter((item) => {
-    // Sửa lại cách lấy title cho bộ lọc tìm kiếm
     const title =
       item.title || item.listing?.title || item.bicycle?.model || "";
     const seller = item.sellerName || "";
@@ -126,234 +117,251 @@ const AdminEventBicyclesPage = () => {
       seller.toLowerCase().includes(searchTerm.toLowerCase()) ||
       eventName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchStatus =
-      filterStatus === "all" ? true : item.status === filterStatus;
+    const itemStatus = (item.status || "").toLowerCase();
+
+    let matchStatus = false;
+    if (filterStatus === "pending") {
+      matchStatus = itemStatus === "pending";
+    } else if (filterStatus === "available") {
+      matchStatus = ["available", "available_in_event"].includes(itemStatus);
+    } else if (filterStatus === "deposited") {
+      matchStatus = itemStatus === "deposited";
+    }
 
     return matchSearch && matchStatus;
   });
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case "Pending":
-        return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200 flex items-center gap-1 w-fit whitespace-nowrap">
-            <MdOutlinePendingActions size={14} /> Chờ duyệt
-          </span>
-        );
-      case "Available":
-        return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-200 flex items-center gap-1 w-fit whitespace-nowrap">
-            <MdCheckCircle size={14} /> Đã duyệt
-          </span>
-        );
-      default:
-        return (
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1 w-fit whitespace-nowrap">
-            {status}
-          </span>
-        );
+    const s = (status || "").toLowerCase();
+    if (s === "pending") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-700">
+          <MdOutlinePendingActions size={14} /> Chờ duyệt
+        </span>
+      );
     }
+    if (s === "available" || s === "available_in_event") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-700">
+          <MdCheckCircle size={14} /> Đã duyệt
+        </span>
+      );
+    }
+    if (s === "deposited") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-blue-100 text-blue-700">
+          <MdAttachMoney size={14} /> Đã cọc
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-gray-100 text-gray-600">
+        {status}
+      </span>
+    );
   };
 
+  const stats = useMemo(() => {
+    return {
+      pending: eventBikes.filter(
+        (b) => (b.status || "").toLowerCase() === "pending",
+      ).length,
+      available: eventBikes.filter((b) =>
+        ["available", "available_in_event"].includes(
+          (b.status || "").toLowerCase(),
+        ),
+      ).length,
+      deposited: eventBikes.filter(
+        (b) => (b.status || "").toLowerCase() === "deposited",
+      ).length,
+    };
+  }, [eventBikes]);
+
+  const tabs = [
+    {
+      id: "pending",
+      label: "Cần duyệt",
+      icon: MdOutlinePendingActions,
+      count: stats.pending,
+    },
+    {
+      id: "available",
+      label: "Đã duyệt",
+      icon: MdCheckCircle,
+      count: stats.available,
+    },
+    {
+      id: "deposited",
+      label: "Đã cọc",
+      icon: MdAttachMoney,
+      count: stats.deposited,
+    },
+  ];
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-          Duyệt Xe Sự Kiện
-        </h1>
-        <p className="text-slate-500 mt-2 text-sm">
-          Kiểm tra thông số kỹ thuật và phê duyệt các xe đạp đăng ký tham gia
-          giao dịch tại sự kiện.
-        </p>
-      </div>
-
-      {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-600">
-            <MdOutlineDirectionsBike size={26} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium mb-1">
-              Tổng số xe
-            </p>
-            <p className="text-3xl font-black text-slate-900">
-              {loading ? "-" : eventBikes.length}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-orange-50 text-orange-600">
-            <MdOutlinePendingActions size={26} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium mb-1">Chờ duyệt</p>
-            <p className="text-3xl font-black text-slate-900">
-              {loading
-                ? "-"
-                : eventBikes.filter((b) => b.status === "Pending").length}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-green-50 text-green-600">
-            <MdCheckCircle size={26} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium mb-1">Đã duyệt</p>
-            <p className="text-3xl font-black text-slate-900">
-              {loading
-                ? "-"
-                : eventBikes.filter((b) => b.status === "Available").length}
-            </p>
-          </div>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+            Xe Sự Kiện
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm">
+            Quản lý và phê duyệt xe đạp đăng ký tham gia sự kiện.
+          </p>
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      {/* Tabs thay cho Stats dạng khối */}
+      <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setFilterStatus(tab.id)}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap border ${
+              filterStatus === tab.id
+                ? "bg-gray-900 text-white border-gray-900 shadow-md"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            <tab.icon size={18} />
+            <span>{tab.label}</span>
+            <span
+              className={`px-2 py-0.5 rounded-md text-xs ${
+                filterStatus === tab.id
+                  ? "bg-gray-700 text-gray-100"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1 relative">
           <MdSearch
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            size={22}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+            size={20}
           />
           <input
             type="text"
-            placeholder="Tìm theo tên xe, người đăng ký, sự kiện..."
+            placeholder="Tìm kiếm xe, người bán, sự kiện..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all outline-none text-sm"
           />
-        </div>
-        <div className="relative min-w-[200px]">
-          <MdFilterList
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            size={22}
-          />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full pl-12 pr-10 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none appearance-none cursor-pointer font-medium text-slate-700"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="Pending">Chờ duyệt</option>
-            <option value="Available">Đã duyệt</option>
-          </select>
         </div>
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left">
-            <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-xs font-semibold">
               <tr>
-                <th className="px-6 py-4 font-bold">Mã</th>
-                <th className="px-6 py-4 font-bold">Thông tin xe</th>
-                <th className="px-6 py-4 font-bold">Sự kiện tham gia</th>
-                <th className="px-6 py-4 font-bold">Người đăng ký</th>
-                <th className="px-6 py-4 font-bold">Trạng thái</th>
-                <th className="px-6 py-4 font-bold text-right">Thao tác</th>
+                <th className="px-6 py-4">Xe đăng ký</th>
+                <th className="px-6 py-4">Sự kiện</th>
+                <th className="px-6 py-4">Người bán</th>
+                <th className="px-6 py-4">Trạng thái</th>
+                <th className="px-6 py-4 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-10 text-center text-slate-500"
-                  >
-                    Đang tải dữ liệu...
+                  <td colSpan="5" className="px-6 py-10 text-center">
+                    <div className="flex justify-center items-center gap-2 text-gray-400">
+                      <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                      Đang tải...
+                    </div>
                   </td>
                 </tr>
               ) : filteredBikes.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="6"
-                    className="px-6 py-10 text-center text-slate-500"
+                    colSpan="5"
+                    className="px-6 py-12 text-center text-gray-400"
                   >
-                    Không tìm thấy dữ liệu xe nào.
+                    Không tìm thấy xe nào.
                   </td>
                 </tr>
               ) : (
                 filteredBikes.map((item) => {
-                  const bikeInfo = extractBikeDisplayData(item);
+                  const bike = extractBikeDisplayData(item);
+                  const isPending =
+                    (bike.status || "").toLowerCase() === "pending";
 
                   return (
                     <tr
-                      key={item.eventBikeId}
-                      className="hover:bg-slate-50/50 transition-colors"
+                      key={bike.eventBikeId}
+                      className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                      onClick={() => setSelectedBike(item)}
                     >
-                      <td className="px-6 py-4 text-sm font-bold text-slate-500">
-                        #{bikeInfo.eventBikeId}
-                      </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           <img
-                            src={bikeInfo.images[0]}
-                            alt="bike"
-                            className="w-16 h-16 rounded-xl object-cover bg-slate-100 border border-slate-200"
+                            src={bike.images[0]}
+                            alt=""
+                            className="w-12 h-12 rounded-lg object-cover bg-gray-100 border border-gray-200"
                           />
                           <div>
-                            <p
-                              className="font-bold text-slate-900 line-clamp-1 max-w-[200px]"
-                              title={bikeInfo.title}
-                            >
-                              {bikeInfo.title}
+                            <p className="font-bold text-gray-900 max-w-[200px] truncate">
+                              {bike.title}
                             </p>
-                            <p className="text-sm font-bold text-orange-600 mt-1">
-                              {bikeInfo.price.toLocaleString()} đ
-                            </p>
-                            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                              <MdPedalBike /> {bikeInfo.category}
+                            <p className="text-gray-500 font-medium mt-0.5">
+                              {bike.price.toLocaleString()} đ
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
-                            <MdEvent size={16} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-700 line-clamp-2 max-w-[180px]">
-                              {bikeInfo.eventName}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              ID: #{bikeInfo.eventId}
-                            </p>
-                          </div>
+                          <MdEvent className="text-gray-400" size={16} />
+                          <span className="font-medium text-gray-700 max-w-[150px] truncate">
+                            {bike.eventName}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="font-bold text-slate-800">
-                          {bikeInfo.sellerName}
+                        <p className="font-medium text-gray-900">
+                          {bike.sellerName}
                         </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {bikeInfo.createDate}
+                        <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                          <MdCalendarToday size={12} />
+                          {bike.createDate
+                            ? new Date(bike.createDate).toLocaleDateString(
+                                "vi-VN",
+                              )
+                            : "N/A"}
                         </p>
                       </td>
                       <td className="px-6 py-4">
-                        {getStatusBadge(bikeInfo.status)}
+                        {getStatusBadge(bike.status)}
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                      <td className="px-6 py-4 text-right space-x-2">
                         <button
-                          onClick={() => setSelectedBike(item)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBike(item);
+                          }}
+                          className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Xem chi tiết"
                         >
-                          <MdVisibility size={16} /> Chi tiết
+                          <MdVisibility size={18} />
                         </button>
-                        {bikeInfo.status === "Pending" ? (
+                        {isPending && (
                           <button
-                            onClick={() => handleApprove(bikeInfo.eventBikeId)}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-orange-500 text-white rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(bike.eventBikeId);
+                            }}
+                            className="inline-flex items-center justify-center h-8 px-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium text-xs transition-colors"
                           >
-                            <MdCheckCircle size={16} /> Duyệt
+                            Duyệt
                           </button>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-600 border border-green-200 rounded-lg font-bold text-sm cursor-not-allowed">
-                            Đã duyệt
-                          </span>
                         )}
                       </td>
                     </tr>
@@ -365,178 +373,146 @@ const AdminEventBicyclesPage = () => {
         </div>
       </div>
 
-      {/* POPUP CHI TIẾT XE */}
+      {/* MODERN MODAL */}
       {selectedBike &&
         (() => {
-          const bikeInfo = extractBikeDisplayData(selectedBike);
+          const bike = extractBikeDisplayData(selectedBike);
+          const isPending = (bike.status || "").toLowerCase() === "pending";
+          const specs = [
+            { label: "Thương hiệu", value: bike.brand },
+            { label: "Danh mục", value: bike.category },
+            { label: "Tình trạng", value: bike.condition },
+            { label: "Khung xe", value: bike.frameMaterial },
+            { label: "Size khung", value: bike.frameSize },
+            { label: "Bánh xe", value: bike.wheelSize },
+            { label: "Truyền động", value: bike.drivetrain },
+            { label: "Phanh", value: bike.brakeType },
+          ].filter(
+            (s) => s.value && s.value !== "N/A" && s.value !== "Chưa cập nhật",
+          );
 
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto py-10">
-              <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col relative my-auto animate-in zoom-in-95 duration-200">
-                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white rounded-t-3xl z-10">
-                  <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                    <MdInfoOutline className="text-orange-500" /> Chi tiết hồ sơ
-                    xe
-                  </h3>
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
+              <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-200">
+                {/* Modal Header */}
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                   <div className="flex items-center gap-3">
-                    {getStatusBadge(bikeInfo.status)}
-                    <button
-                      onClick={() => setSelectedBike(null)}
-                      className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                    >
-                      <MdClose size={24} />
-                    </button>
+                    <h3 className="font-bold text-gray-900 text-lg">
+                      Chi tiết xe sự kiện
+                    </h3>
+                    {getStatusBadge(bike.status)}
                   </div>
-                </div>
-
-                <div className="p-6 md:p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Cột trái: Ảnh */}
-                    <div className="space-y-4">
-                      <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                        <img
-                          src={bikeInfo.images[0]}
-                          alt={bikeInfo.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      {bikeInfo.images.length > 1 && (
-                        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                          {bikeInfo.images.map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt=""
-                              className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0"
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Cột phải: Thông tin */}
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-2xl font-black text-slate-900 leading-tight mb-2">
-                          {bikeInfo.title}
-                        </h2>
-                        <p className="text-3xl font-black text-orange-600">
-                          {bikeInfo.price.toLocaleString()} đ
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col gap-3">
-                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-center gap-4">
-                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-500 shadow-sm shrink-0">
-                            <MdEvent size={20} />
-                          </div>
-                          <div>
-                            <p className="text-xs text-slate-500 font-medium">
-                              Sự kiện đăng ký
-                            </p>
-                            <p className="font-bold text-slate-900 line-clamp-1">
-                              {bikeInfo.eventName}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 flex items-center gap-4">
-                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-orange-500 shadow-sm shrink-0">
-                            <MdPerson size={20} />
-                          </div>
-                          <div>
-                            <p className="text-xs text-slate-500 font-medium">
-                              Người bán / Đăng ký
-                            </p>
-                            <p className="font-bold text-slate-900">
-                              {bikeInfo.sellerName}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-                          <MdSettingsSuggest className="text-slate-400" /> Thông
-                          số kỹ thuật
-                        </h4>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                          {[
-                            { label: "Thương hiệu", value: bikeInfo.brand },
-                            { label: "Danh mục", value: bikeInfo.category },
-                            { label: "Tình trạng", value: bikeInfo.condition },
-                            { label: "Năm sản xuất", value: bikeInfo.year },
-                            {
-                              label: "Chất liệu khung",
-                              value: bikeInfo.frameMaterial,
-                            },
-                            { label: "Size khung", value: bikeInfo.frameSize },
-                            { label: "Màu sắc", value: bikeInfo.color },
-                            { label: "Bánh xe", value: bikeInfo.wheelSize },
-                            { label: "Vành xe", value: bikeInfo.rim },
-                            { label: "Loại phanh", value: bikeInfo.brakeType },
-                            { label: "Loại phuộc", value: bikeInfo.forkType },
-                            {
-                              label: "Giảm xóc",
-                              value: bikeInfo.shockAbsorber,
-                            },
-                            {
-                              label: "Bộ truyền động",
-                              value: bikeInfo.drivetrain,
-                            },
-                            {
-                              label: "Số líp/tốc độ",
-                              value: bikeInfo.numberOfGears,
-                            },
-                            { label: "Đĩa", value: bikeInfo.chainring },
-                            { label: "Xích", value: bikeInfo.chain },
-                            { label: "Ghi đông", value: bikeInfo.handlebar },
-                            { label: "Yên xe", value: bikeInfo.saddle },
-                            { label: "Trọng lượng", value: bikeInfo.weight },
-                          ].map((spec, idx) => (
-                            <div
-                              key={idx}
-                              className="bg-slate-50 p-3 rounded-lg border border-slate-100"
-                            >
-                              <span className="block text-slate-400 text-[11px] uppercase tracking-wider mb-1 font-bold">
-                                {spec.label}
-                              </span>
-                              <span
-                                className="font-bold text-slate-800 line-clamp-1"
-                                title={spec.value}
-                              >
-                                {spec.value}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-bold text-slate-900 mb-2">
-                          Mô tả người bán
-                        </h4>
-                        <p className="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-wrap">
-                          {bikeInfo.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-3xl">
                   <button
                     onClick={() => setSelectedBike(null)}
-                    className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-colors"
+                    className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-900 rounded-full transition-colors"
+                  >
+                    <MdClose size={20} />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column: Images */}
+                  <div className="space-y-3">
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                      <img
+                        src={bike.images[0]}
+                        alt={bike.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {bike.images.length > 1 && (
+                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                        {bike.images.map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt=""
+                            className="w-16 h-16 rounded-lg object-cover border border-gray-200 shrink-0"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Info */}
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-black text-gray-900 leading-tight">
+                        {bike.title}
+                      </h2>
+                      <p className="text-2xl font-bold text-gray-900 mt-2">
+                        {bike.price.toLocaleString()} đ
+                      </p>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mb-1">
+                          <MdEvent /> Sự kiện
+                        </p>
+                        <p className="font-bold text-gray-900 text-sm truncate">
+                          {bike.eventName}
+                        </p>
+                      </div>
+                      <div className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mb-1">
+                          <MdPerson /> Người bán
+                        </p>
+                        <p className="font-bold text-gray-900 text-sm truncate">
+                          {bike.sellerName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1.5">
+                        <MdSettingsSuggest
+                          className="text-gray-400"
+                          size={18}
+                        />
+                        Thông số nổi bật
+                      </h4>
+                      <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                        {specs.map((spec, idx) => (
+                          <div key={idx} className="text-sm">
+                            <span className="text-gray-500 block text-xs">
+                              {spec.label}
+                            </span>
+                            <span className="font-medium text-gray-900 truncate block">
+                              {spec.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-1.5">
+                        <MdInfoOutline className="text-gray-400" size={18} />
+                        Mô tả thêm
+                      </h4>
+                      <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
+                        {bike.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                  <button
+                    onClick={() => setSelectedBike(null)}
+                    className="px-5 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
                   >
                     Đóng
                   </button>
-                  {bikeInfo.status === "Pending" && (
+                  {isPending && (
                     <button
-                      onClick={() => handleApprove(bikeInfo.eventBikeId)}
-                      className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 hover:bg-orange-500 text-white rounded-xl font-bold shadow-lg transition-colors active:scale-95"
+                      onClick={() => handleApprove(bike.eventBikeId)}
+                      className="px-6 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
                     >
-                      <MdCheckCircle size={20} /> Phê duyệt xe này
+                      <MdCheckCircle size={18} /> Phê duyệt xe này
                     </button>
                   )}
                 </div>
