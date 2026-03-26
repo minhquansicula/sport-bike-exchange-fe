@@ -1,22 +1,25 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api", // Proxy Vite sẽ lo phần chuyển hướng
+  // Sử dụng biến môi trường của Vite
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Tự động gắn Token vào Header nếu có
+// Interceptor gắn token (giữ nguyên logic cũ của bạn)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token"); // Hoặc lấy từ nơi bạn lưu
     if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    return Promise.reject(error);
+  },
 );
 
 export default api;
