@@ -12,16 +12,19 @@ import {
   MdStorefront,
   MdLocationOn,
   MdInfoOutline,
-  MdGavel,
-  MdReportProblem,
   MdAccountBalanceWallet,
   MdPedalBike,
   MdVerified,
   MdCalendarToday,
+  MdAssignmentInd,
+  MdEdit,
+  MdGavel,
+  MdReportProblem,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 import { reservationService } from "../../../services/reservationService";
 import { eventBicycleService } from "../../../services/eventBicycleService";
+import { userService } from "../../../services/userService";
 import { toast } from "react-hot-toast";
 import Modal from "../../../components/common/Modal";
 
@@ -35,6 +38,13 @@ const AdminEventTransactionsPage = () => {
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // States cho Schedule Modal (Giờ chỉ dùng để gán Inspector)
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedRes, setSelectedRes] = useState(null);
+  const [inspectors, setInspectors] = useState([]);
+  const [scheduleData, setScheduleData] = useState({
+    inspectorId: "",
+  });
 
   // State quản lý Popup Xem chi tiết xe
   const [viewDetailTarget, setViewDetailTarget] = useState(null);
@@ -46,7 +56,6 @@ const AdminEventTransactionsPage = () => {
       setLoading(true);
       const res = await reservationService.getAllReservations();
       if (res && res.result) {
-        // LỌC CHỈ LẤY GIAO DỊCH XE SỰ KIỆN
         const eventReservations = res.result.filter(
           (r) => r.eventBicycleId || r.eventBikeId,
         );
@@ -60,9 +69,62 @@ const AdminEventTransactionsPage = () => {
     }
   };
 
+  const fetchInspectors = async () => {
+    try {
+      const res = await userService.getAllUsers();
+      if (res && res.result) {
+        const listInspector = res.result.filter(
+          (u) =>
+            u.role?.toUpperCase() === "INSPECTOR" ||
+            u.role?.toUpperCase() === "ADMIN",
+        );
+        setInspectors(listInspector);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy danh sách inspector:", error);
+      toast.error("Không thể tải danh sách kiểm định viên");
+    }
+  };
+
   useEffect(() => {
     fetchReservations();
+    fetchInspectors();
   }, []);
+
+  const handleOpenScheduleModal = (res) => {
+    setSelectedRes(res);
+    setScheduleData({
+      inspectorId: res.inspectorId || "",
+    });
+    setShowScheduleModal(true);
+  };
+
+  const handleScheduleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!scheduleData.inspectorId) {
+      toast.error("Vui lòng chọn kiểm định viên (Inspector)");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Gửi request phân công. Truyền rỗng các trường vị trí/thời gian vì đây là xe sự kiện
+      await reservationService.scheduleReservation(selectedRes.reservationId, {
+        inspectorId: parseInt(scheduleData.inspectorId),
+        meetingLocation: "Giao dịch trực tiếp tại sự kiện",
+        meetingTime: new Date().toISOString(), // Truyền tạm thời gian hiện tại nếu BE bắt buộc khác null
+        latitude: 0,
+        longitude: 0,
+      });
+      toast.success("Phân công kiểm định viên thành công!");
+      setShowScheduleModal(false);
+      fetchReservations();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi phân công!");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleApproveCancel = async (reservationId) => {
     if (
@@ -115,7 +177,7 @@ const AdminEventTransactionsPage = () => {
       return;
     setIsProcessingPayout(true);
     try {
-      // API Payout (Nội bộ Backend)
+      // API Payout nội bộ
       // await reservationService.payoutToSeller(reservationId);
       toast.success("Đã chuyển tiền cho người bán thành công!");
       fetchReservations();
@@ -160,15 +222,13 @@ const AdminEventTransactionsPage = () => {
   const sortedReservations = [...filteredReservations].sort((a, b) => {
     const statusPriority = {
       Pending_Cancel: 1,
-      Disputed: 2,
-      Inspection_Failed: 3,
-      Waiting_Payment: 4,
-      Deposited: 5,
+      Inspection_Failed: 2,
+      Deposited: 3,
+      Scheduled: 4,
+      Waiting_Payment: 5,
       Completed: 6,
       Paid_Out: 7,
       Cancelled: 8,
-      Refunded: 9,
-      Compensated: 10,
     };
     const priorityA = statusPriority[a.status] || 99;
     const priorityB = statusPriority[b.status] || 99;
@@ -187,14 +247,6 @@ const AdminEventTransactionsPage = () => {
           text: "text-red-700",
           border: "border-red-200",
         };
-      case "Disputed":
-        return {
-          label: "Đang tranh chấp",
-          icon: MdGavel,
-          bg: "bg-orange-50",
-          text: "text-orange-700",
-          border: "border-orange-200",
-        };
       case "Waiting_Payment":
         return {
           label: "Chờ thanh toán",
@@ -205,11 +257,19 @@ const AdminEventTransactionsPage = () => {
         };
       case "Deposited":
         return {
-          label: "Chờ giao dịch tại Event",
-          icon: MdEventAvailable,
+          label: "Chờ phân công Inspector",
+          icon: MdAssignmentInd,
           bg: "bg-orange-100",
           text: "text-orange-800",
           border: "border-orange-200",
+        };
+      case "Scheduled":
+        return {
+          label: "Đã phân công",
+          icon: MdCheckCircle,
+          bg: "bg-blue-100",
+          text: "text-blue-800",
+          border: "border-blue-200",
         };
       case "Inspection_Failed":
         return {
@@ -243,22 +303,6 @@ const AdminEventTransactionsPage = () => {
           text: "text-red-800",
           border: "border-red-200",
         };
-      case "Refunded":
-        return {
-          label: "Đã hoàn tiền",
-          icon: MdCheckCircle,
-          bg: "bg-blue-100",
-          text: "text-blue-800",
-          border: "border-blue-200",
-        };
-      case "Compensated":
-        return {
-          label: "Đã đền bù",
-          icon: MdCheckCircle,
-          bg: "bg-blue-100",
-          text: "text-blue-800",
-          border: "border-blue-200",
-        };
       default:
         return {
           label: status,
@@ -273,10 +317,8 @@ const AdminEventTransactionsPage = () => {
   const stats = {
     total: reservations.length,
     deposited: reservations.filter((t) => t.status === "Deposited").length,
+    scheduled: reservations.filter((t) => t.status === "Scheduled").length,
     completed: reservations.filter((t) => t.status === "Completed").length,
-    disputed: reservations.filter(
-      (t) => t.status === "Disputed" || t.status === "Pending_Cancel",
-    ).length,
   };
 
   return (
@@ -289,7 +331,8 @@ const AdminEventTransactionsPage = () => {
             </h1>
             <p className="text-gray-500 text-base mt-2 flex items-center gap-2">
               <MdEventAvailable className="text-orange-500" size={20} />
-              Theo dõi các giao dịch diễn ra trực tiếp tại sự kiện
+
+              Phân công kiểm định và theo dõi giao dịch tại các sự kiện
             </p>
           </div>
         </div>
@@ -308,12 +351,23 @@ const AdminEventTransactionsPage = () => {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center">
-                <MdAttachMoney size={20} />
+                <MdAssignmentInd size={20} />
               </div>
-              <p className="text-sm font-bold text-gray-500">Chờ giao dịch</p>
+              <p className="text-sm font-bold text-gray-500">Chờ phân công</p>
             </div>
             <p className="text-2xl font-black text-gray-900">
               {stats.deposited}
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <MdPerson size={20} />
+              </div>
+              <p className="text-sm font-bold text-gray-500">Đã phân công</p>
+            </div>
+            <p className="text-2xl font-black text-gray-900">
+              {stats.scheduled}
             </p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
@@ -356,10 +410,10 @@ const AdminEventTransactionsPage = () => {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="Waiting_Payment">Chờ thanh toán</option>
-              <option value="Deposited">Chờ giao dịch tại Event</option>
+              <option value="Deposited">Chờ phân công</option>
+              <option value="Scheduled">Đã phân công</option>
               <option value="Pending_Cancel">Yêu cầu hủy</option>
               <option value="Inspection_Failed">Kiểm định thất bại</option>
-              <option value="Disputed">Đang tranh chấp</option>
               <option value="Completed">Hoàn thành</option>
               <option value="Paid_Out">Đã trả seller</option>
               <option value="Cancelled">Đã hủy</option>
@@ -467,14 +521,22 @@ const AdminEventTransactionsPage = () => {
                     </div>
 
                     {/* Vị trí giao dịch sự kiện */}
-                    <div className="bg-orange-50 p-3 rounded-xl mb-4 flex items-center gap-2 text-sm">
+                    <div className="bg-orange-50 p-3 rounded-xl mb-4 flex items-start gap-2 text-sm">
                       <MdLocationOn
-                        className="text-orange-500 shrink-0"
+                        className="text-orange-500 shrink-0 mt-0.5"
                         size={18}
                       />
-                      <span className="text-orange-800 font-medium">
-                        Giao dịch trực tiếp tại khu vực sự kiện
-                      </span>
+                      <div className="flex-1">
+                        <p className="text-orange-800 font-bold">
+                          Giao dịch trực tiếp tại sự kiện
+                        </p>
+                        {r.status === "Scheduled" && r.inspectorName && (
+                          <p className="text-orange-700 mt-1 flex items-center gap-1">
+                            <MdAssignmentInd size={14} /> Phụ trách:{" "}
+                            <strong>{r.inspectorName}</strong>
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {(r.cancelDescription || r.status === "Pending_Cancel") &&
@@ -491,6 +553,7 @@ const AdminEventTransactionsPage = () => {
                       )}
                   </div>
 
+                  {/* ACTION BUTTONS */}
                   <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex flex-wrap justify-end gap-2">
                     {(r.status === "Pending_Cancel" ||
                       (r.cancelDescription && r.status !== "Cancelled")) && (
@@ -512,6 +575,24 @@ const AdminEventTransactionsPage = () => {
                         </>
                       )}
 
+                    {/* Nút Phân công (Chỉ hiện khi Deposited hoặc Scheduled) */}
+                    {r.status === "Deposited" && (
+                      <button
+                        onClick={() => handleOpenScheduleModal(r)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-bold hover:bg-zinc-800 transition-colors shadow-sm"
+                      >
+                        <MdAssignmentInd size={16} /> Phân công Inspector
+                      </button>
+                    )}
+                    {r.status === "Scheduled" && (
+                      <button
+                        onClick={() => handleOpenScheduleModal(r)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors"
+                      >
+                        <MdEdit size={16} /> Đổi người phụ trách
+                      </button>
+                    )}
+
                     {r.status === "Completed" && (
                       <button
                         disabled={isProcessingPayout}
@@ -530,6 +611,84 @@ const AdminEventTransactionsPage = () => {
             })}
           </div>
         )}
+
+        {/* MODAL PHÂN CÔNG INSPECTOR (TINH GỌN) */}
+        {showScheduleModal && selectedRes && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
+              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 className="font-black text-lg text-gray-900 flex items-center gap-2">
+                  <MdAssignmentInd className="text-orange-500" size={24} />
+                  Phân công Kiểm định viên
+                </h3>
+                <button
+                  onClick={() => setShowScheduleModal(false)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <MdClose size={24} />
+                </button>
+              </div>
+              <form onSubmit={handleScheduleSubmit} className="p-6 space-y-5">
+                <div className="bg-orange-50 p-4 rounded-xl text-sm border border-orange-100">
+                  <p className="font-bold text-orange-800">
+                    Thông tin giao dịch #{selectedRes.reservationId}
+                  </p>
+                  <p className="text-orange-700 mt-1">
+                    Xe sự kiện được mặc định giao dịch trực tiếp tại khu vực tổ
+                    chức. Bạn chỉ cần phân công người phụ trách.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Chọn Inspector <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={scheduleData.inspectorId}
+                    onChange={(e) =>
+                      setScheduleData({ inspectorId: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
+                  >
+                    <option value="">-- Chọn kiểm định viên --</option>
+                    {inspectors.map((ins) => (
+                      <option key={ins.userId} value={ins.userId}>
+                        {ins.fullName || ins.username}{" "}
+                        {ins.phone ? `- ${ins.phone}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduleModal(false)}
+                    className="px-6 py-2.5 rounded-xl font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 rounded-xl font-bold bg-gray-900 text-white hover:bg-orange-500 shadow-md disabled:opacity-70 flex items-center gap-2 transition-colors"
+                  >
+                    {isSubmitting ? (
+                      "Đang xử lý..."
+                    ) : (
+                      <>
+                        <MdCheckCircle size={18} /> Xác nhận
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL CHI TIẾT BÀI ĐĂNG POPUP HIỆN ĐẠI */}
         <Modal
           isOpen={!!viewDetailTarget}
           onClose={() => {

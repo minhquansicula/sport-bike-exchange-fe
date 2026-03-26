@@ -27,6 +27,7 @@ import {
   MdPedalBike,
   MdVerified,
   MdCalendarToday,
+  MdAssignmentInd, // Icon phân công
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 import InspectionReportPanel from "./InspectionReportPanel";
@@ -121,7 +122,7 @@ const TransactionManagementTab = () => {
       listingImage: extractImageUrl(tx),
       bikePrice:
         tx.actualPrice ||
-        ((tx.depositAmount || 0) + (tx.remainingAmount || 0)) ||
+        (tx.depositAmount || 0) + (tx.remainingAmount || 0) ||
         tx.amount ||
         listing.price ||
         eventBike.price ||
@@ -162,7 +163,6 @@ const TransactionManagementTab = () => {
       buyerId: buyer.userId || tx.buyerId,
       sellerId: seller.userId || tx.sellerId,
       eventId: eventBike.event?.eventId || tx.eventId,
-      // Thông tin hủy / vắng mặt
       cancelDescription:
         reservation.cancelDescription ||
         tx.cancelDescription ||
@@ -187,10 +187,10 @@ const TransactionManagementTab = () => {
         transactionService.getMyTransactions(),
       ]);
 
-      // ─── 1. Buyer items (from reservation APIs) ──────────────────────────
       const buyerMap = new Map();
       if (regularRes.status === "fulfilled" && regularRes.value?.result) {
-        regularRes.value.result.map(mapTransactionToDisplay)
+        regularRes.value.result
+          .map(mapTransactionToDisplay)
           .filter((r) => r.buyerId === userId)
           .forEach((item) => {
             const key = item.reservationId || item.id;
@@ -198,7 +198,8 @@ const TransactionManagementTab = () => {
           });
       }
       if (eventRes.status === "fulfilled" && eventRes.value?.result) {
-        eventRes.value.result.map(mapTransactionToDisplay)
+        eventRes.value.result
+          .map(mapTransactionToDisplay)
           .filter((r) => r.buyerId === userId)
           .forEach((item) => {
             const key = item.reservationId || item.id;
@@ -206,18 +207,24 @@ const TransactionManagementTab = () => {
           });
       }
 
-      // ─── 2. Other items (from getMyTransactions) ────────────────────────
       const otherMap = new Map();
-      if (transactionsRes.status === "fulfilled" && transactionsRes.value?.result) {
-        transactionsRes.value.result.map(mapTransactionToDisplay)
-          .filter((t) => (t.sellerId === userId || t.buyerId === userId) && !buyerMap.has(t.reservationId || t.id))
+      if (
+        transactionsRes.status === "fulfilled" &&
+        transactionsRes.value?.result
+      ) {
+        transactionsRes.value.result
+          .map(mapTransactionToDisplay)
+          .filter(
+            (t) =>
+              (t.sellerId === userId || t.buyerId === userId) &&
+              !buyerMap.has(t.reservationId || t.id),
+          )
           .forEach((item) => {
             const key = item.reservationId || item.id;
             if (key) otherMap.set(key, item);
           });
       }
 
-      // Merge: buyer items first, then unique other items
       const uniqueMap = new Map([...buyerMap, ...otherMap]);
 
       const statusPriority = {
@@ -261,7 +268,6 @@ const TransactionManagementTab = () => {
     if (userId) fetchAllTransactions();
   }, [userId]);
 
-  // HÀM MỞ POPUP CHI TIẾT
   const handleOpenDetailModal = async (t) => {
     setViewDetailTarget(t);
     setDetailedBikeInfo(null);
@@ -284,7 +290,6 @@ const TransactionManagementTab = () => {
     }
   };
 
-  // HÀM THANH TOÁN CUỐI (KHI XE ĐÃ PASSED KIỂM ĐỊNH)
   const handleFinalPayment = async (reservationId) => {
     setIsProcessing(true);
     try {
@@ -294,7 +299,7 @@ const TransactionManagementTab = () => {
       } else {
         toast.success(
           res.result?.message ||
-          "Thanh toán thành công! Giao dịch đã hoàn tất.",
+            "Thanh toán thành công! Giao dịch đã hoàn tất.",
         );
         fetchAllTransactions();
       }
@@ -307,7 +312,6 @@ const TransactionManagementTab = () => {
     }
   };
 
-  // HÀM ĐẶT CỌC (NẾU CẦN THANH TOÁN LẠI CỌC)
   const handleContinuePayment = async (item) => {
     setIsProcessing(true);
     try {
@@ -360,11 +364,17 @@ const TransactionManagementTab = () => {
   const handleSellerCompensation = async (t) => {
     setIsProcessing(true);
     try {
-      await reservationService.transferDepositToSellerAfterBuyerNoShow(t.reservationId);
-      toast.success("Đã nhận tiền đền bù thành công! Vui lòng kiểm tra số dư ví.");
+      await reservationService.transferDepositToSellerAfterBuyerNoShow(
+        t.reservationId,
+      );
+      toast.success(
+        "Đã nhận tiền đền bù thành công! Vui lòng kiểm tra số dư ví.",
+      );
       fetchAllTransactions();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể nhận tiền đền bù.");
+      toast.error(
+        error.response?.data?.message || "Không thể nhận tiền đền bù.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -424,7 +434,11 @@ const TransactionManagementTab = () => {
         icon: MdWarning,
         color: "red",
       },
-      Paid_Out: { label: "Đã thanh toán (Seller)", icon: MdCheckCircle, color: "blue" },
+      Paid_Out: {
+        label: "Đã thanh toán (Seller)",
+        icon: MdCheckCircle,
+        color: "blue",
+      },
     };
     const config = statusMap[status] || {
       label: status,
@@ -434,16 +448,17 @@ const TransactionManagementTab = () => {
     const Icon = config.icon;
     return (
       <span
-        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${config.color === "red"
-          ? "bg-red-50 text-red-600"
-          : config.color === "blue"
-            ? "bg-blue-50 text-blue-600"
-            : config.color === "emerald"
-              ? "bg-emerald-50 text-emerald-700"
-              : config.color === "green"
-                ? "bg-green-50 text-green-600"
-                : "bg-gray-50 text-gray-600"
-          }`}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+          config.color === "red"
+            ? "bg-red-50 text-red-600"
+            : config.color === "blue"
+              ? "bg-blue-50 text-blue-600"
+              : config.color === "emerald"
+                ? "bg-emerald-50 text-emerald-700"
+                : config.color === "green"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-gray-50 text-gray-600"
+        }`}
       >
         <Icon size={14} />
         {config.label}
@@ -451,13 +466,14 @@ const TransactionManagementTab = () => {
     );
   };
 
-  // Hàm kiểm tra loại vắng mặt từ các field khác nhau
   const getNoShowType = (t) => {
     const combined = [
       t.noShowType || "",
       t.cancelDescription || "",
       t.cancelReason || "",
-    ].join(" ").toLowerCase();
+    ]
+      .join(" ")
+      .toLowerCase();
 
     if (
       combined.includes("seller_no_show") ||
@@ -519,19 +535,21 @@ const TransactionManagementTab = () => {
       <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-2">
         <button
           onClick={() => setTransactionType("regular")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${transactionType === "regular"
-            ? "bg-zinc-900 text-white shadow-sm"
-            : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900"
-            }`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${
+            transactionType === "regular"
+              ? "bg-zinc-900 text-white shadow-sm"
+              : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900"
+          }`}
         >
           <MdStorefront size={18} /> Giao dịch xe thông thường
         </button>
         <button
           onClick={() => setTransactionType("event")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${transactionType === "event"
-            ? "bg-orange-500 text-white shadow-sm"
-            : "bg-orange-50 text-orange-400 hover:bg-orange-100 hover:text-orange-600"
-            }`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${
+            transactionType === "event"
+              ? "bg-orange-500 text-white shadow-sm"
+              : "bg-orange-50 text-orange-400 hover:bg-orange-100 hover:text-orange-600"
+          }`}
         >
           <MdEventAvailable size={18} /> Giao dịch xe sự kiện
         </button>
@@ -561,7 +579,6 @@ const TransactionManagementTab = () => {
                 )}
 
                 <div className="flex flex-col sm:flex-row">
-                  {/* NÚT BẤM VÀO HÌNH ẢNH MỞ POPUP */}
                   <button
                     onClick={() => handleOpenDetailModal(t)}
                     className="sm:w-36 sm:h-36 h-48 w-full sm:shrink-0 bg-gray-50 flex items-center justify-center overflow-hidden relative group outline-none"
@@ -582,7 +599,6 @@ const TransactionManagementTab = () => {
                     <div className="space-y-3 min-w-0 pr-8">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-1 text-left">
-                          {/* NÚT BẤM VÀO TÊN XE MỞ POPUP */}
                           <button
                             onClick={() => handleOpenDetailModal(t)}
                             className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors line-clamp-1 outline-none text-left"
@@ -632,7 +648,7 @@ const TransactionManagementTab = () => {
                       {renderStatusBadge(t.status)}
 
                       <div className="flex items-center gap-2">
-                        {/* ẨN NÚT HỦY ĐỐI VỚI XE SỰ KIỆN */}
+                        {/* ẨN NÚT HỦY CHO XE SỰ KIỆN */}
                         {t.userRole === "buyer" &&
                           !t.isEventBike &&
                           ["Deposited", "Pending", "Paid"].includes(
@@ -647,7 +663,7 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
-                        {/* ẨN NÚT YÊU CẦU HỦY ĐỐI VỚI XE SỰ KIỆN */}
+                        {/* ẨN NÚT YÊU CẦU HỦY CHO XE SỰ KIỆN */}
                         {t.userRole === "seller" &&
                           !t.isEventBike &&
                           [
@@ -667,7 +683,6 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
-                        {/* NÚT THANH TOÁN CUỐI SAU KHI KIỂM ĐỊNH PASS */}
                         {t.status === "Waiting_Payment" &&
                           t.userRole === "buyer" && (
                             <button
@@ -681,7 +696,6 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
-                        {/* NÚT THANH TOÁN LẠI CỌC NẾU CẦN */}
                         {t.status === "Pending" && t.userRole === "buyer" && (
                           <button
                             disabled={isProcessing}
@@ -692,36 +706,52 @@ const TransactionManagementTab = () => {
                           </button>
                         )}
 
-                        {t.status === "Inspection_Failed" && t.userRole === "buyer" && getNoShowType(t) !== "BUYER_NO_SHOW" && (
-                          <button
-                            disabled={isProcessing}
-                            onClick={() => setCancelTarget(t)}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
-                          >
-                            <MdCancel size={16} /> Hủy & Yêu cầu hoàn tiền cọc
-                          </button>
-                        )}
+                        {t.status === "Inspection_Failed" &&
+                          t.userRole === "buyer" &&
+                          getNoShowType(t) !== "BUYER_NO_SHOW" && (
+                            <button
+                              disabled={isProcessing}
+                              onClick={() => setCancelTarget(t)}
+                              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                            >
+                              <MdCancel size={16} /> Hủy & Yêu cầu hoàn tiền cọc
+                            </button>
+                          )}
 
-                        {t.status === "Inspection_Failed" && t.userRole === "seller" && getNoShowType(t) === "BUYER_NO_SHOW" && (
-                          <button
-                            disabled={isProcessing}
-                            onClick={() => handleSellerCompensation(t)}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
-                          >
-                            <MdPayment size={16} /> Yêu cầu nhận tiền đền bù
-                          </button>
-                        )}
+                        {/* XE SỰ KIỆN SẼ KHÔNG CÓ BUYER/SELLER NO SHOW DO ADMIN KHÔNG PHÂN XỬ - Cứ để logic này chạy ngầm cho xe thường thôi */}
+                        {t.status === "Inspection_Failed" &&
+                          t.userRole === "seller" &&
+                          getNoShowType(t) === "BUYER_NO_SHOW" && (
+                            <button
+                              disabled={isProcessing}
+                              onClick={() => handleSellerCompensation(t)}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                            >
+                              <MdPayment size={16} /> Yêu cầu nhận tiền đền bù
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Phần hiển thị thông tin cuộc hẹn */}
+                {/* --- PHẦN HIỂN THỊ THÔNG TIN CUỘC HẸN --- */}
                 {t.isEventBike ? (
-                  <div className="border-t border-orange-100 bg-orange-50/50 p-4 flex items-center justify-between text-sm text-orange-800">
-                    <div className="flex items-center gap-2 font-medium">
-                      <MdLocationOn size={18} className="text-orange-500" />
-                      Giao dịch trực tiếp tại khu vực sự kiện
+                  <div className="border-t border-orange-100 bg-orange-50/50 p-4 flex items-start gap-3 text-sm">
+                    <MdLocationOn
+                      size={20}
+                      className="text-orange-500 shrink-0 mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <p className="text-orange-800 font-bold">
+                        Giao dịch trực tiếp tại khu vực sự kiện
+                      </p>
+                      {t.status === "Scheduled" && t.inspectorName && (
+                        <p className="text-orange-700 mt-1 flex items-center gap-1 font-medium">
+                          <MdAssignmentInd size={16} /> Phụ trách:{" "}
+                          {t.inspectorName}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -735,12 +765,12 @@ const TransactionManagementTab = () => {
                         <span className="text-gray-700">
                           {t.meetingTime
                             ? new Date(t.meetingTime).toLocaleString("vi-VN", {
-                              weekday: "long",
-                              day: "numeric",
-                              month: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                                weekday: "long",
+                                day: "numeric",
+                                month: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
                             : "Chưa chốt thời gian"}
                         </span>
                       </div>
@@ -755,6 +785,7 @@ const TransactionManagementTab = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                            title="Xem trên Google Maps"
                           >
                             {t.meetingLocation}
                           </a>
@@ -784,12 +815,20 @@ const TransactionManagementTab = () => {
                   )
                 )}
 
-                {/* Panel báo cáo kiểm định */}
-                {["Waiting_Payment", "Inspection_Failed", "Cancelled", "Refunded", "Compensated"].includes(
-                  t.status,
-                ) && <InspectionReportPanel reservationId={t.reservationId} currentUserRole={t.userRole} />}
+                {[
+                  "Waiting_Payment",
+                  "Inspection_Failed",
+                  "Cancelled",
+                  "Refunded",
+                  "Compensated",
+                ].includes(t.status) && (
+                  <InspectionReportPanel
+                    reservationId={t.reservationId}
+                    currentUserRole={t.userRole}
+                  />
+                )}
 
-                {/* Banners */}
+                {/* --- BANNERS TRẠNG THÁI --- */}
                 {t.status === "Waiting_Payment" && (
                   <div className="border-t border-emerald-100 bg-emerald-50/60 p-3 text-sm text-emerald-800 flex items-center gap-2.5">
                     <MdCheckCircle
@@ -813,107 +852,199 @@ const TransactionManagementTab = () => {
                   <div className="border-t border-red-100 bg-red-50/60 p-3 text-sm text-red-800 flex items-center gap-2.5">
                     <MdWarning size={18} className="text-red-500 shrink-0" />
                     <span>
-                      Xe <strong>không đạt kiểm định</strong>. {t.userRole === "buyer" ? "Hãy ấn nút Hủy & Yêu cầu hoàn tiền cọc bên dưới để nhận lại tiền." : "Giao dịch sẽ bị hủy."}
+                      Xe <strong>không đạt kiểm định</strong>.{" "}
+                      {t.userRole === "buyer"
+                        ? "Hãy ấn nút Hủy & Yêu cầu hoàn tiền cọc bên dưới để nhận lại tiền."
+                        : "Giao dịch sẽ bị hủy."}
                     </span>
                   </div>
                 )}
                 {t.status === "Refunded" && !getNoShowType(t) && (
                   <div className="border-t border-blue-100 bg-blue-50/60 p-3 text-sm text-blue-800 flex items-center gap-2.5">
-                    <MdCheckCircle size={18} className="text-blue-500 shrink-0" />
+                    <MdCheckCircle
+                      size={18}
+                      className="text-blue-500 shrink-0"
+                    />
                     <span>
-                      Xe <strong>không đạt kiểm định</strong>. {t.userRole === "buyer" ? "Tiền cọc đã được hoàn trả thành công vào ví của bạn." : "Giao dịch đã bị hủy và hoàn tất xử lý."}
+                      Xe <strong>không đạt kiểm định</strong>.{" "}
+                      {t.userRole === "buyer"
+                        ? "Tiền cọc đã được hoàn trả thành công vào ví của bạn."
+                        : "Giao dịch đã bị hủy và hoàn tất xử lý."}
                     </span>
                   </div>
                 )}
+
                 {t.status === "Deposited" && !t.isEventBike && (
                   <div className="border-t border-gray-50 bg-blue-50/50 p-3 text-sm text-blue-700 flex items-center gap-2.5">
                     <MdAdminPanelSettings size={18} className="text-blue-500" />
                     <span>Đang chờ Admin xếp lịch hẹn kiểm tra xe...</span>
                   </div>
                 )}
+
                 {t.status === "Deposited" && t.isEventBike && (
                   <div className="border-t border-orange-100 bg-orange-50/50 p-3 text-sm text-orange-800 flex items-center gap-2.5">
-                    <MdCheckCircle size={18} className="text-orange-500" />
+                    <MdEventAvailable size={18} className="text-orange-500" />
                     <span>
-                      Vui lòng đến sự kiện để kiểm tra xe và hoàn tất thủ tục
-                      giao dịch.
+                      Đã đặt cọc. Hệ thống đang phân công Kiểm định viên phụ
+                      trách giao dịch của bạn tại sự kiện.
+                    </span>
+                  </div>
+                )}
+
+                {t.status === "Scheduled" && t.isEventBike && (
+                  <div className="border-t border-blue-100 bg-blue-50/50 p-3 text-sm text-blue-800 flex items-center gap-2.5">
+                    <MdAssignmentInd size={18} className="text-blue-500" />
+                    <span>
+                      Đã phân công Kiểm định viên. Vui lòng tiến hành giao dịch
+                      trực tiếp tại sự kiện.
                     </span>
                   </div>
                 )}
 
                 {/* Banner vắng mặt - Người bán không đến */}
-                {(t.status === "Cancelled" || t.status === "Inspection_Failed" || t.status === "Refunded") && getNoShowType(t) === "SELLER_NO_SHOW" && (
-                  <div className="border-t p-4 text-sm flex items-start gap-3 bg-red-50/80 border-red-100 text-red-800">
-                    {t.userRole === "buyer" ? (
-                      <>
-                        <MdWarning size={20} className="text-red-500 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold mb-1">Giao dịch đã bị hủy — Người bán không đến</p>
-                          {t.status === "Refunded" ? (
-                            <p><strong>Thành công!</strong> Tiền cọc đã được hoàn trả 100% + thêm 200,000 VND tiền bồi thường vào ví của bạn.</p>
-                          ) : (
-                            <p>Hãy ấn nút <strong>Hủy & Yêu cầu hoàn tiền cọc</strong> bên dưới để được hoàn 100% tiền cọc + thêm <strong>200,000 VND</strong> tiền bồi thường vì người bán đã không đến.</p>
-                          )}
-                          {t.cancelDescription && (
-                            <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
-                              <span className="font-semibold">Lý do ghi nhận:</span> {t.cancelDescription}
+                {(t.status === "Cancelled" ||
+                  t.status === "Inspection_Failed" ||
+                  t.status === "Refunded") &&
+                  getNoShowType(t) === "SELLER_NO_SHOW" && (
+                    <div className="border-t p-4 text-sm flex items-start gap-3 bg-red-50/80 border-red-100 text-red-800">
+                      {t.userRole === "buyer" ? (
+                        <>
+                          <MdWarning
+                            size={20}
+                            className="text-red-500 shrink-0 mt-0.5"
+                          />
+                          <div>
+                            <p className="font-bold mb-1">
+                              Giao dịch đã bị hủy — Người bán không đến
                             </p>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <MdWarning size={20} className="text-red-500 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold mb-1">Giao dịch đã thất bại — Bạn đã không đến</p>
-                          <p>Giao dịch bị hủy vì <strong>bạn (người bán) không đến</strong> đúng giờ. Tiền cọc sẽ được hoàn lại cho người mua kèm 200,000 VND bồi thường. Liên hệ hỗ trợ nếu có khiếu nại.</p>
-                          {t.cancelDescription && (
-                            <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
-                              <span className="font-semibold">Lý do ghi nhận:</span> {t.cancelDescription}
+                            {t.status === "Refunded" ? (
+                              <p>
+                                <strong>Thành công!</strong> Tiền cọc đã được
+                                hoàn trả 100% + thêm 200,000 VND tiền bồi thường
+                                vào ví của bạn.
+                              </p>
+                            ) : (
+                              <p>
+                                Hãy ấn nút{" "}
+                                <strong>Hủy & Yêu cầu hoàn tiền cọc</strong> bên
+                                dưới để được hoàn 100% tiền cọc + thêm{" "}
+                                <strong>200,000 VND</strong> tiền bồi thường vì
+                                người bán đã không đến.
+                              </p>
+                            )}
+                            {t.cancelDescription && (
+                              <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
+                                <span className="font-semibold">
+                                  Lý do ghi nhận:
+                                </span>{" "}
+                                {t.cancelDescription}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <MdWarning
+                            size={20}
+                            className="text-red-500 shrink-0 mt-0.5"
+                          />
+                          <div>
+                            <p className="font-bold mb-1">
+                              Giao dịch đã thất bại — Bạn đã không đến
                             </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                            <p>
+                              Giao dịch bị hủy vì{" "}
+                              <strong>bạn (người bán) không đến</strong> đúng
+                              giờ. Tiền cọc sẽ được hoàn lại cho người mua kèm
+                              200,000 VND bồi thường. Liên hệ hỗ trợ nếu có
+                              khiếu nại.
+                            </p>
+                            {t.cancelDescription && (
+                              <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
+                                <span className="font-semibold">
+                                  Lý do ghi nhận:
+                                </span>{" "}
+                                {t.cancelDescription}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                 {/* Banner vắng mặt - Người mua không đến */}
-                {(t.status === "Inspection_Failed" || t.status === "Compensated") && getNoShowType(t) === "BUYER_NO_SHOW" && (
-                  <div className="border-t p-4 text-sm flex items-start gap-3 bg-red-50/80 border-red-100 text-red-800">
-                    {t.userRole === "seller" ? (
-                      <>
-                        <MdWarning size={20} className="text-red-500 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold mb-1">Giao dịch đã bị hủy — Người mua không đến</p>
-                          {t.status === "Compensated" ? (
-                            <p><strong>Thành công!</strong> Bạn đã nhận được <strong>50% tiền cọc</strong> từ người mua. Vui lòng kiểm tra ví.</p>
-                          ) : (
-                            <p>Hãy ấn nút <strong>Yêu cầu nhận tiền đền bù</strong> bên dưới để nhận <strong>50% tiền cọc</strong> vì người mua đã không đến. Hệ thống sẽ giữ lại 50% còn lại.</p>
-                          )}
-                          {t.cancelDescription && (
-                            <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
-                              <span className="font-semibold">Lý do ghi nhận:</span> {t.cancelDescription}
+                {(t.status === "Inspection_Failed" ||
+                  t.status === "Compensated") &&
+                  getNoShowType(t) === "BUYER_NO_SHOW" && (
+                    <div className="border-t p-4 text-sm flex items-start gap-3 bg-red-50/80 border-red-100 text-red-800">
+                      {t.userRole === "seller" ? (
+                        <>
+                          <MdWarning
+                            size={20}
+                            className="text-red-500 shrink-0 mt-0.5"
+                          />
+                          <div>
+                            <p className="font-bold mb-1">
+                              Giao dịch đã bị hủy — Người mua không đến
                             </p>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <MdWarning size={20} className="text-red-500 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold mb-1">Giao dịch đã thất bại — Bạn đã không đến</p>
-                          <p>Giao dịch bị hủy vì <strong>bạn (người mua) đã không đến</strong> đúng giờ hẹn kiểm định. <span className="font-bold underline">50% tiền cọc đã chuyển cho người bán</span>, 50% còn lại hệ thống giữ lại theo quy định.</p>
-                          {t.cancelDescription && (
-                            <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
-                              <span className="font-semibold">Lý do ghi nhận:</span> {t.cancelDescription}
+                            {t.status === "Compensated" ? (
+                              <p>
+                                <strong>Thành công!</strong> Bạn đã nhận được{" "}
+                                <strong>50% tiền cọc</strong> từ người mua. Vui
+                                lòng kiểm tra ví.
+                              </p>
+                            ) : (
+                              <p>
+                                Hãy ấn nút{" "}
+                                <strong>Yêu cầu nhận tiền đền bù</strong> bên
+                                dưới để nhận <strong>50% tiền cọc</strong> vì
+                                người mua đã không đến. Hệ thống sẽ giữ lại 50%
+                                còn lại.
+                              </p>
+                            )}
+                            {t.cancelDescription && (
+                              <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
+                                <span className="font-semibold">
+                                  Lý do ghi nhận:
+                                </span>{" "}
+                                {t.cancelDescription}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <MdWarning
+                            size={20}
+                            className="text-red-500 shrink-0 mt-0.5"
+                          />
+                          <div>
+                            <p className="font-bold mb-1">
+                              Giao dịch đã thất bại — Bạn đã không đến
                             </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                            <p>
+                              Giao dịch bị hủy vì{" "}
+                              <strong>bạn (người mua) đã không đến</strong> đúng
+                              giờ hẹn kiểm định.{" "}
+                              <span className="font-bold underline">
+                                50% tiền cọc đã chuyển cho người bán
+                              </span>
+                              , 50% còn lại hệ thống giữ lại theo quy định.
+                            </p>
+                            {t.cancelDescription && (
+                              <p className="mt-2 text-red-700 bg-red-100/50 p-2 rounded text-xs">
+                                <span className="font-semibold">
+                                  Lý do ghi nhận:
+                                </span>{" "}
+                                {t.cancelDescription}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
               </div>
             );
           })}
@@ -936,7 +1067,11 @@ const TransactionManagementTab = () => {
             <button
               onClick={confirmCancelReservation}
               disabled={isProcessing}
-              className={`flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${cancelTarget?.status === "Inspection_Failed" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-500 hover:bg-red-600"}`}
+              className={`flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
+                cancelTarget?.status === "Inspection_Failed"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-red-500 hover:bg-red-600"
+              }`}
             >
               {isProcessing ? "Đang xử lý..." : "Xác nhận hủy"}
             </button>
@@ -1053,9 +1188,15 @@ const TransactionManagementTab = () => {
                 src={
                   detailedBikeInfo?.image_url?.split(",")[0] ||
                   viewDetailTarget.listingImage ||
+                  viewDetailTarget.eventBicycleImage ||
+                  viewDetailTarget.eventBikeImage ||
                   "https://via.placeholder.com/800x400?text=No+Image"
                 }
-                alt={viewDetailTarget.listingTitle}
+                alt={
+                  viewDetailTarget.listingTitle ||
+                  viewDetailTarget.eventBicycleTitle ||
+                  viewDetailTarget.eventBikeTitle
+                }
                 className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent"></div>
@@ -1073,11 +1214,13 @@ const TransactionManagementTab = () => {
               <div className="absolute bottom-0 left-0 p-6 w-full z-10">
                 {viewDetailTarget.isEventBike && (
                   <span className="bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded mb-2 inline-flex items-center gap-1 shadow-sm">
-                    <MdEventAvailable size={14} /> Thuộc sự kiện
+                    <MdEventAvailable size={14} /> Xe Sự kiện
                   </span>
                 )}
                 <h2 className="text-2xl md:text-3xl font-black text-white leading-tight mb-1 drop-shadow-md">
-                  {viewDetailTarget.listingTitle}
+                  {viewDetailTarget.listingTitle ||
+                    viewDetailTarget.eventBicycleTitle ||
+                    viewDetailTarget.eventBikeTitle}
                 </h2>
                 <p className="text-orange-400 font-black text-2xl drop-shadow-md">
                   {formatCurrency(viewDetailTarget.bikePrice)}
@@ -1102,7 +1245,8 @@ const TransactionManagementTab = () => {
                       </p>
                       <p className="font-bold text-gray-800 text-sm truncate">
                         {detailedBikeInfo?.bicycle?.brand?.name ||
-                          viewDetailTarget.brandName}
+                          detailedBikeInfo?.bicycle?.brandName ||
+                          "N/A"}
                       </p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -1111,7 +1255,8 @@ const TransactionManagementTab = () => {
                       </p>
                       <p className="font-bold text-gray-800 text-sm truncate">
                         {detailedBikeInfo?.bicycle?.category?.name ||
-                          viewDetailTarget.categoryName}
+                          detailedBikeInfo?.bikeType ||
+                          "N/A"}
                       </p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -1119,8 +1264,7 @@ const TransactionManagementTab = () => {
                         <MdVerified /> Tình trạng
                       </p>
                       <p className="font-bold text-orange-600 text-sm truncate">
-                        {detailedBikeInfo?.condition ||
-                          viewDetailTarget.condition}
+                        {detailedBikeInfo?.condition || "N/A"}
                       </p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -1128,49 +1272,39 @@ const TransactionManagementTab = () => {
                         <MdCalendarToday /> Năm SX
                       </p>
                       <p className="font-bold text-gray-800 text-sm truncate">
-                        {detailedBikeInfo?.bicycle?.yearManufacture ||
-                          viewDetailTarget.yearManufacture}
+                        {detailedBikeInfo?.bicycle?.yearManufacture || "N/A"}
                       </p>
                     </div>
                   </div>
 
-                  {(detailedBikeInfo?.bicycle ||
-                    detailedBikeInfo?.frameSize) && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 border-t border-gray-100 pt-4">
-                        <div className="flex justify-between items-center py-1">
-                          <span className="text-gray-400">Khung xe:</span>
-                          <span className="font-medium text-gray-800">
-                            {detailedBikeInfo.bicycle?.frameMaterial ||
-                              detailedBikeInfo.frameMaterial ||
-                              "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-1">
-                          <span className="text-gray-400">Size khung:</span>
-                          <span className="font-medium text-gray-800">
-                            {detailedBikeInfo.bicycle?.frameSize ||
-                              detailedBikeInfo.frameSize ||
-                              "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-1">
-                          <span className="text-gray-400">Phanh xe:</span>
-                          <span className="font-medium text-gray-800">
-                            {detailedBikeInfo.bicycle?.brakeType ||
-                              detailedBikeInfo.brakeType ||
-                              "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-1">
-                          <span className="text-gray-400">Bộ đề:</span>
-                          <span className="font-medium text-gray-800">
-                            {detailedBikeInfo.bicycle?.drivetrain ||
-                              detailedBikeInfo.drivetrain ||
-                              "N/A"}
-                          </span>
-                        </div>
+                  {detailedBikeInfo?.bicycle && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 border-t border-gray-100 pt-4">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">Khung xe:</span>
+                        <span className="font-medium text-gray-800">
+                          {detailedBikeInfo.bicycle?.frameMaterial || "N/A"}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">Size khung:</span>
+                        <span className="font-medium text-gray-800">
+                          {detailedBikeInfo.bicycle?.frameSize || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">Phanh xe:</span>
+                        <span className="font-medium text-gray-800">
+                          {detailedBikeInfo.bicycle?.brakeType || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-400">Bộ đề:</span>
+                        <span className="font-medium text-gray-800">
+                          {detailedBikeInfo.bicycle?.drivetrain || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
@@ -1179,7 +1313,8 @@ const TransactionManagementTab = () => {
                     </h4>
                     <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
                       {detailedBikeInfo?.description ||
-                        viewDetailTarget.description}
+                        detailedBikeInfo?.bicycle?.description ||
+                        "Chưa có thông tin mô tả."}
                     </p>
                   </div>
                 </div>
