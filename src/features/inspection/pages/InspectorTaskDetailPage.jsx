@@ -47,6 +47,8 @@ const InspectorTaskDetailPage = () => {
         reason: isSeller ? "Người bán không đến" : "Người mua không đến",
         note: "",
         checklistItems: [],
+        buyerCheckin: !isSeller,
+        sellerCheckin: isSeller,
       };
       await inspectorService.createInspectionReport(id, payload);
       toast.success(isSeller ? "Đã báo cáo người bán không đến thành công!" : "Đã báo cáo người mua không đến thành công!");

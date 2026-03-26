@@ -46,8 +46,8 @@ export const reservationService = {
     return response.data;
   },
 
-  // Yêu cầu hủy giao dịch (dành cho người bán)
-  requestCancelReservationBySeller: async (reservationId, data) => {
+  // Yêu cầu hủy giao dịch (dành cho người mua và người bán)
+  requestCancelReservation: async (reservationId, data) => {
     const response = await api.put(
       `/reservations/${reservationId}/request-cancel`,
       data,
@@ -79,10 +79,32 @@ export const reservationService = {
     return response.data;
   },
 
+  finalPaymentEventBicycle: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/event-bicycle/${reservationId}/final-payment`,
+    );
+    return response.data;
+  },
+
+  confirmOfflinePayment: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/event-bicycle/${reservationId}/confirm-offline-payment`,
+    );
+    return response.data;
+  },
+
   // Hoàn tiền đặt cọc khi kiểm định thất bại
   refundDepositAfterInspectionFail: async (reservationId) => {
     const response = await api.post(
       `/reservations/${reservationId}/refund-inspection-fail`,
+    );
+    return response.data;
+  },
+
+  // Hoàn tiền đặt cọc khi kiểm định thất bại (xe sự kiện)
+  refundDepositAfterInspectionFailEvent: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/${reservationId}/refund-inspection-fail-event`,
     );
     return response.data;
   },
