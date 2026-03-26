@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
+import { useInspectorTasks } from "../hooks/useInspectorTasks"; // Đảm bảo hook này hoạt động tốt
+import { getPartyInfo } from "../../../utils/getPartyInfo";
+import { toast } from "react-hot-toast";
 import {
   MdAssignment,
   MdCheckCircle,
@@ -10,71 +13,57 @@ import {
   MdLocationOn,
   MdPedalBike,
   MdPerson,
+  MdEventAvailable,
 } from "react-icons/md";
-
-// Mock data cho các nhiệm vụ
-const MOCK_TASKS = [
-  {
-    id: 1,
-    bikeName: "Trek Marlin 7 Gen 2",
-    bikeImage: "https://fxbike.vn/wp-content/uploads/2022/02/Trek-Marlin-7-2022-1-600x450.jpeg",
-    buyer: "Nguyễn Văn A",
-    seller: "Trần Thị B",
-    location: "Trạm OldBike Đống Đa",
-    scheduledTime: "2026-01-29 14:00",
-    status: "pending",
-    price: 12500000,
-  },
-  {
-    id: 2,
-    bikeName: "Giant Escape 2 City Disc",
-    bikeImage: "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=400",
-    buyer: "Lê Văn C",
-    seller: "Hoàng Văn D",
-    location: "Trạm OldBike Q1 HCM",
-    scheduledTime: "2026-01-30 10:00",
-    status: "pending",
-    price: 8200000,
-  },
-  {
-    id: 3,
-    bikeName: "Specialized Allez E5",
-    bikeImage: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400",
-    buyer: "Phạm Thị E",
-    seller: "Nguyễn Văn F",
-    location: "Trạm OldBike Đà Nẵng",
-    scheduledTime: "2026-01-31 09:00",
-    status: "pending",
-    price: 21000000,
-  },
-];
 
 const InspectorHomePage = () => {
   const { user } = useAuth();
+  const { tasks, loading, error } = useInspectorTasks();
 
-  // Thống kê
+  useEffect(() => {
+    if (error) {
+      toast.error("Không thể tải dữ liệu thống kê nhiệm vụ");
+    }
+  }, [error]);
+
+  // Phân loại task từ dữ liệu thật
+  const pendingTasks = tasks.filter((t) =>
+    ["Scheduled", "pending"].includes(t.status),
+  );
+  const completedTasksThisWeek = tasks.filter((t) =>
+    ["Completed"].includes(t.status),
+  ); // Bạn có thể thêm logic lọc theo tuần thực tế
+  const totalTasksThisMonth = tasks.length; // Thống kê tạm theo tổng số task
+
+  // Lấy danh sách nhiệm vụ sắp tới (Tối đa 5 task)
+  const upcomingTasks = pendingTasks
+    .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
+    .slice(0, 5);
+
+  // Thống kê động
   const stats = [
     {
-      label: "Nhiệm vụ hôm nay",
-      value: 3,
+      label: "Nhiệm vụ cần xử lý",
+      value: pendingTasks.length,
       icon: <MdAssignment size={24} />,
       color: "bg-blue-500",
     },
     {
-      label: "Đã hoàn thành tuần này",
-      value: 12,
+      label: "Đã hoàn thành",
+      value: completedTasksThisWeek.length,
       icon: <MdCheckCircle size={24} />,
       color: "bg-emerald-500",
     },
     {
-      label: "Chờ xử lý",
-      value: 5,
+      label: "Chờ xử lý khẩn cấp",
+      value: pendingTasks.filter((t) => new Date(t.scheduledTime) < new Date())
+        .length, // Số task quá hạn
       icon: <MdAccessTime size={24} />,
       color: "bg-orange-500",
     },
     {
-      label: "Tổng tháng này",
-      value: 48,
+      label: "Tổng số phân công",
+      value: totalTasksThisMonth,
       icon: <MdTrendingUp size={24} />,
       color: "bg-purple-500",
     },
@@ -87,17 +76,26 @@ const InspectorHomePage = () => {
     }).format(value);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 rounded-2xl p-6 text-white shadow-md">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold mb-1">
               Xin chào, {user?.name}! 👋
             </h1>
             <p className="text-emerald-100 text-sm">
-              Bạn có <strong>3 nhiệm vụ</strong> cần xử lý hôm nay.
+              Bạn có <strong>{pendingTasks.length} nhiệm vụ</strong> đang chờ
+              kiểm định.
             </p>
           </div>
           <div className="flex gap-3">
@@ -106,12 +104,6 @@ const InspectorHomePage = () => {
               className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-all backdrop-blur-sm"
             >
               Xem tất cả
-            </Link>
-            <Link
-              to="/inspector/create-report"
-              className="px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg text-sm font-medium transition-all shadow-lg"
-            >
-              Tạo báo cáo
             </Link>
           </div>
         </div>
@@ -138,84 +130,119 @@ const InspectorHomePage = () => {
       </div>
 
       {/* Upcoming Tasks */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-bold text-gray-900">
               Nhiệm vụ sắp tới
             </h2>
             <p className="text-sm text-gray-500">
-              Các buổi kiểm định đã được lên lịch
+              Các buổi kiểm định đã được lên lịch gần nhất
             </p>
           </div>
           <Link
             to="/inspector/tasks"
-            className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700"
+            className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg"
           >
             Xem tất cả <MdArrowForward />
           </Link>
         </div>
 
         <div className="space-y-4">
-          {MOCK_TASKS.map((task) => (
-            <div
-              key={task.id}
-              className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition-colors"
-            >
-              {/* Bike Image */}
-              <img
-                src={task.bikeImage}
-                alt={task.bikeName}
-                className="w-16 h-16 rounded-lg object-cover border border-gray-200"
-              />
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 truncate">
-                  {task.bikeName}
-                </h3>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <MdPerson size={14} />
-                    {task.buyer} ↔ {task.seller}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <MdLocationOn size={14} />
-                    {task.location}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MdAccessTime size={14} />
-                    {task.scheduledTime}
-                  </span>
-                </div>
-              </div>
-
-              {/* Price */}
-              <div className="text-right">
-                <p className="font-bold text-emerald-600">
-                  {formatCurrency(task.price)}
-                </p>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 mt-1">
-                  Chờ kiểm định
-                </span>
-              </div>
-
-              {/* Action */}
-              <Link
-                to={`/inspector/tasks/${task.id}`}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
-              >
-                Chi tiết
-              </Link>
+          {upcomingTasks.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              Không có nhiệm vụ nào sắp tới.
             </div>
-          ))}
+          ) : (
+            upcomingTasks.map((task) => {
+              const buyer = getPartyInfo(task, "buyer");
+              const seller = getPartyInfo(task, "seller");
+
+              return (
+                <div
+                  key={task.id}
+                  className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition-colors border border-gray-100 relative overflow-hidden"
+                >
+                  {/* Badge Sự kiện */}
+                  {task.isEventBike && (
+                    <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-sm z-10 flex items-center gap-1">
+                      <MdEventAvailable size={14} /> Sự kiện
+                    </div>
+                  )}
+
+                  {/* Bike Image */}
+                  <img
+                    src={
+                      task.bikeImage?.split(",")[0] ||
+                      "https://via.placeholder.com/150"
+                    }
+                    alt={task.bikeName}
+                    className="w-20 h-20 rounded-lg object-cover border border-gray-200 bg-white"
+                  />
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="font-bold text-gray-900 truncate text-base">
+                      {task.bikeName}
+                    </h3>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                      <span className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-gray-200">
+                        <MdPerson size={14} className="text-gray-400" />
+                        <span className="truncate max-w-[100px]">
+                          {buyer.name}
+                        </span>
+                        <span className="text-gray-300">↔</span>
+                        <span className="truncate max-w-[100px]">
+                          {seller.name}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-500">
+                      <span
+                        className={`flex items-center gap-1 ${task.isEventBike ? "text-orange-700 font-medium" : ""}`}
+                      >
+                        <MdLocationOn
+                          size={14}
+                          className={task.isEventBike ? "text-orange-500" : ""}
+                        />
+                        {task.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MdAccessTime size={14} />
+                        {task.scheduledTime
+                          ? new Date(task.scheduledTime).toLocaleString("vi-VN")
+                          : "Chưa cập nhật"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Price & Action */}
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-4 md:mt-0 border-t md:border-t-0 border-gray-200 pt-4 md:pt-0">
+                    <div className="text-left md:text-right">
+                      <p className="font-bold text-emerald-600 text-lg">
+                        {formatCurrency(task.price)}
+                      </p>
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-bold bg-yellow-100 text-yellow-700 mt-1 uppercase tracking-wider">
+                        Chờ kiểm định
+                      </span>
+                    </div>
+
+                    <Link
+                      to={`/inspector/tasks/${task.id}`}
+                      className="px-5 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors mt-0 md:mt-3"
+                    >
+                      Chi tiết
+                    </Link>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
       {/* Quick Tips */}
-      <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6">
+      <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-6 shadow-sm">
         <h3 className="font-bold text-emerald-900 mb-3 flex items-center gap-2">
           <MdPedalBike className="text-emerald-600" />
           Lưu ý khi kiểm định
