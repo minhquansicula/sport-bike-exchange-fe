@@ -102,4 +102,11 @@ export const reservationService = {
     );
     return response.data;
   },
+
+  refundDepositAfterTransaction: async (reservationId) => {
+    const response = await api.post(
+      `/reservations/${reservationId}/refund-success-transaction`,
+    );
+    return response.data;
+  },
 };

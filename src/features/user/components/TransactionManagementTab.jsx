@@ -27,7 +27,7 @@ import {
   MdPedalBike,
   MdVerified,
   MdCalendarToday,
-  MdAssignmentInd, // Icon phân công
+  MdAssignmentInd,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
 import InspectionReportPanel from "./InspectionReportPanel";
@@ -334,14 +334,21 @@ const TransactionManagementTab = () => {
     }
   };
 
+  // CẬP NHẬT: GỌI API THEO ĐÚNG LOẠI XE (EVENT / THƯỜNG) KHI HOÀN TIỀN
   const confirmCancelReservation = async () => {
     if (!cancelTarget) return;
     setIsProcessing(true);
     try {
       if (cancelTarget.status === "Inspection_Failed") {
-        await reservationService.refundDepositAfterInspectionFail(
-          cancelTarget.reservationId,
-        );
+        if (cancelTarget.isEventBike) {
+          await reservationService.refundDepositAfterInspectionFailEvent(
+            cancelTarget.reservationId,
+          );
+        } else {
+          await reservationService.refundDepositAfterInspectionFail(
+            cancelTarget.reservationId,
+          );
+        }
         toast.success("Đã hoàn tiền và hủy giao dịch thành công!");
       } else {
         await reservationService.cancelReservation(cancelTarget.reservationId);
@@ -678,6 +685,7 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
+                        {/* NÚT THANH TOÁN CUỐI SAU KHI KIỂM ĐỊNH PASS */}
                         {t.status === "Waiting_Payment" &&
                           t.userRole === "buyer" && (
                             <button
@@ -691,6 +699,7 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
+                        {/* NÚT THANH TOÁN LẠI CỌC NẾU CẦN */}
                         {t.status === "Pending" && t.userRole === "buyer" && (
                           <button
                             disabled={isProcessing}
@@ -810,6 +819,7 @@ const TransactionManagementTab = () => {
                   )
                 )}
 
+                {/* Panel báo cáo kiểm định */}
                 {[
                   "Waiting_Payment",
                   "Inspection_Failed",
