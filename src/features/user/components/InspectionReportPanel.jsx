@@ -29,7 +29,7 @@ const StatusIcon = ({ status }) => {
 const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(true); // Mặc định mở để user thấy ngay
+  const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
         ? JSON.parse(report.checklistItems)
         : report.checklistItems;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const isPassed = report.result === "SUCCESS";
   const passCount = checklist.filter((i) => i.status === "PASS").length;
@@ -95,9 +95,8 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
 
   return (
     <div
-      className={`border-t ${
-        isPassed ? "border-emerald-100 bg-emerald-50/40" : "border-red-100 bg-red-50/40"
-      }`}
+      className={`border-t ${isPassed ? "border-emerald-100 bg-emerald-50/40" : "border-red-100 bg-red-50/40"
+        }`}
     >
       {/* Header toggle */}
       <button
@@ -137,34 +136,15 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
               Vì bạn không tới nên tiền cọc đã bị tịch thu.
             </div>
           )}
-
-          {/* Trạng thái có mặt */}
-          {(report.buyerCheckin !== null && report.buyerCheckin !== undefined) && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                report.buyerCheckin ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
-              }`}>
-                {report.buyerCheckin ? "✓ Người mua có mặt" : "✗ Người mua vắng mặt"}
-              </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                report.sellerCheckin ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
-              }`}>
-                {report.sellerCheckin ? "✓ Người bán có mặt" : "✗ Người bán vắng mặt"}
-              </span>
-            </div>
-          )}
-
-          {/* Summary + Checklist */}
-          {checklist.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
-                ✓ {passCount} PASS
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold">
-                ✗ {failCount} FAIL
-              </span>
-            </div>
-          )}
+          {/* Summary */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+              ✓ {passCount} PASS
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+              ✗ {failCount} FAIL
+            </span>
+          </div>
 
           {/* Checklist table */}
           {checklist.length > 0 && (
