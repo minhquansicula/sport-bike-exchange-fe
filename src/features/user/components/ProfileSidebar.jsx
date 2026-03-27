@@ -16,13 +16,7 @@ const ProfileSidebar = ({
   activeTab,
   setActiveTab,
   logout,
-  transactions = [],
 }) => {
-  // Tính toán số lượng giao dịch đang chờ người bán xác nhận
-  const pendingCount = transactions.filter(
-    (t) => t.status === "pending_seller",
-  ).length;
-
   const accountItems = [
     { id: "info", icon: <MdPerson size={20} />, label: "Thông tin cá nhân" },
     { id: "security", icon: <MdLock size={20} />, label: "Bảo mật tài khoản" },
