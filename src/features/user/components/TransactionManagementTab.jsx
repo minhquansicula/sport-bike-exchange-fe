@@ -869,7 +869,7 @@ const TransactionManagementTab = () => {
                 )}
 
                 {/* Panel báo cáo kiểm định */}
-                {[
+                {!t.isEventBike && [
                   "Waiting_Payment",
                   "Inspection_Failed",
                   "Cancelled",
