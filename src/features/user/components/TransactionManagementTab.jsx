@@ -187,6 +187,7 @@ const TransactionManagementTab = () => {
       ]);
 
       const buyerMap = new Map();
+      const otherMap = new Map();
       if (regularRes.status === "fulfilled" && regularRes.value?.result) {
         regularRes.value.result
           .map(mapTransactionToDisplay)
@@ -202,7 +203,6 @@ const TransactionManagementTab = () => {
           });
       }
 
-      const otherMap = new Map();
       if (
         transactionsRes.status === "fulfilled" &&
         transactionsRes.value?.result
@@ -526,6 +526,7 @@ const TransactionManagementTab = () => {
       "Pending",
       "Paid",
       "Pending_Cancel",
+      "Paid_Out", // Xe sự kiện sau khi admin đã payout cho seller
     ].includes(t.status);
   });
 
@@ -874,6 +875,8 @@ const TransactionManagementTab = () => {
                   "Cancelled",
                   "Refunded",
                   "Compensated",
+                  "Paid_Out",
+                  "Completed",
                 ].includes(t.status) && (
                     <InspectionReportPanel
                       reservationId={t.reservationId}
