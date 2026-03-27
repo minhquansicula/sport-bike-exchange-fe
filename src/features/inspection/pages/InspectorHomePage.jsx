@@ -55,13 +55,6 @@ const InspectorHomePage = () => {
       color: "bg-emerald-500",
     },
     {
-      label: "Chờ xử lý khẩn cấp",
-      value: pendingTasks.filter((t) => new Date(t.scheduledTime) < new Date())
-        .length, // Số task quá hạn
-      icon: <MdAccessTime size={24} />,
-      color: "bg-orange-500",
-    },
-    {
       label: "Tổng số phân công",
       value: totalTasksThisMonth,
       icon: <MdTrendingUp size={24} />,
@@ -110,7 +103,7 @@ const InspectorHomePage = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat, index) => (
           <div
             key={index}
