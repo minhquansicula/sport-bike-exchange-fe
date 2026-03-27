@@ -37,7 +37,6 @@ const ProfileSidebar = ({
       id: "transaction-manage",
       icon: <MdManageAccounts size={20} />,
       label: "Quản lý giao dịch",
-      badge: pendingCount > 0 ? pendingCount : null,
     },
     { id: "my-bikes", icon: <MdPedalBike size={20} />, label: "Xe của tôi" },
     {
