@@ -117,11 +117,11 @@ const TransactionHistoryTab = () => {
           .forEach((item) => {
             const key = item.reservationId || item.id;
             if (key) {
-               if (item.buyerId === userId) {
-                 buyerMap.set(key, item);
-               } else {
-                 otherMap.set(key, item);
-               }
+              if (item.buyerId === userId) {
+                buyerMap.set(key, item);
+              } else {
+                otherMap.set(key, item);
+              }
             }
           });
       }
@@ -257,10 +257,10 @@ const TransactionHistoryTab = () => {
                         {t.listingTitle}
                       </h4>
                       <p className="text-sm text-gray-500 mb-1.5 flex items-center gap-2">
-                         {t.reservedAt
+                        {t.reservedAt
                           ? new Date(t.reservedAt).toLocaleDateString("vi-VN")
                           : "N/A"}{" "}
-                        <span className="text-gray-300">•</span> 
+                        <span className="text-gray-300">•</span>
                         <strong className="text-gray-900">{formatCurrency(t.bikePrice || 0)}</strong>
                       </p>
                       <span className="text-[10px] bg-gray-100 border border-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
@@ -271,7 +271,7 @@ const TransactionHistoryTab = () => {
                   <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 border-t border-gray-50 pt-3 sm:border-0 sm:pt-0 shrink-0">
                     {renderStatusBadge(t.status)}
                     <Link
-                      to={`/manage/transactions`} 
+                      to={`/manage/transactions`}
                       className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-wider"
                     >
                       Xem chi tiết

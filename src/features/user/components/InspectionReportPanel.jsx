@@ -59,7 +59,7 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
         ? JSON.parse(report.checklistItems)
         : report.checklistItems;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const isPassed = report.result === "SUCCESS";
   const passCount = checklist.filter((i) => i.status === "PASS").length;
@@ -95,9 +95,8 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
 
   return (
     <div
-      className={`border-t ${
-        isPassed ? "border-emerald-100 bg-emerald-50/40" : "border-red-100 bg-red-50/40"
-      }`}
+      className={`border-t ${isPassed ? "border-emerald-100 bg-emerald-50/40" : "border-red-100 bg-red-50/40"
+        }`}
     >
       {/* Header toggle */}
       <button
