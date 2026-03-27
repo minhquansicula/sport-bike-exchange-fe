@@ -111,6 +111,13 @@ const MyEventBikesTab = ({ user }) => {
         </span>
       );
     }
+    if (status === "Sold") {
+      return (
+        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 border border-blue-200 flex items-center gap-1.5 shadow-sm">
+          Đã bán
+        </span>
+      );
+    }
     return (
       <span className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 flex items-center gap-1.5 shadow-sm">
         {status}

@@ -18,7 +18,7 @@ export const eventBicycleService = {
   },
 
   getMyEventPostings: async () => {
-    const response = await api.get("/events/my-posts");
+    const response = await api.get("/post/events/my-posts");
     return response.data;
   },
 
