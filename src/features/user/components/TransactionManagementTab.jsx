@@ -296,7 +296,7 @@ const TransactionManagementTab = () => {
       } else {
         toast.success(
           res.result?.message ||
-            "Thanh toán thành công! Giao dịch đã hoàn tất.",
+          "Thanh toán thành công! Giao dịch đã hoàn tất.",
         );
         fetchAllTransactions();
       }
@@ -470,8 +470,7 @@ const TransactionManagementTab = () => {
     const Icon = config.icon;
     return (
       <span
-        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
-          config.color === "red"
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${config.color === "red"
             ? "bg-red-50 text-red-600"
             : config.color === "blue"
               ? "bg-blue-50 text-blue-600"
@@ -480,7 +479,7 @@ const TransactionManagementTab = () => {
                 : config.color === "green"
                   ? "bg-green-50 text-green-600"
                   : "bg-gray-50 text-gray-600"
-        }`}
+          }`}
       >
         <Icon size={14} />
         {config.label}
@@ -557,21 +556,19 @@ const TransactionManagementTab = () => {
       <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-2">
         <button
           onClick={() => setTransactionType("regular")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${
-            transactionType === "regular"
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${transactionType === "regular"
               ? "bg-zinc-900 text-white shadow-sm"
               : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900"
-          }`}
+            }`}
         >
           <MdStorefront size={18} /> Giao dịch xe thông thường
         </button>
         <button
           onClick={() => setTransactionType("event")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${
-            transactionType === "event"
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-t-xl font-bold transition-all ${transactionType === "event"
               ? "bg-orange-500 text-white shadow-sm"
               : "bg-orange-50 text-orange-400 hover:bg-orange-100 hover:text-orange-600"
-          }`}
+            }`}
         >
           <MdEventAvailable size={18} /> Giao dịch xe sự kiện
         </button>
@@ -717,7 +714,7 @@ const TransactionManagementTab = () => {
                         )}
 
                         {/* NÚT THANH TOÁN TIẾP/ XÁC NHẬN CHO XE SỰ KIỆN SAU KHI ADMIN CHUYỂN TIỀN CHO SELLER */}
-                        {t.status === "Paid_Out" && t.isEventBike && (
+                        {(t.status === "Paid_Out" || t.status === "Waiting_Payment") && t.isEventBike && (
                           <>
                             {t.userRole === "buyer" && (
                               <button
@@ -820,12 +817,12 @@ const TransactionManagementTab = () => {
                         <span className="text-gray-700">
                           {t.meetingTime
                             ? new Date(t.meetingTime).toLocaleString("vi-VN", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                              weekday: "long",
+                              day: "numeric",
+                              month: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
                             : "Chưa chốt thời gian"}
                         </span>
                       </div>
@@ -878,11 +875,11 @@ const TransactionManagementTab = () => {
                   "Refunded",
                   "Compensated",
                 ].includes(t.status) && (
-                  <InspectionReportPanel
-                    reservationId={t.reservationId}
-                    currentUserRole={t.userRole}
-                  />
-                )}
+                    <InspectionReportPanel
+                      reservationId={t.reservationId}
+                      currentUserRole={t.userRole}
+                    />
+                  )}
 
                 {/* --- BANNERS TRẠNG THÁI --- */}
                 {t.status === "Waiting_Payment" && (
@@ -1123,11 +1120,10 @@ const TransactionManagementTab = () => {
             <button
               onClick={confirmCancelReservation}
               disabled={isProcessing}
-              className={`flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
-                cancelTarget?.status === "Inspection_Failed"
+              className={`flex-1 px-4 py-2.5 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${cancelTarget?.status === "Inspection_Failed"
                   ? "bg-emerald-600 hover:bg-emerald-700"
                   : "bg-red-500 hover:bg-red-600"
-              }`}
+                }`}
             >
               {isProcessing ? "Đang xử lý..." : "Xác nhận hủy"}
             </button>
