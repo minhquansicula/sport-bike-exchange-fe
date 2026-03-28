@@ -372,11 +372,7 @@ const TransactionManagementTab = () => {
           cancelTarget.reservationId,
           { cancelDescription: desc },
         );
-        if (cancelTarget.userRole === "buyer") {
-          toast.success("Đã hủy giao dịch. Tiền cọc sẽ không được hoàn lại theo chính sách sàn.");
-        } else {
-          toast.success("Đã hủy giao dịch và hoàn tiền cọc cho người mua thành công!");
-        }
+        toast.success("Gửi yêu cầu hủy giao dịch thành công. Vui lòng chờ Admin phê duyệt.");
       }
       fetchAllTransactions();
     } catch (error) {
@@ -414,7 +410,7 @@ const TransactionManagementTab = () => {
         sellerCancelTarget,
         { cancelDescription: cancelReason },
       );
-      toast.success("Đã gửi yêu cầu hủy giao dịch thành công!");
+      toast.success("Gửi yêu cầu hủy giao dịch thành công. Vui lòng chờ Admin phê duyệt.");
       fetchAllTransactions();
     } catch (error) {
       toast.error(
@@ -878,6 +874,7 @@ const TransactionManagementTab = () => {
                 {!t.isEventBike && [
                   "Waiting_Payment",
                   "Inspection_Failed",
+                  "Pending_Cancel",
                   "Cancelled",
                   "Refunded",
                   "Compensated",
