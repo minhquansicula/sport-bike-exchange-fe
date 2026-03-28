@@ -115,7 +115,7 @@ const AdminLocationsPage = () => {
             Hệ thống Trạm
           </h1>
           <p className="text-gray-500 mt-1">
-            Quản lý các điểm giao dịch trực tiếp trên toàn quốc
+            Quản lý các điểm giao dịch trực tiếp trên toàn tp.HCM
           </p>
         </div>
         <button
