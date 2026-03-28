@@ -297,6 +297,21 @@ const TransactionHistoryTab = () => {
                     <><strong className="text-purple-700">Thông báo:</strong> Người mua không đến kiểm định. Đã chuyển khoản tiền đền bù đặt cọc cho người bán.</>
                   )}
                 </div>
+
+                {/* Báo cáo kiểm định - chỉ hiện cho xe thường (không phải xe sự kiện) */}
+                {!t.isEventBike && [
+                  "Completed",
+                  "Paid_Out",
+                  "Refunded",
+                  "Inspection_Failed",
+                  "Compensated",
+                  "Cancelled",
+                ].includes(t.status) && t.reservationId && (
+                  <InspectionReportPanel
+                    reservationId={t.reservationId}
+                    currentUserRole={t.userRole}
+                  />
+                )}
               </div>
             );
           })}
