@@ -13,6 +13,7 @@ import {
   MdImage,
 } from "react-icons/md";
 import formatCurrency from "../../../utils/formatCurrency";
+import InspectionReportPanel from "./InspectionReportPanel";
 
 const BikeImage = ({ src, alt, className }) => {
   const [imgSrc, setImgSrc] = useState(src);
@@ -71,8 +72,7 @@ const TransactionHistoryTab = () => {
       reservationId:
         reservation.reservationId ||
         tx.reservation?.reservationId ||
-        tx.reservationId ||
-        tx.transactionId,
+        (tx.reservationId > 0 ? tx.reservationId : null),
       listingId: listing.listingId || tx.listingId,
       eventBikeId: eventBike.eventBikeId || tx.eventBicycleId,
       isEventBike: isEventBike,
@@ -270,12 +270,12 @@ const TransactionHistoryTab = () => {
                   </div>
                   <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 border-t border-gray-50 pt-3 sm:border-0 sm:pt-0 shrink-0">
                     {renderStatusBadge(t.status)}
-                    <Link
+                    {/* <Link
                       to={`/manage/transactions`}
                       className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-wider"
                     >
                       Xem chi tiết
-                    </Link>
+                    </Link> */}
                   </div>
                 </div>
 
@@ -299,19 +299,24 @@ const TransactionHistoryTab = () => {
                 </div>
 
                 {/* Báo cáo kiểm định - chỉ hiện cho xe thường (không phải xe sự kiện) */}
-                {!t.isEventBike && [
-                  "Completed",
-                  "Paid_Out",
-                  "Refunded",
-                  "Inspection_Failed",
-                  "Compensated",
-                  "Cancelled",
-                ].includes(t.status) && t.reservationId && (
-                  <InspectionReportPanel
-                    reservationId={t.reservationId}
-                    currentUserRole={t.userRole}
-                  />
-                )}
+                {(() => {
+                  if (t.isEventBike || !t.reservationId) return null;
+                  const shouldShow = [
+                    "Completed",
+                    "Paid_Out",
+                    "Refunded",
+                    "Inspection_Failed",
+                    "Compensated",
+                    "Cancelled",
+                  ].includes(t.status);
+                  if (!shouldShow) return null;
+                  return (
+                    <InspectionReportPanel
+                      reservationId={t.reservationId}
+                      currentUserRole={t.userRole}
+                    />
+                  );
+                })()}
               </div>
             );
           })}

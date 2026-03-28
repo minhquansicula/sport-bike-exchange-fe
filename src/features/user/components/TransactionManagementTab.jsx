@@ -108,8 +108,7 @@ const TransactionManagementTab = () => {
       reservationId:
         reservation.reservationId ||
         tx.reservation?.reservationId ||
-        tx.reservationId ||
-        tx.transactionId,
+        (tx.reservationId > 0 ? tx.reservationId : null),
       listingId: listing.listingId || tx.listingId,
       eventBikeId: eventBike.eventBikeId || tx.eventBicycleId,
       isEventBike: isEventBike,
@@ -871,21 +870,22 @@ const TransactionManagementTab = () => {
                 )}
 
                 {/* Panel báo cáo kiểm định */}
-                {!t.isEventBike && [
-                  "Waiting_Payment",
-                  "Inspection_Failed",
-                  "Pending_Cancel",
-                  "Cancelled",
-                  "Refunded",
-                  "Compensated",
-                  "Paid_Out",
-                  "Completed",
-                ].includes(t.status) && (
+                {(() => {
+                  if (t.isEventBike || !t.reservationId) return null;
+                  // Waiting_Payment gồm 2 stage:
+                  // - Stage 1: chờ đặt cọc (chưa có inspector) → KHÔNG hiện
+                  // - Stage 2: sau kiểm định (có inspector) → HIỆN
+                  const shouldShow = t.status === "Waiting_Payment"
+                    ? (t.inspectorName && t.inspectorName !== "Đang cập nhật")
+                    : ["Inspection_Failed", "Pending_Cancel", "Cancelled", "Refunded", "Compensated", "Paid_Out", "Completed"].includes(t.status);
+                  if (!shouldShow) return null;
+                  return (
                     <InspectionReportPanel
                       reservationId={t.reservationId}
                       currentUserRole={t.userRole}
                     />
-                  )}
+                  );
+                })()}
 
                 {/* --- BANNERS TRẠNG THÁI --- */}
                 {t.status === "Waiting_Payment" && (
