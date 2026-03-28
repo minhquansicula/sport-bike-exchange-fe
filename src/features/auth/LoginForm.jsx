@@ -44,7 +44,7 @@ const LoginForm = () => {
       console.error("Login Error:", err);
       setError(
         err.response?.data?.message ||
-          "Tên đăng nhập hoặc mật khẩu không đúng.",
+        "Tên đăng nhập hoặc mật khẩu không đúng.",
       );
     } finally {
       setIsLoading(false);
@@ -125,14 +125,14 @@ const LoginForm = () => {
             </button>
           </div>
 
-          <div className="flex justify-end">
+          {/* <div className="flex justify-end">
             <button
               type="button"
               className="text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline bg-transparent border-none cursor-pointer"
             >
               Quên mật khẩu?
             </button>
-          </div>
+          </div> */}
 
           <button
             type="submit"
