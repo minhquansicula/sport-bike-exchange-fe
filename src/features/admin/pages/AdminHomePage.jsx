@@ -2,119 +2,139 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import BikeCard from "../../bicycle/components/BikeCard";
 import { bikeService } from "../../../services/bikeService";
+import { reservationService } from "../../../services/reservationService";
+import { userService } from "../../../services/userService";
 import {
   MdArrowForward,
   MdArticle,
   MdSwapHoriz,
   MdPeople,
   MdWarning,
-  MdTrendingUp,
-  MdAttachMoney,
   MdLocationOn,
 } from "react-icons/md";
 
 const AdminHomePage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [bikes, setBikes] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Gọi API lấy dữ liệu thật từ database
+  // Chuẩn hóa trạng thái để so sánh ổn định với dữ liệu BE có thể khác format.
+  const normalizeStatus = (status) =>
+    (status || "")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+  // Gọi API lấy dữ liệu thật từ database cho toàn bộ dashboard
   useEffect(() => {
-    const fetchBikes = async () => {
+    const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const response = await bikeService.getAllBikeListings();
-        if (response && response.result) {
+        const [bikeResponse, reservationResponse, userResponse] =
+          await Promise.all([
+            bikeService.getAllBikeListings(),
+            reservationService.getAllReservations(),
+            userService.getAllUsers(),
+          ]);
+
+        if (bikeResponse?.result) {
           // Sắp xếp xe mới nhất lên đầu
-          const sortedBikes = response.result.sort(
+          const sortedBikes = [...bikeResponse.result].sort(
             (a, b) => b.listingId - a.listingId,
           );
           setBikes(sortedBikes);
         }
+
+        if (reservationResponse?.result) {
+          // Chỉ lấy giao dịch xe thường, đồng bộ với trang /admin/transactions
+          const regularReservations = reservationResponse.result.filter(
+            (r) => !r.eventBicycleId && !r.eventBikeId,
+          );
+          setReservations(regularReservations);
+        }
+
+        if (userResponse?.result) {
+          setUsers(userResponse.result);
+        }
       } catch (error) {
-        console.error("Lỗi tải danh sách xe:", error);
+        console.error("Lỗi tải dữ liệu dashboard admin:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBikes();
+    fetchDashboardData();
   }, []);
 
-  // Tính toán số lượng tin chờ duyệt thực tế
+  // Thống kê thật cho 4 nhãn tổng quan
   const pendingCount = bikes.filter(
-    (bike) => bike.status?.toLowerCase() === "pending",
+    (bike) => normalizeStatus(bike.status) === "pending",
   ).length;
 
-  // Mock thống kê tổng quan (Cập nhật giá trị "Tin chờ duyệt" bằng data thật)
+  const processingStatuses = ["pending_cancel", "deposited", "completed"];
+  const pendingTransactionsCount = reservations.filter((reservation) =>
+    processingStatuses.includes(normalizeStatus(reservation.status)),
+  ).length;
+
+  const violatedMembersCount = users.filter((user) => {
+    const role = (user.role || "").toLowerCase();
+    const status = normalizeStatus(user.status);
+
+    return role !== "admin" && status && status !== "active";
+  }).length;
+
+  const totalMembersCount = users.filter(
+    (user) => (user.role || "").toLowerCase() !== "admin",
+  ).length;
+
+  // Không dùng mock data, tất cả giá trị lấy từ API
   const stats = [
     {
       label: "Tin chờ duyệt",
-      value: pendingCount, // Sử dụng data thật
+      value: pendingCount,
       icon: <MdArticle size={24} />,
       color: "bg-blue-500",
       link: "/admin/posts",
     },
     {
       label: "Giao dịch chờ xử lý",
-      value: 5,
+      value: pendingTransactionsCount,
       icon: <MdSwapHoriz size={24} />,
       color: "bg-orange-500",
       link: "/admin/transactions",
     },
     {
       label: "Thành viên vi phạm",
-      value: 3,
+      value: violatedMembersCount,
       icon: <MdWarning size={24} />,
       color: "bg-red-500",
-      link: "/admin/violations",
+      link: "/admin/users",
     },
     {
       label: "Tổng thành viên",
-      value: 1250,
+      value: totalMembersCount,
       icon: <MdPeople size={24} />,
       color: "bg-green-500",
-      link: "/admin/members",
+      link: "/admin/users",
     },
   ];
 
-  // Mock thống kê doanh thu
-  const revenueStats = [
-    {
-      label: "Doanh thu hôm nay",
-      value: "2,500,000đ",
-      trend: "+12%",
-      trendUp: true,
-    },
-    {
-      label: "Doanh thu tháng này",
-      value: "45,800,000đ",
-      trend: "+8%",
-      trendUp: true,
-    },
-    {
-      label: "Giao dịch thành công",
-      value: "48",
-      trend: "+5",
-      trendUp: true,
-    },
-    {
-      label: "Tỷ lệ hoàn thành",
-      value: "94%",
-      trend: "-2%",
-      trendUp: false,
-    },
-  ];
 
   // Lọc xe theo trạng thái từ data API
   const getFilteredBikes = () => {
     switch (filterStatus) {
       case "pending":
-        return bikes.filter((bike) => bike.status?.toLowerCase() === "pending");
+        return bikes.filter((bike) => normalizeStatus(bike.status) === "pending");
       case "approved":
-        // Giả sử xe đã duyệt có status là 'available'
+        // Đồng bộ trạng thái đã duyệt với các case API đang trả về.
         return bikes.filter(
-          (bike) => bike.status?.toLowerCase() === "available",
+          (bike) =>
+            ["available", "available_in_event"].includes(
+              normalizeStatus(bike.status),
+            ),
         );
       default:
         return bikes;
@@ -171,41 +191,7 @@ const AdminHomePage = () => {
         ))}
       </div>
 
-      {/* --- 3. REVENUE OVERVIEW --- */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <MdAttachMoney className="text-orange-500" />
-            Thống kê doanh thu
-          </h2>
-          <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-orange-300">
-            <option>Hôm nay</option>
-            <option>7 ngày qua</option>
-            <option>Tháng này</option>
-            <option>Năm nay</option>
-          </select>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {revenueStats.map((item, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs text-gray-500 mb-1">{item.label}</p>
-              <div className="flex items-end gap-2">
-                <span className="text-xl font-bold text-gray-900">
-                  {item.value}
-                </span>
-                <span
-                  className={`text-xs font-medium flex items-center gap-0.5 ${
-                    item.trendUp ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  <MdTrendingUp className={!item.trendUp ? "rotate-180" : ""} />
-                  {item.trend}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      
 
       {/* --- 4. PRODUCT LISTING --- */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -337,7 +323,7 @@ const AdminHomePage = () => {
             Quản lý các tài khoản "boom hàng" - không đến điểm hẹn giao dịch.
           </p>
           <Link
-            to="/admin/violations"
+            to="/admin/users"
             className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
           >
             Đi đến <MdArrowForward />
