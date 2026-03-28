@@ -170,6 +170,12 @@ const RegisterBikeModal = ({
         }
       };
 
+      //check
+
+
+      
+    
+
       fetchListingsData();
 
       // 2. TẢI THƯ VIỆN DỮ LIỆU TỰ ĐỘNG ĐIỀN
