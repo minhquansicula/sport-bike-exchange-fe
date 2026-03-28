@@ -195,13 +195,13 @@ const AdminSettingsPage = () => {
                     name="accountName"
                     value={banking.accountName}
                     onChange={handleBankingChange}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-green-200 focus:bg-white transition-all font-bold text-gray-900 uppercase"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-green-200 focus:bg-white transition-all font-semibold text-sm text-gray-900"
                   />
                 </div>
               </div>
 
               {/* Card Preview */}
-              <div className="w-full md:w-80 h-48 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-700 p-6 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
+              <div className="w-full md:w-96 h-48 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-700 p-6 text-white shadow-xl flex flex-col justify-between relative overflow-hidden">
                 <div className="absolute w-40 h-40 bg-white opacity-5 rounded-full -top-10 -right-10"></div>
                 <div className="flex justify-between items-start z-10">
                   <span className="font-bold tracking-wider opacity-80">
@@ -217,7 +217,7 @@ const AdminSettingsPage = () => {
                 </div>
                 <div className="z-10">
                   <p className="text-xs opacity-60 mb-1">Card Holder</p>
-                  <p className="font-bold tracking-wide truncate">
+                  <p className="font-bold tracking-wide text-sm leading-tight break-all min-h-10">
                     {banking.accountName}
                   </p>
                 </div>
