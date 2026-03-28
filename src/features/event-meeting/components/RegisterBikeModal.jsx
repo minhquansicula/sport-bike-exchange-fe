@@ -102,8 +102,7 @@ const RegisterBikeModal = ({
           const registeredListingIds = eventPostings
             .map((post) => post.listing?.listingId || post.listing?.id || post.listingId)
             .filter(Boolean);
-
-          const currentEventListingIds = (eventBikes || [])
+const currentEventListingIds = (eventBikes || [])
             .map((bike) => bike.listing?.listingId || bike.listing?.id || bike.listingId)
             .filter(Boolean);
 
@@ -189,7 +188,7 @@ const RegisterBikeModal = ({
         color: selectedBike.color || prev.color,
         wheelSize: selectedBike.wheelSize || prev.wheelSize,
         rim: selectedBike.rim || prev.rim,
-        brakeType: selectedBike.brakeType || prev.brakeType,
+brakeType: selectedBike.brakeType || prev.brakeType,
         forkType: selectedBike.forkType || prev.forkType,
         shockAbsorber: selectedBike.shockAbsorber || prev.shockAbsorber,
         drivetrain: selectedBike.drivetrain || prev.drivetrain,
@@ -278,7 +277,7 @@ const RegisterBikeModal = ({
         if (!formData.brand) newErrors.brand = "Chọn thương hiệu";
         if (!formData.model.trim()) newErrors.model = "Nhập dòng xe";
         if (!formData.category) newErrors.category = "Chọn loại xe";
-        if (!formData.price || parseFloat(formData.price) <= 0)
+if (!formData.price || parseFloat(formData.price) <= 0)
           newErrors.price = "Nhập giá hợp lệ";
         if (!formData.condition) newErrors.condition = "Chọn tình trạng";
         if (formData.images.length === 0)
@@ -354,8 +353,7 @@ const RegisterBikeModal = ({
         createBikeRes.result?.bikeId || createBikeRes.result?.id;
 
       if (!createdBikeId) throw new Error("Không lấy được ID xe sau khi tạo.");
-
-      const requestBody = {
+const requestBody = {
         title: `Xe tham gia sự kiện: ${formData.model}`,
         price: parseFloat(formData.price) || 0,
         condition: formData.condition,
@@ -442,7 +440,7 @@ const RegisterBikeModal = ({
             >
               <MdClose size={24} />
             </button>
-          </div>
+</div>
 
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex gap-4">
             <button
@@ -499,7 +497,7 @@ const RegisterBikeModal = ({
                           return (
                             <div className="flex items-center gap-4 p-4 border border-orange-200 bg-orange-50 rounded-xl animate-in fade-in zoom-in-95 duration-200">
                               <BikeImage
-                                src={previewBike.image_url?.split(",")[0]}
+src={previewBike.image_url?.split(",")[0]}
                                 alt="preview"
                                 className="w-24 h-24 rounded-lg object-cover border border-orange-200 shadow-sm"
                               />
@@ -559,7 +557,7 @@ const RegisterBikeModal = ({
                       <label className="block text-sm font-bold text-slate-700 mb-2">
                         Dòng xe (Model) <span className="text-red-500">*</span>
                       </label>
-                      <input
+<input
                         type="text"
                         name="model"
                         placeholder="VD: Marlin 7"
@@ -616,7 +614,7 @@ const RegisterBikeModal = ({
                         className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.category ? "border-red-500" : "border-slate-200"}`}
                       >
                         <option value="">Chọn loại</option>
-                        {availableCategories.map((c, idx) => (
+{availableCategories.map((c, idx) => (
                           <option key={idx} value={c}>
                             {c}
                           </option>
@@ -679,7 +677,7 @@ const RegisterBikeModal = ({
                           let rawValue = e.target.value.replace(/\D/g, "");
                           if (rawValue.startsWith("0"))
                             rawValue = rawValue.replace(/^0+/, "");
-                          setFormData({ ...formData, price: rawValue });
+setFormData({ ...formData, price: rawValue });
                           if (errors.price)
                             setErrors({ ...errors, price: null });
                         }}
@@ -735,7 +733,7 @@ const RegisterBikeModal = ({
                         type="text"
                         name="frameMaterial"
                         placeholder="Chất liệu"
-                        value={formData.frameMaterial}
+value={formData.frameMaterial}
                         onChange={handleChange}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-orange-500"
                       />
@@ -792,7 +790,7 @@ const RegisterBikeModal = ({
                             <button
                               type="button"
                               onClick={() => removeImage(idx)}
-                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                             >
                               <MdClose size={14} />
                             </button>
@@ -854,7 +852,7 @@ const RegisterBikeModal = ({
                     {formatDisplayAmount(previewPriceForFee)} đ
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+<div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="text-gray-800 font-bold">
                     Phí sàn phải trả:
                   </span>
