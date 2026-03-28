@@ -125,7 +125,7 @@ const BikeCard = ({ bike }) => {
           </span>
           <span className="flex items-center gap-1 text-[11px] text-zinc-400 font-medium whitespace-nowrap shrink-0 mt-0.5">
             <MdLocationOn size={14} />{" "}
-            {bike.location ? bike.location.split(",")[0] : "Toàn quốc"}
+            {bike.location ? bike.location.split(",")[0] : "Tp.HCM"}
           </span>
         </div>
 
