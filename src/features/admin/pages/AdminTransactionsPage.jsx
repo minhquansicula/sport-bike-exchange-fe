@@ -596,6 +596,25 @@ const AdminTransactionsPage = () => {
                   </div>
 
                   <div className="p-4 border-t border-gray-50 bg-gray-50/50 flex flex-wrap justify-end gap-2">
+                    {r.status === "Pending_Cancel" && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApproveCancel(r.reservationId)}
+                          disabled={isProcessingCancel}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                          <MdCheckCircle size={16} /> Duyệt hủy
+                        </button>
+                        <button
+                          onClick={() => handleRejectCancel(r.reservationId)}
+                          disabled={isProcessingCancel}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                        >
+                          <MdClose size={16} /> Từ chối
+                        </button>
+                      </div>
+                    )}
+
                     {r.status === "Completed" && (
                       <button
                         onClick={() => handlePayout(r.reservationId)}

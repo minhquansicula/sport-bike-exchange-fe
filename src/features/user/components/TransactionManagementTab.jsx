@@ -372,7 +372,7 @@ const TransactionManagementTab = () => {
           cancelTarget.reservationId,
           { cancelDescription: desc },
         );
-        toast.success("Đã hủy giao dịch và hoàn tiền cọc thành công!");
+        toast.success("Gửi yêu cầu hủy giao dịch thành công. Vui lòng chờ Admin phê duyệt.");
       }
       fetchAllTransactions();
     } catch (error) {
@@ -410,7 +410,7 @@ const TransactionManagementTab = () => {
         sellerCancelTarget,
         { cancelDescription: cancelReason },
       );
-      toast.success("Đã gửi yêu cầu hủy giao dịch thành công!");
+      toast.success("Gửi yêu cầu hủy giao dịch thành công. Vui lòng chờ Admin phê duyệt.");
       fetchAllTransactions();
     } catch (error) {
       toast.error(
@@ -874,6 +874,7 @@ const TransactionManagementTab = () => {
                 {!t.isEventBike && [
                   "Waiting_Payment",
                   "Inspection_Failed",
+                  "Pending_Cancel",
                   "Cancelled",
                   "Refunded",
                   "Compensated",
@@ -1161,13 +1162,23 @@ const TransactionManagementTab = () => {
               <h4 className="text-xl font-semibold text-gray-900 mb-2">
                 Bạn chắc chắn muốn hủy?
               </h4>
-              <p className="text-gray-500 text-sm leading-relaxed px-4">
-                Tiền cọc của bạn sẽ{" "}
-                <span className="text-red-500 font-medium">
-                  không được hoàn lại
-                </span>{" "}
-                nếu bạn tự ý hủy giao dịch ở giai đoạn này.
-              </p>
+              {cancelTarget?.userRole === "buyer" ? (
+                <p className="text-gray-500 text-sm leading-relaxed px-4">
+                  ⚠️ Tiền cọc của bạn sẽ{" "}
+                  <span className="text-red-600 font-bold">
+                    không được hoàn lại
+                  </span>{" "}
+                  theo chính sách sàn khi người mua tự hủy giao dịch.
+                </p>
+              ) : (
+                <p className="text-gray-500 text-sm leading-relaxed px-4">
+                  Khi người bán yêu cầu hủy, hệ thống sẽ{" "}
+                  <span className="text-emerald-600 font-bold">
+                    hoàn 100% tiền cọc
+                  </span>{" "}
+                  về ví của người mua.
+                </p>
+              )}
             </>
           )}
         </div>

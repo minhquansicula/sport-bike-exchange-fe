@@ -15,11 +15,14 @@ import { eventBicycleService } from "../../../services/eventBicycleService";
 const BikeImage = ({ src, alt, className }) => {
   const [imgSrc, setImgSrc] = useState(src);
   const [error, setError] = useState(false);
+  
   useEffect(() => {
     setImgSrc(src);
     setError(false);
   }, [src]);
+  
   const handleError = () => setError(true);
+  
   if (error || !imgSrc)
     return (
       <div
@@ -28,6 +31,7 @@ const BikeImage = ({ src, alt, className }) => {
         <MdImage size={24} />
       </div>
     );
+    
   return (
     <img src={imgSrc} alt={alt} className={className} onError={handleError} />
   );
@@ -83,82 +87,32 @@ const RegisterBikeModal = ({
 
   useEffect(() => {
     if (showRegisterModal && user) {
-      // 1. TẢI DANH SÁCH XE VÀ LỌC XE ĐÃ ĐĂNG KÝ
-      // const fetchListingsData = async () => {
-      //   try {
-      //     const [listingsRes, eventPostingsRes] = await Promise.all([
-      //       bikeService.getMyBikeListings(),
-      //       eventBicycleService
-      //         .getMyEventPostings()
-      //         .catch(() => ({ result: [] })), // Bỏ qua lỗi nếu API chưa sẵn sàng
-      //     ]);
-
-      //     const allListings = listingsRes?.result || [];
-      //     const eventPostings = eventPostingsRes?.result || [];
-
-      //     // 1. Lấy ID của các xe đã đăng ký từ API my-posts (xử lý cả trường hợp object lồng nhau)
-      //     const registeredListingIds = eventPostings
-      //       .map((post) => post.listingId || post.listing?.listingId)
-      //       .filter(Boolean);
-
-      //     // 2. Lấy thêm ID của các xe đã nằm sẵn trong sự kiện HIỆN TẠI (từ props eventBikes)
-      //     const currentEventListingIds = (eventBikes || [])
-      //       .map((bike) => bike.listingId || bike.listing?.listingId)
-      //       .filter(Boolean);
-
-      //     // Gộp chung 2 danh sách ID lại và loại bỏ trùng lặp
-      //     const allInvalidIds = [
-      //       ...new Set([...registeredListingIds, ...currentEventListingIds]),
-      //     ];
-
-      //     // Lọc ra các xe CHƯA tham gia sự kiện và đang ở trạng thái Available (nếu cần)
-      //     const availableListings = allListings.filter(
-      //       (listing) => !allInvalidIds.includes(listing.listingId),
-      //     );
-
-      //     setMyListings(availableListings);
-      //   } catch (error) {
-      //     console.error("Lỗi lấy dữ liệu xe:", error);
-      //   }
-      // };
-
       const fetchListingsData = async () => {
         try {
           const [listingsRes, eventPostingsRes] = await Promise.all([
             bikeService.getMyBikeListings(),
             eventBicycleService
               .getMyEventPostings()
-              .catch(() => ({ result: [] })), // Bỏ qua lỗi nếu API chưa sẵn sàng
+              .catch(() => ({ result: [] })),
           ]);
 
           const allListings = listingsRes?.result || [];
           const eventPostings = eventPostingsRes?.result || [];
 
-          // 1. Lấy ID của các xe đã đăng ký sự kiện.
-          // 🔥 Bổ sung fallback check cả "id" và "listingId" để vét sạch mọi trường hợp BE trả về
           const registeredListingIds = eventPostings
             .map((post) => post.listing?.listingId || post.listing?.id || post.listingId)
             .filter(Boolean);
-
-          // 2. Lấy thêm ID của các xe đã nằm sẵn trong sự kiện HIỆN TẠI (từ props eventBikes)
-          const currentEventListingIds = (eventBikes || [])
+const currentEventListingIds = (eventBikes || [])
             .map((bike) => bike.listing?.listingId || bike.listing?.id || bike.listingId)
             .filter(Boolean);
 
-          // Gộp chung 2 danh sách ID lại và loại bỏ trùng lặp
           const allInvalidIds = [
             ...new Set([...registeredListingIds, ...currentEventListingIds]),
           ];
 
-          // 3. LỌC XE HỢP LỆ
           const availableListings = allListings.filter((listing) => {
             const currentId = listing.listingId || listing.id;
-            
-            // Điều kiện 1: ID xe này KHÔNG ĐƯỢC nằm trong mảng những xe đã đăng ký sự kiện
             const isNotRegistered = !allInvalidIds.includes(currentId);
-            
-            // Điều kiện 2: Xe phải đang ở trạng thái sẵn sàng giao dịch trên sàn (Không bị khóa/bán/cọc)
-            // (Bạn có thể điều chỉnh chữ "Available" cho khớp với enum ở Backend của bạn nhé)
             const isAvailableStatus = listing.status === "Available"; 
 
             return isNotRegistered && isAvailableStatus;
@@ -169,10 +123,9 @@ const RegisterBikeModal = ({
           console.error("Lỗi lấy dữ liệu xe:", error);
         }
       };
-
+      
       fetchListingsData();
 
-      // 2. TẢI THƯ VIỆN DỮ LIỆU TỰ ĐỘNG ĐIỀN
       if (availableBrands.length === 0) {
         bikeService
           .getBicycleLibrary()
@@ -197,6 +150,7 @@ const RegisterBikeModal = ({
           })
           .catch(console.error);
       }
+      
       if (eventDetail?.bikeType && eventDetail.bikeType !== "ALL") {
         setFormData((prev) => ({ ...prev, category: eventDetail.bikeType }));
       }
@@ -234,7 +188,7 @@ const RegisterBikeModal = ({
         color: selectedBike.color || prev.color,
         wheelSize: selectedBike.wheelSize || prev.wheelSize,
         rim: selectedBike.rim || prev.rim,
-        brakeType: selectedBike.brakeType || prev.brakeType,
+brakeType: selectedBike.brakeType || prev.brakeType,
         forkType: selectedBike.forkType || prev.forkType,
         shockAbsorber: selectedBike.shockAbsorber || prev.shockAbsorber,
         drivetrain: selectedBike.drivetrain || prev.drivetrain,
@@ -283,9 +237,6 @@ const RegisterBikeModal = ({
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  // ========================================================
-  // BƯỚC 1: XỬ LÝ TRƯỚC KHI GỬI (TÍNH PHÍ SÀN VÀ HIỂN THỊ POPUP)
-  // ========================================================
   const handlePreSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -293,7 +244,6 @@ const RegisterBikeModal = ({
     try {
       let priceForFee = 0;
 
-      // NẾU CHỌN XE ĐÃ BÁN (Không bật Popup phí)
       if (registerMode === "existing") {
         if (!selectedListingId) {
           toast.error("Vui lòng chọn một xe đang bán!");
@@ -312,7 +262,6 @@ const RegisterBikeModal = ({
           return;
         }
 
-        // Gọi thẳng API không qua popup phí
         await eventBicycleService.registerBicycleToEvent(
           eventId,
           parseInt(selectedListingId),
@@ -323,13 +272,12 @@ const RegisterBikeModal = ({
         setShowRegisterModal(false);
         setSelectedListingId("");
       }
-      // NẾU TẠO XE MỚI (Bật Popup Phí)
       else {
         const newErrors = {};
         if (!formData.brand) newErrors.brand = "Chọn thương hiệu";
         if (!formData.model.trim()) newErrors.model = "Nhập dòng xe";
         if (!formData.category) newErrors.category = "Chọn loại xe";
-        if (!formData.price || parseFloat(formData.price) <= 0)
+if (!formData.price || parseFloat(formData.price) <= 0)
           newErrors.price = "Nhập giá hợp lệ";
         if (!formData.condition) newErrors.condition = "Chọn tình trạng";
         if (formData.images.length === 0)
@@ -346,7 +294,7 @@ const RegisterBikeModal = ({
         if (feeResponse && feeResponse.result !== undefined) {
           setListingFee(feeResponse.result);
           setPreviewPriceForFee(priceForFee);
-          setShowFeeModal(true); // Mở Popup phí
+          setShowFeeModal(true);
         } else {
           throw new Error("Không lấy được thông tin phí sàn");
         }
@@ -360,9 +308,6 @@ const RegisterBikeModal = ({
     }
   };
 
-  // ========================================================
-  // BƯỚC 2: XÁC NHẬN SUBMIT TẠO XE MỚI (SAU KHI ĐỒNG Ý PHÍ SÀN)
-  // ========================================================
   const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -408,8 +353,7 @@ const RegisterBikeModal = ({
         createBikeRes.result?.bikeId || createBikeRes.result?.id;
 
       if (!createdBikeId) throw new Error("Không lấy được ID xe sau khi tạo.");
-
-      const requestBody = {
+const requestBody = {
         title: `Xe tham gia sự kiện: ${formData.model}`,
         price: parseFloat(formData.price) || 0,
         condition: formData.condition,
@@ -496,7 +440,7 @@ const RegisterBikeModal = ({
             >
               <MdClose size={24} />
             </button>
-          </div>
+</div>
 
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex gap-4">
             <button
@@ -505,12 +449,12 @@ const RegisterBikeModal = ({
             >
               Tạo xe mới
             </button>
-            <button
+            {/* <button
               onClick={() => setRegisterMode("existing")}
               className={`px-4 py-2 font-bold rounded-lg transition-colors ${registerMode === "existing" ? "bg-orange-500 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"}`}
             >
               Chọn xe đang bán
-            </button>
+            </button> */}
           </div>
 
           <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -553,7 +497,7 @@ const RegisterBikeModal = ({
                           return (
                             <div className="flex items-center gap-4 p-4 border border-orange-200 bg-orange-50 rounded-xl animate-in fade-in zoom-in-95 duration-200">
                               <BikeImage
-                                src={previewBike.image_url?.split(",")[0]}
+src={previewBike.image_url?.split(",")[0]}
                                 alt="preview"
                                 className="w-24 h-24 rounded-lg object-cover border border-orange-200 shadow-sm"
                               />
@@ -613,7 +557,7 @@ const RegisterBikeModal = ({
                       <label className="block text-sm font-bold text-slate-700 mb-2">
                         Dòng xe (Model) <span className="text-red-500">*</span>
                       </label>
-                      <input
+<input
                         type="text"
                         name="model"
                         placeholder="VD: Marlin 7"
@@ -670,7 +614,7 @@ const RegisterBikeModal = ({
                         className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none ${errors.category ? "border-red-500" : "border-slate-200"}`}
                       >
                         <option value="">Chọn loại</option>
-                        {availableCategories.map((c, idx) => (
+{availableCategories.map((c, idx) => (
                           <option key={idx} value={c}>
                             {c}
                           </option>
@@ -733,7 +677,7 @@ const RegisterBikeModal = ({
                           let rawValue = e.target.value.replace(/\D/g, "");
                           if (rawValue.startsWith("0"))
                             rawValue = rawValue.replace(/^0+/, "");
-                          setFormData({ ...formData, price: rawValue });
+setFormData({ ...formData, price: rawValue });
                           if (errors.price)
                             setErrors({ ...errors, price: null });
                         }}
@@ -789,7 +733,7 @@ const RegisterBikeModal = ({
                         type="text"
                         name="frameMaterial"
                         placeholder="Chất liệu"
-                        value={formData.frameMaterial}
+value={formData.frameMaterial}
                         onChange={handleChange}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-orange-500"
                       />
@@ -846,7 +790,7 @@ const RegisterBikeModal = ({
                             <button
                               type="button"
                               onClick={() => removeImage(idx)}
-                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                             >
                               <MdClose size={14} />
                             </button>
@@ -908,7 +852,7 @@ const RegisterBikeModal = ({
                     {formatDisplayAmount(previewPriceForFee)} đ
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+<div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="text-gray-800 font-bold">
                     Phí sàn phải trả:
                   </span>
