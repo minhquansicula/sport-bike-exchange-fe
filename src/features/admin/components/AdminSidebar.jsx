@@ -83,11 +83,6 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
           icon: <MdAttachMoney size={20} />,
         },
         {
-          label: "Địa điểm giao dịch",
-          path: "/admin/locations",
-          icon: <MdLocationOn size={20} />,
-        },
-        {
           label: "Cài đặt chung",
           path: "/admin/settings",
           icon: <MdSettings size={20} />,
@@ -101,11 +96,6 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
           label: "Danh sách thành viên",
           path: "/admin/users",
           icon: <MdPeople size={20} />,
-        },
-        {
-          label: "Xử lý vi phạm",
-          path: "/admin/violations",
-          icon: <MdWarning size={20} />,
         },
       ],
     },
