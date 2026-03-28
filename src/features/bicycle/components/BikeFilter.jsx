@@ -138,24 +138,6 @@ const BikeFilter = ({ filters, setFilters, onReset }) => {
           ))}
         </div>
       </div>
-
-      {/* --- 5. ĐỊA ĐIỂM --- */}
-      <div>
-        <label className="text-sm font-bold text-zinc-800 mb-2 block">
-          Khu vực
-        </label>
-        <select
-          name="location"
-          value={filters.location}
-          onChange={handleChange}
-          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:border-orange-500 outline-none cursor-pointer"
-        >
-          <option value="">Toàn quốc</option>
-          <option value="Hà Nội">Hà Nội</option>
-          <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
-          <option value="Đà Nẵng">Đà Nẵng</option>
-        </select>
-      </div>
     </div>
   );
 };
