@@ -84,6 +84,44 @@ const RegisterBikeModal = ({
   useEffect(() => {
     if (showRegisterModal && user) {
       // 1. TẢI DANH SÁCH XE VÀ LỌC XE ĐÃ ĐĂNG KÝ
+      // const fetchListingsData = async () => {
+      //   try {
+      //     const [listingsRes, eventPostingsRes] = await Promise.all([
+      //       bikeService.getMyBikeListings(),
+      //       eventBicycleService
+      //         .getMyEventPostings()
+      //         .catch(() => ({ result: [] })), // Bỏ qua lỗi nếu API chưa sẵn sàng
+      //     ]);
+
+      //     const allListings = listingsRes?.result || [];
+      //     const eventPostings = eventPostingsRes?.result || [];
+
+      //     // 1. Lấy ID của các xe đã đăng ký từ API my-posts (xử lý cả trường hợp object lồng nhau)
+      //     const registeredListingIds = eventPostings
+      //       .map((post) => post.listingId || post.listing?.listingId)
+      //       .filter(Boolean);
+
+      //     // 2. Lấy thêm ID của các xe đã nằm sẵn trong sự kiện HIỆN TẠI (từ props eventBikes)
+      //     const currentEventListingIds = (eventBikes || [])
+      //       .map((bike) => bike.listingId || bike.listing?.listingId)
+      //       .filter(Boolean);
+
+      //     // Gộp chung 2 danh sách ID lại và loại bỏ trùng lặp
+      //     const allInvalidIds = [
+      //       ...new Set([...registeredListingIds, ...currentEventListingIds]),
+      //     ];
+
+      //     // Lọc ra các xe CHƯA tham gia sự kiện và đang ở trạng thái Available (nếu cần)
+      //     const availableListings = allListings.filter(
+      //       (listing) => !allInvalidIds.includes(listing.listingId),
+      //     );
+
+      //     setMyListings(availableListings);
+      //   } catch (error) {
+      //     console.error("Lỗi lấy dữ liệu xe:", error);
+      //   }
+      // };
+
       const fetchListingsData = async () => {
         try {
           const [listingsRes, eventPostingsRes] = await Promise.all([
@@ -96,14 +134,15 @@ const RegisterBikeModal = ({
           const allListings = listingsRes?.result || [];
           const eventPostings = eventPostingsRes?.result || [];
 
-          // 1. Lấy ID của các xe đã đăng ký từ API my-posts (xử lý cả trường hợp object lồng nhau)
+          // 1. Lấy ID của các xe đã đăng ký sự kiện.
+          // 🔥 Bổ sung fallback check cả "id" và "listingId" để vét sạch mọi trường hợp BE trả về
           const registeredListingIds = eventPostings
-            .map((post) => post.listingId || post.listing?.listingId)
+            .map((post) => post.listing?.listingId || post.listing?.id || post.listingId)
             .filter(Boolean);
 
           // 2. Lấy thêm ID của các xe đã nằm sẵn trong sự kiện HIỆN TẠI (từ props eventBikes)
           const currentEventListingIds = (eventBikes || [])
-            .map((bike) => bike.listingId || bike.listing?.listingId)
+            .map((bike) => bike.listing?.listingId || bike.listing?.id || bike.listingId)
             .filter(Boolean);
 
           // Gộp chung 2 danh sách ID lại và loại bỏ trùng lặp
@@ -111,10 +150,19 @@ const RegisterBikeModal = ({
             ...new Set([...registeredListingIds, ...currentEventListingIds]),
           ];
 
-          // Lọc ra các xe CHƯA tham gia sự kiện và đang ở trạng thái Available (nếu cần)
-          const availableListings = allListings.filter(
-            (listing) => !allInvalidIds.includes(listing.listingId),
-          );
+          // 3. LỌC XE HỢP LỆ
+          const availableListings = allListings.filter((listing) => {
+            const currentId = listing.listingId || listing.id;
+            
+            // Điều kiện 1: ID xe này KHÔNG ĐƯỢC nằm trong mảng những xe đã đăng ký sự kiện
+            const isNotRegistered = !allInvalidIds.includes(currentId);
+            
+            // Điều kiện 2: Xe phải đang ở trạng thái sẵn sàng giao dịch trên sàn (Không bị khóa/bán/cọc)
+            // (Bạn có thể điều chỉnh chữ "Available" cho khớp với enum ở Backend của bạn nhé)
+            const isAvailableStatus = listing.status === "Available"; 
+
+            return isNotRegistered && isAvailableStatus;
+          });
 
           setMyListings(availableListings);
         } catch (error) {
