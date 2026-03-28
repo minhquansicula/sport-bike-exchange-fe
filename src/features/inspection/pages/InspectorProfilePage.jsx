@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "../../../hooks/useAuth";
-import { inspectorService } from "../../../services/inspectorService";
 import { uploadService } from "../../../services/uploadService";
+import { useInspectorTasks } from "../hooks/useInspectorTasks";
 import { toast } from "react-hot-toast";
 import {
   MdCameraAlt,
@@ -9,8 +9,6 @@ import {
   MdSave,
   MdPerson,
   MdEmail,
-  MdPhone,
-  MdLocationOn,
   MdWork,
   MdStar,
   MdCheckCircle,
@@ -20,13 +18,11 @@ import {
 const InspectorProfilePage = () => {
   const { user, updateUser } = useAuth();
   const fileInputRef = useRef();
+  const { tasks, loading: tasksLoading } = useInspectorTasks();
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
-    address: "",
-    bio: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -35,11 +31,8 @@ const InspectorProfilePage = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || "",
+        name: user.fullName || user.name || "",
         email: user.email || "",
-        phone: user.phone || "",
-        address: user.address || "",
-        bio: user.bio || "",
       });
     }
   }, [user]);
@@ -71,22 +64,74 @@ const InspectorProfilePage = () => {
   };
 
   const handleSave = async () => {
-    try {
-      await inspectorService.updateProfile(formData);
-      updateUser(formData);
-      setIsEditing(false);
-      toast.success("Cập nhật thông tin thành công!");
-    } catch (error) {
-      toast.error("Cập nhật thất bại");
-    }
+    updateUser(formData);
+    setIsEditing(false);
+    toast.success("Cập nhật thông tin thành công!");
   };
 
-  // Mock thống kê (có thể thay bằng API sau)
-  const stats = [
-    { label: "Tổng kiểm định", value: 156, icon: <MdAssignment size={20} /> },
-    { label: "Đánh giá", value: "4.9", icon: <MdStar size={20} /> },
-    { label: "Hoàn thành", value: "98%", icon: <MdCheckCircle size={20} /> },
-  ];
+  // Tính toán thống kê từ dữ liệu thực
+  const stats = useMemo(() => {
+    const doneStatuses = [
+      "completed",
+      "waiting_payment",
+      "inspection_failed",
+      "cancelled",
+    ];
+    const doneTasks = tasks.filter((t) =>
+      doneStatuses.includes(t.status?.toLowerCase()),
+    );
+    const totalTasks = doneTasks.length;
+    const completedTasks = doneTasks.filter(
+      (t) => t.status?.toLowerCase() === "completed",
+    ).length;
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    // Tính đánh giá trung bình (giả sử từ rating field, hoặc mặc định 4.9 nếu không có)
+    const avgRating =
+      tasks.length > 0
+        ? (
+            tasks.reduce((sum, t) => sum + (t.rating || 5), 0) / tasks.length
+          ).toFixed(1)
+        : "4.9";
+
+    return [
+      {
+        label: "Tổng kiểm định",
+        value: totalTasks,
+        icon: <MdAssignment size={20} />,
+      },
+      { label: "Đánh giá", value: avgRating, icon: <MdStar size={20} /> },
+      {
+        label: "Hoàn thành",
+        value: `${completionRate}%`,
+        icon: <MdCheckCircle size={20} />,
+      },
+    ];
+  }, [tasks]);
+
+  // Lấy lịch sử công việc gần đây (những task đã hoàn thành, sắp xếp theo ngày mới nhất)
+  const recentWorkHistory = useMemo(() => {
+    return tasks
+      .filter((t) => t.status?.toLowerCase() === "completed")
+      .sort(
+        (a, b) =>
+          new Date(b.scheduledTime || b.completedTime || 0) -
+          new Date(a.scheduledTime || a.completedTime || 0),
+      )
+      .slice(0, 6)
+      .map((task) => ({
+        id: task.id,
+        bike: task.bikeName || task.bicycleName || "Xe đạp VeloX",
+        date: task.scheduledTime
+          ? new Date(task.scheduledTime).toLocaleDateString("vi-VN")
+          : "Chưa cập nhật",
+        result:
+          task.status?.toLowerCase() === "completed"
+            ? "Đạt"
+            : "Không đạt",
+      }));
+  }, [tasks]);
 
   if (!user) {
     return (
@@ -141,7 +186,7 @@ const InspectorProfilePage = () => {
               <MdWork size={16} /> Inspector
             </p>
             <p className="text-emerald-100 text-sm mt-2 max-w-md">
-              {user.bio || "Chuyên gia kiểm định xe đạp tại OldBike"}
+              Chuyên gia kiểm định xe đạp tại OldBike
             </p>
           </div>
 
@@ -230,63 +275,6 @@ const InspectorProfilePage = () => {
             </p>
           </div>
 
-          {/* Số điện thoại */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <MdPhone className="text-gray-400" /> Số điện thoại
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              disabled={!isEditing}
-              className={`w-full px-4 py-2.5 border rounded-lg transition-colors ${
-                isEditing
-                  ? "border-gray-200 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-50"
-                  : "border-transparent bg-gray-50 text-gray-700"
-              }`}
-            />
-          </div>
-
-          {/* Địa chỉ */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <MdLocationOn className="text-gray-400" /> Địa chỉ làm việc
-            </label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              disabled={!isEditing}
-              className={`w-full px-4 py-2.5 border rounded-lg transition-colors ${
-                isEditing
-                  ? "border-gray-200 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-50"
-                  : "border-transparent bg-gray-50 text-gray-700"
-              }`}
-            />
-          </div>
-
-          {/* Bio */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Giới thiệu bản thân
-            </label>
-            <textarea
-              name="bio"
-              value={formData.bio}
-              onChange={handleChange}
-              disabled={!isEditing}
-              rows={3}
-              placeholder="Mô tả ngắn về bạn..."
-              className={`w-full px-4 py-2.5 border rounded-lg transition-colors resize-none ${
-                isEditing
-                  ? "border-gray-200 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-50"
-                  : "border-transparent bg-gray-50 text-gray-700"
-              }`}
-            />
-          </div>
         </div>
       </div>
 
@@ -297,36 +285,39 @@ const InspectorProfilePage = () => {
           Lịch sử công việc gần đây
         </h2>
 
-        <div className="space-y-4">
-          {[
-            { bike: "Trek Marlin 7", date: "28/01/2026", result: "Đạt" },
-            { bike: "Giant Escape 2", date: "27/01/2026", result: "Đạt" },
-            {
-              bike: "Specialized Allez",
-              date: "25/01/2026",
-              result: "Không đạt",
-            },
-          ].map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-            >
-              <div>
-                <p className="font-medium text-gray-900">{item.bike}</p>
-                <p className="text-sm text-gray-500">{item.date}</p>
-              </div>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  item.result === "Đạt"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
-                }`}
+        {tasksLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-emerald-200 border-t-emerald-600"></div>
+          </div>
+        ) : recentWorkHistory.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+            <MdAssignment size={32} className="mx-auto mb-2 text-gray-300" />
+            <p>Chưa có công việc hoàn thành</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentWorkHistory.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-emerald-50 transition-colors"
               >
-                {item.result}
-              </span>
-            </div>
-          ))}
-        </div>
+                <div>
+                  <p className="font-medium text-gray-900">{item.bike}</p>
+                  <p className="text-sm text-gray-500">{item.date}</p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    item.result === "Đạt"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {item.result}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

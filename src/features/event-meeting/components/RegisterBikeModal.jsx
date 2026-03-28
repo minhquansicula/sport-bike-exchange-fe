@@ -449,12 +449,12 @@ const requestBody = {
             >
               Tạo xe mới
             </button>
-            <button
+            {/* <button
               onClick={() => setRegisterMode("existing")}
               className={`px-4 py-2 font-bold rounded-lg transition-colors ${registerMode === "existing" ? "bg-orange-500 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"}`}
             >
               Chọn xe đang bán
-            </button>
+            </button> */}
           </div>
 
           <div className="p-6 md:p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
