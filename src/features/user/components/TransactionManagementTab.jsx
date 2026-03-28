@@ -669,6 +669,7 @@ const TransactionManagementTab = () => {
 
                       <div className="flex items-center gap-2">
                         {t.userRole === "buyer" &&
+                          !t.isEventBike &&
                           ["Deposited", "Pending", "Paid"].includes(
                             t.status,
                           ) && (
@@ -682,6 +683,7 @@ const TransactionManagementTab = () => {
                           )}
 
                         {t.userRole === "seller" &&
+                          !t.isEventBike &&
                           [
                             "Deposited",
                             "Pending",
@@ -869,7 +871,7 @@ const TransactionManagementTab = () => {
                 )}
 
                 {/* Panel báo cáo kiểm định */}
-                {[
+                {!t.isEventBike && [
                   "Waiting_Payment",
                   "Inspection_Failed",
                   "Cancelled",
