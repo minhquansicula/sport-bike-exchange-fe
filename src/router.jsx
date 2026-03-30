@@ -23,6 +23,7 @@ const RootLayout = () => {
 
 // Các trang chức năng
 import HomePage from "./pages/HomePage";
+import QAPage from "./pages/QAPage";
 import BikeListPage from "./features/bicycle/pages/BikeListPage";
 import BikeDetailPage from "./features/bicycle/pages/BikeDetailPage";
 import PostBikePage from "./features/bicycle/pages/PostBikePage";
@@ -79,6 +80,7 @@ const router = createBrowserRouter([
           { path: "wishlist", element: <WishlistPage /> },
           { path: "events", element: <EventListPage /> },
           { path: "events/:id", element: <EventDetailPage /> },
+          { path: "qna", element: <QAPage /> },
         ],
       },
       {
