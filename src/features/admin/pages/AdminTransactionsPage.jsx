@@ -133,8 +133,11 @@ const AdminTransactionsPage = () => {
     }
 
     const selectedTime = new Date(scheduleData.meetingTime);
-    if (selectedTime < new Date()) {
-      toast.error("Thời gian hẹn không được chọn trong quá khứ!");
+    const now = new Date();
+    const minValidTime = new Date(now.getTime() + 30 * 60000); // 30 mins buffer
+
+    if (selectedTime < minValidTime) {
+      toast.error("Thời gian hẹn phải nằm trong tương lai (cách hiện tại ít nhất 30 phút)!");
       return;
     }
     setIsSubmitting(true);
@@ -787,7 +790,7 @@ const AdminTransactionsPage = () => {
                   <input
                     type="datetime-local"
                     required
-                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                    min={new Date(new Date().getTime() + 30 * 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                     value={scheduleData.meetingTime}
                     onChange={(e) =>
                       setScheduleData({
