@@ -131,6 +131,12 @@ const AdminTransactionsPage = () => {
       );
       return;
     }
+
+    const selectedTime = new Date(scheduleData.meetingTime);
+    if (selectedTime < new Date()) {
+      toast.error("Thời gian hẹn không được chọn trong quá khứ!");
+      return;
+    }
     setIsSubmitting(true);
     try {
       await reservationService.scheduleReservation(selectedRes.reservationId, {
@@ -781,6 +787,7 @@ const AdminTransactionsPage = () => {
                   <input
                     type="datetime-local"
                     required
+                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                     value={scheduleData.meetingTime}
                     onChange={(e) =>
                       setScheduleData({
