@@ -39,11 +39,11 @@ const AdminHeader = ({ onMenuClick }) => {
           <span>Cửa hàng</span>
         </Link>
 
-        {/* Notification */}
+        {/* Notification
         <button className="relative w-10 h-10 flex items-center justify-center text-gray-500 hover:text-zinc-900 hover:bg-gray-50 rounded-full transition-all border border-transparent hover:border-gray-200">
           <MdNotifications size={22} />
           <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
-        </button>
+        </button> */}
 
         {/* Divider */}
         <div className="w-px h-6 bg-gray-200 mx-1"></div>
