@@ -96,7 +96,9 @@ const AdminEventsPage = () => {
 
   const validateEventForm = (formData, isEdit = false) => {
     const errors = {};
-    const today = new Date().toISOString().split("T")[0];
+    const localNow = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000);
+    const localTomorrow = new Date(localNow.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrow = localTomorrow.toISOString().split("T")[0];
 
     if (!formData.name || !formData.name.trim())
       errors.name = "Tên sự kiện không được để trống.";
@@ -106,8 +108,8 @@ const AdminEventsPage = () => {
 
     if (!formData.startDate) {
       errors.startDate = "Vui lòng chọn ngày bắt đầu.";
-    } else if (!isEdit && formData.startDate < today) {
-      errors.startDate = "Ngày bắt đầu không được trong quá khứ.";
+    } else if (!isEdit && formData.startDate < tomorrow) {
+      errors.startDate = "Ngày bắt đầu sự kiện phải nằm trong tương lai (từ ngày mai trở đi).";
     }
 
     if (!formData.endDate) {
@@ -607,6 +609,7 @@ const AdminEventsPage = () => {
                       </label>
                       <input
                         type="date"
+                        min={new Date(new Date().getTime() + 24 * 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]}
                         className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${
                           formErrors.startDate
                             ? "border-red-500 focus:ring-red-500/10"
@@ -634,6 +637,7 @@ const AdminEventsPage = () => {
                       </label>
                       <input
                         type="date"
+                        min={formData.startDate || new Date(new Date().getTime() + 24 * 60 * 60 * 1000 - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]}
                         className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:ring-4 focus:outline-none transition-all text-slate-700 ${
                           formErrors.endDate
                             ? "border-red-500 focus:ring-red-500/10"
