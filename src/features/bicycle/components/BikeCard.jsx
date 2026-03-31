@@ -13,7 +13,7 @@ import {
   MdAccessTime,
 } from "react-icons/md";
 
-const BikeCard = ({ bike }) => {
+const BikeCard = ({ bike, showDepositButton = true }) => {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -23,6 +23,10 @@ const BikeCard = ({ bike }) => {
   if (!bike) return null;
 
   const liked = isInWishlist(bike.listingId);
+  const userRole = String(user?.role || "").toUpperCase();
+  const isStaffUser =
+    userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
+  const canShowDepositButton = showDepositButton && !isStaffUser;
 
   // Xử lý ảnh
   const displayImage =
@@ -43,13 +47,10 @@ const BikeCard = ({ bike }) => {
       return;
     }
 
-    const userRole = String(user?.role || "").toUpperCase();
-    const isStaff =
-      userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
     const isOwner =
       user.username === bike.sellerName || user.userId === bike.sellerId;
 
-    if (isStaff) {
+    if (isStaffUser) {
       toast.error("Tài khoản quản trị/nội bộ không thể đặt mua xe.");
       return;
     }
@@ -142,24 +143,26 @@ const BikeCard = ({ bike }) => {
             </span>
           </div>
 
-          <button
-            disabled={isDepositing}
-            className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 text-blue-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 flex items-center justify-center transition-all duration-300 shadow-sm group/btn relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Gửi yêu cầu giao dịch"
-            onClick={handleDeposit}
-          >
-            {isDepositing ? (
-              <div className="w-4 h-4 border-2 border-blue-500 group-hover/btn:border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <MdHandshake size={18} />
-            )}
+          {canShowDepositButton && (
+            <button
+              disabled={isDepositing}
+              className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 text-blue-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 flex items-center justify-center transition-all duration-300 shadow-sm group/btn relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Gửi yêu cầu giao dịch"
+              onClick={handleDeposit}
+            >
+              {isDepositing ? (
+                <div className="w-4 h-4 border-2 border-blue-500 group-hover/btn:border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <MdHandshake size={18} />
+              )}
 
-            {!isDepositing && (
-              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
-                Yêu cầu đặt cọc
-              </span>
-            )}
-          </button>
+              {!isDepositing && (
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                  Yêu cầu đặt cọc
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Footer Card */}
