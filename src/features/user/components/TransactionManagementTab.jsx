@@ -771,7 +771,7 @@ const TransactionManagementTab = () => {
                                   >
                                     <MdPayment size={16} /> Yêu cầu nhận tiền đền bù
                                   </button>
-                                ) : (
+                                ) : getNoShowType(t) !== "SELLER_NO_SHOW" ? (
                                   <button
                                     disabled={isProcessing}
                                     onClick={() => setCancelTarget(t)}
@@ -779,7 +779,7 @@ const TransactionManagementTab = () => {
                                   >
                                     <MdCancel size={16} /> Hủy & Hoàn cọc cho Buyer
                                   </button>
-                                )}
+                                ) : null}
                               </>
                             )}
                           </>
