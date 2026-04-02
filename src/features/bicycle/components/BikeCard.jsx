@@ -143,7 +143,7 @@ const BikeCard = ({ bike, showDepositButton = true }) => {
             </span>
           </div>
 
-          {canShowDepositButton && (
+          {/* {canShowDepositButton && (
             <button
               disabled={isDepositing}
               className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 text-blue-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 flex items-center justify-center transition-all duration-300 shadow-sm group/btn relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -162,7 +162,7 @@ const BikeCard = ({ bike, showDepositButton = true }) => {
                 </span>
               )}
             </button>
-          )}
+          )} */}
         </div>
 
         {/* Footer Card */}
