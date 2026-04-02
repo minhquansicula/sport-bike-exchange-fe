@@ -769,7 +769,7 @@ const TransactionManagementTab = () => {
                                     onClick={() => handleSellerCompensation(t)}
                                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
                                   >
-                                    <MdPayment size={16} /> Yêu cầu nhận tiền đền bù
+                                    <MdPayment size={16} /> Nhận tiền đền bù
                                   </button>
                                 ) : getNoShowType(t) !== "SELLER_NO_SHOW" ? (
                                   <button

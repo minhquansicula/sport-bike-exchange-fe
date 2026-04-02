@@ -615,7 +615,7 @@ const AdminEventTransactionsPage = () => {
                       </button>
                     )}
 
-                    {r.status === "Inspection_Failed" && (
+                    {/* {r.status === "Inspection_Failed" && (
                       <button
                         disabled={isProcessingRefund}
                         onClick={() => handleRefundBuyer(r.reservationId)}
@@ -626,7 +626,7 @@ const AdminEventTransactionsPage = () => {
                           ? "Đang hoàn tiền..."
                           : "Hoàn tiền cho Buyer"}
                       </button>
-                    )}
+                    )} */}
 
                     {(r.status === "Completed" || r.status === "Waiting_Payment") && (
                       <button
