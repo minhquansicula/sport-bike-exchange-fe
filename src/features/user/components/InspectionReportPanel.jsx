@@ -26,7 +26,7 @@ const StatusIcon = ({ status }) => {
  * - Hiển thị kết quả báo cáo kiểm định theo reservationId
  * - Tự fetch từ API, collapse/expand được
  */
-const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
+const InspectionReportPanel = ({ reservationId, currentUserRole, noShowType }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -71,18 +71,26 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
       return { text: "✓ PASSED", cls: "bg-emerald-600" };
     }
 
-    // Kiểm tra chéo với nội dung reason/note để tránh hiển thị sai "Bạn đã không có mặt"
-    const combinedReason = `${report.reason || ""} ${report.note || ""}`.toLowerCase();
-    const isSellerNoShowText = combinedReason.includes("người bán không") || combinedReason.includes("seller_no_show");
-    const isBuyerNoShowText = combinedReason.includes("người mua không") || combinedReason.includes("buyer_no_show");
+    // Ưu tiên noShowType prop (lấy từ cancelDescription của transaction — đáng tin cậy hơn report.result)
+    const resolvedNoShow = noShowType ||
+      (report.result === "SELLER_NO_SHOW" ? "SELLER_NO_SHOW" :
+      report.result === "BUYER_NO_SHOW" ? "BUYER_NO_SHOW" :
+      (() => {
+        const combinedReason = `${report.reason || ""} ${report.note || ""}`.toLowerCase();
+        if (combinedReason.includes("seller_no_show") || combinedReason.includes("người bán không đến") || combinedReason.includes("người bán không có mặt"))
+          return "SELLER_NO_SHOW";
+        if (combinedReason.includes("buyer_no_show") || combinedReason.includes("người mua không đến") || combinedReason.includes("người mua không có mặt"))
+          return "BUYER_NO_SHOW";
+        return null;
+      })());
 
-    if (report.result === "SELLER_NO_SHOW" || isSellerNoShowText) {
+    if (resolvedNoShow === "SELLER_NO_SHOW") {
       if (currentUserRole === "seller") {
         return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
       }
-      return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI BÁN KHÔNG CÓ MẶT", cls: "bg-red-500" };
+      return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI BÁN KHÔNG TỚI", cls: "bg-red-500" };
     }
-    if (report.result === "BUYER_NO_SHOW" || isBuyerNoShowText) {
+    if (resolvedNoShow === "BUYER_NO_SHOW") {
       if (currentUserRole === "buyer") {
         return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
       }
@@ -131,14 +139,19 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
       {/* Expanded detail */}
       {expanded && (
         <div className="px-5 pb-4 space-y-3">
-          {report.result === "BUYER_NO_SHOW" && currentUserRole === "buyer" && (
+          {noShowType === "BUYER_NO_SHOW" && currentUserRole === "buyer" && (
             <div className="text-sm text-red-700 bg-red-50 rounded-lg border border-red-100 px-4 py-3 mt-2 font-medium">
               Vì bạn không tới nên tiền cọc đã bị tịch thu.
             </div>
           )}
-          {report.result === "BUYER_NO_SHOW" && currentUserRole === "seller" && (
+          {noShowType === "BUYER_NO_SHOW" && currentUserRole === "seller" && (
             <div className="text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-100 px-4 py-3 mt-2 font-medium">
               Người mua đã không tới điểm hẹn kiểm định. Bạn có thể nhận 50% tiền cọc bù đắp.
+            </div>
+          )}
+          {noShowType === "SELLER_NO_SHOW" && currentUserRole === "buyer" && (
+            <div className="text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-100 px-4 py-3 mt-2 font-medium">
+              Người bán đã không tới điểm hẹn. Bạn sẽ được hoàn 100% tiền cọc + 200.000 VND bồi thường.
             </div>
           )}
           {/* Summary */}

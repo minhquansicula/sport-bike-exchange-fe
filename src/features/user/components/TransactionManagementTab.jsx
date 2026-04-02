@@ -883,6 +883,7 @@ const TransactionManagementTab = () => {
                     <InspectionReportPanel
                       reservationId={t.reservationId}
                       currentUserRole={t.userRole}
+                      noShowType={getNoShowType(t)}
                     />
                   );
                 })()}
