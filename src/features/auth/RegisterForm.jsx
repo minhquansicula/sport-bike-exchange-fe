@@ -41,6 +41,32 @@ const RegisterForm = () => {
     setError("");
 
     // 1. Validate cơ bản
+    if (!formData.username.trim()) {
+      setError("Tên đăng nhập không được để trống!");
+      return;
+    }
+    if (!formData.fullName.trim()) {
+      setError("Họ và tên không được để trống!");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Email không hợp lệ!");
+      return;
+    }
+
+    const phoneRegex = /^(0|84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!formData.phone || !phoneRegex.test(formData.phone)) {
+      setError("Số điện thoại không hợp lệ (Phải đúng 10 số theo mạng VN)!");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự!");
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Mật khẩu xác nhận không khớp!");
       return;

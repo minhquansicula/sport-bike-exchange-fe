@@ -12,19 +12,15 @@ import {
   MdEventAvailable, // <-- Thêm import icon
 } from "react-icons/md";
 
-const ProfileSidebar = ({
-  activeTab,
-  setActiveTab,
-  logout,
-}) => {
+const ProfileSidebar = ({ activeTab, setActiveTab, logout }) => {
   const accountItems = [
     { id: "info", icon: <MdPerson size={20} />, label: "Thông tin cá nhân" },
     { id: "security", icon: <MdLock size={20} />, label: "Bảo mật tài khoản" },
-    {
-      id: "notification",
-      icon: <MdNotifications size={20} />,
-      label: "Cài đặt thông báo",
-    },
+    // {
+    //   id: "notification",
+    //   icon: <MdNotifications size={20} />,
+    //   label: "Cài đặt thông báo",
+    // },
   ];
 
   const manageItems = [

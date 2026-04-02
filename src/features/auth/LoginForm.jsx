@@ -34,6 +34,17 @@ const LoginForm = () => {
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!usernameOrEmail.trim()) {
+      setError("Vui lòng nhập Username hoặc Email.");
+      return;
+    }
+
+    if (!password) {
+      setError("Vui lòng nhập mật khẩu.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {

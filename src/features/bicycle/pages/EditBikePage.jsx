@@ -3,8 +3,6 @@ import React, {
   useState,
   useEffect,
   useRef,
-  ChangeEvent,
-  FormEvent,
 } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { bikeService } from "../../../services/bikeService";
@@ -18,17 +16,17 @@ import {
 } from "react-icons/md";
 
 const EditBikePage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef(null);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Lấy danh sách Brand và Category từ API để render Dropdown (Tránh việc phải gõ tay)
-  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [availableBrands, setAvailableBrands] = useState([]);
+  const [availableCategories, setAvailableCategories] = useState([]);
 
   // State Form
   const [formData, setFormData] = useState({
@@ -65,18 +63,18 @@ const EditBikePage = () => {
         if (res && res.result) {
           const uniqueBrands = Array.from(
             new Set(
-              res.result.map((bike: any) => bike.brand?.name).filter(Boolean),
+              res.result.map((bike) => bike.brand?.name).filter(Boolean),
             ),
-          ).sort() as string[];
+          ).sort();
           setAvailableBrands(uniqueBrands);
 
           const uniqueCategories = Array.from(
             new Set(
               res.result
-                .map((bike: any) => bike.category?.name || bike.bikeType)
+                .map((bike) => bike.category?.name || bike.bikeType)
                 .filter(Boolean),
             ),
-          ).sort() as string[];
+          ).sort();
           setAvailableCategories(uniqueCategories);
         }
       } catch (error) {
@@ -133,20 +131,18 @@ const EditBikePage = () => {
     fetchBikeDetail();
   }, [id]);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Nâng cấp 1: Hàm hiển thị format giá tiền (10.000.000)
-  const formatDisplayAmount = (val: string) => {
+  const formatDisplayAmount = (val) => {
     if (!val) return "";
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePriceChange = (e) => {
     let rawValue = e.target.value.replace(/\D/g, "");
     if (rawValue.startsWith("0")) {
       rawValue = rawValue.replace(/^0+/, "");
@@ -154,7 +150,7 @@ const EditBikePage = () => {
     setFormData((prev) => ({ ...prev, price: rawValue }));
   };
 
-  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -185,9 +181,35 @@ const EditBikePage = () => {
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!id) return;
+
+    if (!formData.title.trim() || formData.title.length < 10) {
+      toast.error("Vui lòng nhập tiêu đề tối thiểu 10 ký tự.");
+      return;
+    }
+
+    const priceNum = parseFloat(formData.price);
+    if (!formData.price || isNaN(priceNum) || priceNum <= 0) {
+      toast.error("Vui lòng nhập giá bán hợp lệ (lớn hơn 0).");
+      return;
+    }
+    
+    if (priceNum > 500000000) {
+      toast.error("Giá bán vượt quá giới hạn (500.000.000đ).");
+      return;
+    }
+
+    if (!formData.description.trim() || formData.description.length < 20) {
+      toast.error("Vui lòng nhập mô tả chi tiết tối thiểu 20 ký tự.");
+      return;
+    }
+
+    if (!formData.image_url) {
+      toast.error("Vui lòng tải lên ít nhất 1 hình ảnh.");
+      return;
+    }
 
     setIsSaving(true);
     try {
