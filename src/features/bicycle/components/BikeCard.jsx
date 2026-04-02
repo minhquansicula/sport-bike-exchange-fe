@@ -24,9 +24,9 @@ const BikeCard = ({ bike, showDepositButton = true }) => {
 
   const liked = isInWishlist(bike.listingId);
   const userRole = String(user?.role || "").toUpperCase();
-  const isStaffUser =
+  const isStaff =
     userRole.includes("ADMIN") || userRole.includes("INSPECTOR");
-  const canShowDepositButton = showDepositButton && !isStaffUser;
+  const canShowDepositButton = showDepositButton && !isStaff;
 
   // Xử lý ảnh
   const displayImage =
@@ -50,7 +50,7 @@ const BikeCard = ({ bike, showDepositButton = true }) => {
     const isOwner =
       user.username === bike.sellerName || user.userId === bike.sellerId;
 
-    if (isStaffUser) {
+    if (isStaff) {
       toast.error("Tài khoản quản trị/nội bộ không thể đặt mua xe.");
       return;
     }

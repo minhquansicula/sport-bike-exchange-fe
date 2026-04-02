@@ -727,7 +727,7 @@ const TransactionManagementTab = () => {
                                 <MdPayment size={16} /> Thanh toán tiếp số tiền còn lại
                               </button>
                             )}
-                            {t.userRole === "seller" && (
+                            {/* {t.userRole === "seller" && (
                               <button
                                 disabled={isProcessing}
                                 onClick={() => handleConfirmOfflinePayment(t)}
@@ -735,7 +735,7 @@ const TransactionManagementTab = () => {
                               >
                                 <MdCheckCircle size={16} /> Xác nhận đã nhận tiền mặt
                               </button>
-                            )}
+                            )} */}
                           </>
                         )}
 
