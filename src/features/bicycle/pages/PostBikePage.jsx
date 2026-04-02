@@ -215,8 +215,8 @@ const PostBikePage = () => {
 
     if (!formData.description.trim()) {
       newErrors.description = "Vui lòng nhập mô tả chi tiết của xe.";
-    } else if (formData.description.trim().length < 20) {
-      newErrors.description = "Mô tả chi tiết quá ngắn (tối thiểu 20 ký tự).";
+    } else if (formData.description.trim().length < 10) {
+      newErrors.description = "Mô tả chi tiết quá ngắn (tối thiểu 10 ký tự).";
     }
 
     if (formData.images.length === 0) {
