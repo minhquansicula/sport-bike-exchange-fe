@@ -204,10 +204,19 @@ const PostBikePage = () => {
       newErrors.weight = "Trọng lượng phải lớn hơn 0.";
     }
 
+    const numericPrice = parseFloat(formData.price);
     if (!formData.price) {
       newErrors.price = "Vui lòng nhập giá bán.";
-    } else if (parseFloat(formData.price) <= 0) {
+    } else if (isNaN(numericPrice) || numericPrice <= 0) {
       newErrors.price = "Giá bán phải lớn hơn 0.";
+    } else if (numericPrice > 500000000) {
+      newErrors.price = "Giá bán vượt quá giới hạn (500.000.000đ).";
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = "Vui lòng nhập mô tả chi tiết của xe.";
+    } else if (formData.description.trim().length < 20) {
+      newErrors.description = "Mô tả chi tiết quá ngắn (tối thiểu 20 ký tự).";
     }
 
     if (formData.images.length === 0) {
@@ -999,7 +1008,7 @@ const PostBikePage = () => {
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Mô tả chi tiết
+                  Mô tả chi tiết <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute top-4 left-4 pointer-events-none text-gray-400">
@@ -1008,13 +1017,21 @@ const PostBikePage = () => {
                   <textarea
                     rows="5"
                     placeholder="Mô tả kỹ hơn về tình trạng trầy xước, phụ kiện đi kèm, lịch sử bảo dưỡng..."
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all resize-none"
+                    className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all resize-none ${
+                      errors.description ? "border-red-500" : "border-gray-200"
+                    }`}
                     value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, description: e.target.value });
+                      if (errors.description) setErrors({ ...errors, description: null });
+                    }}
                   ></textarea>
                 </div>
+                {errors.description && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">
+                    {errors.description}
+                  </p>
+                )}
               </div>
             </div>
           </div>
