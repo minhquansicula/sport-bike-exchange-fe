@@ -259,7 +259,11 @@ const AdminHomePage = () => {
               {getFilteredBikes()
                 .slice(0, 8)
                 .map((bike) => (
-                  <BikeCard key={bike.listingId || bike.id} bike={bike} />
+                  <BikeCard
+                    key={bike.listingId || bike.id}
+                    bike={bike}
+                    showDepositButton={false}
+                  />
                 ))}
             </div>
 

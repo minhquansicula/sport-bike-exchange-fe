@@ -121,6 +121,18 @@ const Header = ({ onOpenSidebar }) => {
               <MdEvent size={22} />
               <span>Hội chợ</span>
             </Link>
+
+            <Link
+              to="/qna"
+              className={`flex items-center gap-1 px-3 py-2 rounded-full font-bold text-sm transition-all ${
+                location.pathname === "/qna"
+                  ? "bg-orange-50 text-orange-600"
+                  : "text-orange-600 hover:bg-orange-50"
+              }`}
+            >
+              <MdFactCheck size={22} />
+              <span>Hỏi đáp</span>
+            </Link>
           </div>
 
           <div className="hidden lg:block w-px h-6 bg-gray-200 mx-1"></div>

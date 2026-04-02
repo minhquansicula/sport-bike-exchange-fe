@@ -6,7 +6,7 @@ import {
   MdHome,
   MdStorefront,
   MdAddCircleOutline,
-  MdArticle,
+  MdFactCheck,
   MdClose,
   MdLogin,
   MdPersonAdd,
@@ -21,6 +21,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { label: "Trang chủ", path: "/", icon: <MdHome size={24} /> },
     { label: "Mua xe", path: "/bikes", icon: <MdStorefront size={24} /> },
+    { label: "Hỏi đáp", path: "/qna", icon: <MdFactCheck size={24} /> },
     {
       label: "Đăng bán",
       path: "/post-bike",
