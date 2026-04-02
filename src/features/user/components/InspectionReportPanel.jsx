@@ -86,7 +86,7 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
       if (currentUserRole === "buyer") {
         return { text: "✗ GIAO DỊCH THẤT BẠI: BẠN ĐÃ KHÔNG CÓ MẶT", cls: "bg-red-500" };
       }
-      return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI MUA KHÔNG CÓ MẶT", cls: "bg-red-500" };
+      return { text: "✗ GIAO DỊCH THẤT BẠI: NGƯỜI MUA KHÔNG TỚI", cls: "bg-red-500" };
     }
     return { text: "✗ FAILED", cls: "bg-red-500" };
   };
@@ -134,6 +134,11 @@ const InspectionReportPanel = ({ reservationId, currentUserRole }) => {
           {report.result === "BUYER_NO_SHOW" && currentUserRole === "buyer" && (
             <div className="text-sm text-red-700 bg-red-50 rounded-lg border border-red-100 px-4 py-3 mt-2 font-medium">
               Vì bạn không tới nên tiền cọc đã bị tịch thu.
+            </div>
+          )}
+          {report.result === "BUYER_NO_SHOW" && currentUserRole === "seller" && (
+            <div className="text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-100 px-4 py-3 mt-2 font-medium">
+              Người mua đã không tới điểm hẹn kiểm định. Bạn có thể nhận 50% tiền cọc bù đắp.
             </div>
           )}
           {/* Summary */}
