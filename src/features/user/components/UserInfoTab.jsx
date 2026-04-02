@@ -70,7 +70,7 @@ const UserInfoTab = ({ formData, handleChange, onSave, loading }) => {
         </div>
 
         {/* Bio */}
-        <div className="md:col-span-2 space-y-2">
+        {/* <div className="md:col-span-2 space-y-2">
           <label className="text-sm font-bold text-zinc-700">
             Giới thiệu (Bio)
           </label>
@@ -82,7 +82,7 @@ const UserInfoTab = ({ formData, handleChange, onSave, loading }) => {
             placeholder="Chia sẻ đôi chút về bạn..."
             className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-100 resize-none transition-all"
           />
-        </div>
+        </div> */}
 
         {/* Button */}
         <div className="md:col-span-2">
