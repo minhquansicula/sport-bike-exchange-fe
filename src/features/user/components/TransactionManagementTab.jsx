@@ -306,20 +306,6 @@ const TransactionManagementTab = () => {
     }
   };
 
-  const handleConfirmOfflinePayment = async (t) => {
-    if (!window.confirm("Xác nhận bạn đã nhận đủ tiền mặt từ người mua tại sự kiện?")) return;
-    setIsProcessing(true);
-    try {
-      await reservationService.confirmOfflinePayment(t.reservationId);
-      toast.success("Xác nhận thanh toán thành công! Giao dịch đã hoàn tất.");
-      fetchAllTransactions();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi xác nhận thanh toán.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleContinuePayment = async (item) => {
     setIsProcessing(true);
     try {
@@ -347,7 +333,6 @@ const TransactionManagementTab = () => {
     }
   };
 
-  // CẬP NHẬT: GỌI API THEO ĐÚNG LOẠI XE (EVENT / THƯỜNG) KHI HOÀN TIỀN
   const confirmCancelReservation = async () => {
     if (!cancelTarget) return;
     setIsProcessing(true);
@@ -456,9 +441,9 @@ const TransactionManagementTab = () => {
         color: "red",
       },
       Paid_Out: {
-        label: "Đã thanh toán (Seller)",
+        label: "Đã thanh toán (Hoàn tất)",
         icon: MdCheckCircle,
-        color: "blue",
+        color: "green",
       },
     };
     const config = statusMap[status] || {
@@ -525,7 +510,8 @@ const TransactionManagementTab = () => {
       "Pending",
       "Paid",
       "Pending_Cancel",
-      "Paid_Out", // Xe sự kiện sau khi admin đã payout cho seller
+      "Completed",
+      "Paid_Out", // Cho phép hiện lịch sử các xe đã thanh toán hoàn tất
     ].includes(t.status);
   });
 
@@ -700,46 +686,18 @@ const TransactionManagementTab = () => {
                             </button>
                           )}
 
-                        {/* NÚT THANH TOÁN CUỐI SAU KHI KIỂM ĐỊNH PASS */}
-                        {t.status === "Waiting_Payment" && (
-                          <>
-                            {t.userRole === "buyer" && !t.isEventBike && (
-                              <button
-                                disabled={isProcessing}
-                                onClick={() => handleFinalPayment(t)}
-                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
-                              >
-                                <MdPayment size={16} /> Thanh toán giao dịch
-                              </button>
-                            )}
-                          </>
+                        {/* 🔥 SỬA CHỮA ĐIỀU KIỆN NÚT THANH TOÁN */}
+                        {t.status === "Waiting_Payment" && t.userRole === "buyer" && (
+                          <button
+                            disabled={isProcessing}
+                            onClick={() => handleFinalPayment(t)}
+                            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
+                          >
+                            <MdPayment size={16} /> 
+                            {t.isEventBike ? "Thanh toán tiếp số tiền còn lại" : "Thanh toán giao dịch"}
+                          </button>
                         )}
 
-                        {/* NÚT THANH TOÁN TIẾP/ XÁC NHẬN CHO XE SỰ KIỆN SAU KHI ADMIN CHUYỂN TIỀN CHO SELLER */}
-                        {(t.status === "Paid_Out" || t.status === "Waiting_Payment") && t.isEventBike && (
-                          <>
-                            {t.userRole === "buyer" && (
-                              <button
-                                disabled={isProcessing}
-                                onClick={() => handleFinalPayment(t)}
-                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
-                              >
-                                <MdPayment size={16} /> Thanh toán tiếp số tiền còn lại
-                              </button>
-                            )}
-                            {/* {t.userRole === "seller" && (
-                              <button
-                                disabled={isProcessing}
-                                onClick={() => handleConfirmOfflinePayment(t)}
-                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-emerald-200"
-                              >
-                                <MdCheckCircle size={16} /> Xác nhận đã nhận tiền mặt
-                              </button>
-                            )} */}
-                          </>
-                        )}
-
-                        {/* NÚT THANH TOÁN LẠI CỌC NẾU CẦN */}
                         {t.status === "Pending" && t.userRole === "buyer" && (
                           <button
                             disabled={isProcessing}
@@ -872,9 +830,6 @@ const TransactionManagementTab = () => {
                 {/* Panel báo cáo kiểm định */}
                 {(() => {
                   if (t.isEventBike || !t.reservationId) return null;
-                  // Waiting_Payment gồm 2 stage:
-                  // - Stage 1: chờ đặt cọc (chưa có inspector) → KHÔNG hiện
-                  // - Stage 2: sau kiểm định (có inspector) → HIỆN
                   const shouldShow = t.status === "Waiting_Payment"
                     ? (t.inspectorName && t.inspectorName !== "Đang cập nhật")
                     : ["Inspection_Failed", "Pending_Cancel", "Cancelled", "Refunded", "Compensated", "Paid_Out", "Completed"].includes(t.status);
